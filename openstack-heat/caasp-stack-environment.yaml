@@ -1,0 +1,11 @@
+---
+parameters:
+  image: <Image ID>
+  key_name: <Key Name>
+  root_password: <Password>
+  admin_flavor: m1.large
+  master_flavor: m1.large
+  worker_flavor: m1.large
+  worker_count: 3
+  ext_net_id: <External Network ID>
+  int_net_id: <Internal Network ID>
