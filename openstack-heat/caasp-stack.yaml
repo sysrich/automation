@@ -1,0 +1,181 @@
+heat_template_version: 2015-04-30
+
+description: Template to create a CaaSP cluster for Dev/Test purposes
+
+parameters:
+  key_name:
+    type: string
+    description: Name of keypair to assign to servers
+    constraints:
+      - custom_constraint: nova.keypair
+  image:
+    type: string
+    description: Name of image to use for servers
+    constraints:
+      - custom_constraint: glance.image
+  ext_net_id:
+    type: string
+    description: >
+      ID of public network for which floating IP addresses will be allocated
+    default: 66ee2bc5-1464-4ce3-9386-52fe9a3d3518
+  int_net_id:
+    type: string
+    description: ID of private network into which servers get deployed
+    constraints:
+      - custom_constraint: neutron.network
+  admin_flavor:
+    type: string
+    description: Admin Flavor
+    default: m1.large
+    constraints:
+      - custom_constraint: nova.flavor
+  master_flavor:
+    type: string
+    description: Master Flavor
+    default: m1.large
+    constraints:
+      - custom_constraint: nova.flavor
+  worker_flavor:
+    type: string
+    description: Worker Flavor
+    default: m1.large
+    constraints:
+      - custom_constraint: nova.flavor
+  worker_count:
+    type: number
+    description: Number of Worker nodes to boot
+    default: 5
+  root_password:
+    type: string
+    description: Root Password for the VMs
+    default: linux
+
+resources:
+  admin:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: image }
+      key_name: { get_param: key_name }
+      flavor: { get_param: admin_flavor }
+      networks:
+        - port: { get_resource: admin_port }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #cloud-config
+
+            disable_root: False
+            ssh_deletekeys: False
+            ssh_pwauth: True
+
+            chpasswd:
+              list: |
+                root:$root_password
+              expire: False
+
+            suse_caasp:
+              role: admin
+          params:
+            $root_password: { get_param: root_password }
+
+  admin_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: int_net_id }
+      security_groups:
+        - default
+
+  admin_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: ext_net_id }
+
+  admin_floating_ip_association:
+    type: OS::Neutron::FloatingIPAssociation
+    properties:
+      floatingip_id: { get_resource: admin_floating_ip }
+      port_id: { get_resource: admin_port }
+
+  master:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: image }
+      key_name: { get_param: key_name }
+      flavor: { get_param: master_flavor }
+      networks:
+        - port: { get_resource: master_port }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          template: |
+            #cloud-config
+
+            disable_root: False
+            ssh_deletekeys: False
+            ssh_pwauth: True
+
+            chpasswd:
+              list: |
+                root:$root_password
+              expire: False
+
+            suse_caasp:
+              role: cluster
+              admin_node: $admin_node
+          params:
+            $admin_node: { get_attr: [admin, first_address] }
+            $root_password: { get_param: root_password }
+
+  master_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: int_net_id }
+      security_groups:
+        - default
+
+  master_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: ext_net_id }
+
+  master_floating_ip_association:
+    type: OS::Neutron::FloatingIPAssociation
+    properties:
+      floatingip_id: { get_resource: master_floating_ip }
+      port_id: { get_resource: master_port }
+
+  worker:
+    type: OS::Heat::AutoScalingGroup
+    properties:
+      min_size: { get_param: worker_count }
+      desired_capacity: { get_param: worker_count }
+      max_size: { get_param: worker_count }
+      resource:
+        type: OS::Nova::Server
+        properties:
+          image: { get_param: image }
+          key_name: { get_param: key_name }
+          flavor: { get_param: worker_flavor }
+          networks:
+            - network: { get_param: int_net_id }
+          user_data_format: RAW
+          user_data:
+            str_replace:
+              template: |
+                #cloud-config
+
+                disable_root: False
+                ssh_deletekeys: False
+                ssh_pwauth: True
+
+                chpasswd:
+                  list: |
+                    root:linux
+                  expire: False
+
+                suse_caasp:
+                  role: cluster
+                  admin_node: $admin_node
+              params:
+                $admin_node: {get_attr: [admin, first_address]}
