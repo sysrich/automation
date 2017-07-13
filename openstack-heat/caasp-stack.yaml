@@ -9,14 +9,14 @@ parameter_groups:
       - image
       - key_name
       - root_password
-      - worker_count
 
-  - label: flavor
-    description: Flavor Parameters
+  - label: sizing
+    description: Sizing Parameters
     parameters:
       - admin_flavor
       - master_flavor
       - worker_flavor
+      - worker_count
 
   - label: network
     description: Network Parameters
