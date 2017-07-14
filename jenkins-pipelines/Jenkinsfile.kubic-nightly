@@ -1,0 +1,3 @@
+library "kubic-jenkins-library@${env.BRANCH_NAME}"
+
+coreKubicProjectPeriodic(minionCount: 50)
