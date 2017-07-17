@@ -1,3 +1,11 @@
 library "kubic-jenkins-library@${env.BRANCH_NAME}"
 
+// Configure the build properties
+properties(
+    [
+        [$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', numToKeepStr: '31']],
+        pipelineTriggers([cron('@daily')]),
+    ]
+)
+
 coreKubicProjectPeriodic(minionCount: 3)
