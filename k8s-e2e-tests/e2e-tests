@@ -1,0 +1,131 @@
+#!/bin/sh
+
+# options
+IMAGE_NAME=k8s-e2e-tests
+CURR_DIR=$( pwd )
+DOCKER_RUN_ARGS="-ti"
+
+USAGE=$(cat <<USAGE
+Usage:
+
+  * providing a "kubeconfig"
+
+    -k|--kubeconfig <FILE>   kubeconfig file
+
+  * providing API server access details
+
+    -u|--url <URL>           kubernetes API server URL
+
+Certificates:
+
+    --ca-crt <FILE>          the ca.crt file
+    --admin-crt <FILE>       the admin.crt file
+    --admin-key <FILE>       the admin.key file
+
+USAGE
+)
+
+
+# logging
+log()   { (>&2 echo ">>> [e2e-tests] $@") ; }
+warn()  { log "WARNING: $@" ; }
+error() { log "ERROR: $@" ; exit 1 ; }
+abort() { log "FATAL: $@" ; exit 1 ; }
+
+# images
+
+image_cleanup() {
+  [ -n "$IMAGE_NAME" ] || abort "no IMAGE_NAME provided"
+
+  log "Stop container $IMAGE_NAME"
+  docker stop -t 5 "$IMAGE_NAME" 2>/dev/null || true
+  log "Remove container $IMAGE_NAME"
+  docker rm "$IMAGE_NAME" 2>/dev/null || true
+  log "Clean up image $IMAGE_NAME"
+  docker rmi "$IMAGE_NAME" 2>/dev/null || true
+}
+
+image_build() {
+  [ -n "$IMAGE_NAME" ] || abort "no IMAGE_NAME provided"
+
+  log "Building image"
+  docker build -t "$IMAGE_NAME" .
+  res=$?
+  return $res
+}
+
+image_run() {
+  [ -n "$IMAGE_NAME" ] || abort "no IMAGE_NAME provided"
+
+  log "Running the container..."
+  docker run --net=host \
+      --name "$IMAGE_NAME" \
+    $DOCKER_RUN_ARGS \
+    $IMAGE_NAME
+}
+
+check_file() {
+    if [ ! -f $1 ]; then
+        error "File $1 doesn't exist!"
+    fi
+}
+
+# options
+
+while [[ $# > 0 ]] ; do
+  case $1 in
+    -u|--url)
+      DOCKER_RUN_ARGS="$DOCKER_RUN_ARGS -e KUBE_API_URL=$2"
+      URL=1
+      shift
+      ;;
+    --ca-crt)
+      f="$(realpath $2)"
+      check_file $f
+      DOCKER_RUN_ARGS="$DOCKER_RUN_ARGS -v $f:/root/.kube/ca.crt"
+      CA_CRT=1
+      shift
+      ;;
+    --admin-crt)
+      f="$(realpath $2)"
+      check_file $f
+      DOCKER_RUN_ARGS="$DOCKER_RUN_ARGS -v $f:/root/.kube/admin.crt"
+      ADM_CRT=1
+      shift
+      ;;
+    --admin-key)
+      f="$(realpath $2)"
+      check_file $f
+      DOCKER_RUN_ARGS="$DOCKER_RUN_ARGS -v $f:/root/.kube/admin.key"
+      ADM_KEY=1
+      shift
+      ;;
+    -k|--kubeconfig)
+      f="$(realpath $2)"
+      check_file $f
+      DOCKER_RUN_ARGS="$DOCKER_RUN_ARGS -e KUBECONFIG=$2 -v $f:/root/.kube/config"
+      K8S_CFG=1
+      shift
+      ;;
+    -h|--help)
+      echo "$USAGE"
+      exit 0
+      ;;
+  esac
+  shift
+done
+
+if [ -z $URL ] && [ -z $K8S_CFG ]; then
+    error "Option -u|--url or -k|--kubeconfig is required"
+fi
+[ -z $CA_CRT ]  && error "Option --ca-crt is required"
+[ -z $ADM_CRT ] && error "Option --admin-crt is required"
+[ -z $ADM_KEY ] && error "Option --admin-key is required"
+
+# main
+
+image_cleanup || abort "could not cleanup"
+image_build   || abort "could not build image"
+image_run     || abort "'docker run' failed"
+
+log "Done."
