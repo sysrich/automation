@@ -2,8 +2,7 @@
 
 # options
 IMAGE_NAME=k8s-e2e-tests
-CURR_DIR=$( pwd )
-DOCKER_RUN_ARGS="-ti"
+DOCKER_RUN_ARGS=${DOCKER_RUN_ARGS:-"-ti"}
 
 USAGE=$(cat <<USAGE
 Usage:
