@@ -46,7 +46,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Wait for accept-all button to be enabled"
     wait_for(timeout: 20, interval: 5) do
-      !find_button("accept-all").disabled?
+      !find_button("accept-all").disabled? rescue false
     end
     puts "<<< accept-all button enabled"
 
