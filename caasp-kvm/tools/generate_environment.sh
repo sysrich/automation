@@ -12,7 +12,7 @@ if command -v jq; then
         environment=$(echo "$environment" | jq ".minions | map(if (.ipv4 == \"$node\") then . + {\"minionID\": \"$machine_id\"} else . end) | {minions: .}")
     done
     environment=$(echo "$environment" | jq " . + {dashboardHost: .minions[] | select(.role==\"admin\") | .ipv4, kubernetesHost: .minions[] | select(.role==\"master\") | .ipv4}")
-    environment=$(echo "$environment" | jq " . + {sshKey: \"`pwd`/ssh/id_docker\", sshUser: \"root\"}")
+    environment=$(echo "$environment" | jq " . + {sshKey: \"`pwd`/tools/id_docker\", sshUser: \"root\"}")
     echo "$environment" | tee environment.json
 else
     echo "jq is not installed - please install jq to generate the environment.json file"
