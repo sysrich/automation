@@ -1,0 +1,285 @@
+#####################
+# libvirt variables #
+#####################
+
+variable "libvirt_uri" {
+  default     = "qemu:///system"
+  description = "libvirt connection url - default to localhost"
+}
+
+variable "pool" {
+  default     = "default"
+  description = "pool to be used to store all the volumes"
+}
+
+#####################
+# Cluster variables #
+#####################
+
+variable "caasp_img_source_url" {
+  type        = "string"
+  default     = "channel://devel"
+  description = "CaaSP image to use for KVM - you can use 'http://', 'file://' or 'channel://' formatted addresses. 'http' and 'file' point to remote http, and local images on disk, while 'channel' refers to the release channel from IBS. e.g. 'channel://devel' will download the latest image from the devel channel. Currently supported channels are: devel, staging_a, staging_b, and release"
+}
+
+variable "caasp_admin_memory" {
+  default     = 2048
+  description = "The amount of RAM for a admin node"
+}
+
+variable "caasp_admin_vcpu" {
+  default     = 2
+  description = "The amount of virtual CPUs for a admin node"
+}
+
+variable "caasp_master_count" {
+  default     = 1
+  description = "Number of masters to be created"
+}
+
+variable "caasp_master_memory" {
+  default     = 2048
+  description = "The amount of RAM for a master"
+}
+
+variable "caasp_master_vcpu" {
+  default     = 2
+  description = "The amount of virtual CPUs for a master"
+}
+
+variable "caasp_worker_count" {
+  default     = 2
+  description = "Number of workers to be created"
+}
+
+variable "caasp_worker_memory" {
+  default     = 2048
+  description = "The amount of RAM for a worker"
+}
+
+variable "caasp_worker_vcpu" {
+  default     = 2
+  description = "The amount of virtual CPUs for a worker"
+}
+
+variable "caasp_domain_name" {
+  type        = "string"
+  default     = "devenv.caasp.suse.net"
+  description = "The amount of virtual CPUs for a worker"
+}
+
+####################
+# DevEnv variables #
+####################
+
+variable "kubic_salt_dir" {
+  type = "string"
+  description = "Path to the directory where https://github.com/kubic-project/salt/ has been cloned into"
+}
+
+variable "kubic_caasp_container_manifests_dir" {
+  type = "string"
+  description = "Path to the directory where https://github.com/kubic-project/caasp-container-manifests has been cloned into"
+}
+
+#######################
+# Cluster declaration #
+#######################
+
+provider "libvirt" {
+  uri = "${var.libvirt_uri}"
+}
+
+resource "null_resource" "local_checkout_of_caasp_image" {
+  provisioner "local-exec" {
+    command = "./tools/download_image.py ${var.caasp_img_source_url}"
+  }
+}
+
+# This is the CaaSP kvm image that has been created by IBS
+resource "libvirt_volume" "caasp_img" {
+  name   = "${basename(var.caasp_img_source_url)}"
+  source = "${basename(var.caasp_img_source_url)}"
+  pool   = "${var.pool}"
+
+  depends_on = ["null_resource.local_checkout_of_caasp_image"]
+}
+
+##############
+# Networking #
+##############
+resource "libvirt_network" "network" {
+    name      = "caasp-net"
+    mode      = "nat"
+    domain    = "${var.caasp_domain_name}"
+    addresses = ["10.17.0.0/22"]
+}
+
+##############
+# Admin node #
+##############
+resource "libvirt_volume" "admin" {
+  name           = "caasp_admin.qcow2"
+  pool           = "${var.pool}"
+  base_volume_id = "${libvirt_volume.caasp_img.id}"
+}
+
+resource "libvirt_cloudinit" "admin" {
+  name      = "caasp_admin_cloud_init.iso"
+  pool      = "${var.pool}"
+  user_data = "${file("cloud-init/admin.cfg")}"
+}
+
+resource "libvirt_domain" "admin" {
+  name      = "caasp_admin"
+  memory    = "${var.caasp_admin_memory}"
+  vcpu      = "${var.caasp_admin_vcpu}"
+  metadata   = "caasp-admin.${var.caasp_domain_name},admin,${count.index}"
+  cloudinit = "${libvirt_cloudinit.admin.id}"
+
+  disk {
+    volume_id = "${libvirt_volume.admin.id}"
+  }
+
+  network_interface {
+    network_id     = "${libvirt_network.network.id}"
+    hostname       = "caasp-admin"
+    addresses      = ["10.17.1.0"]
+    wait_for_lease = 1
+  }
+
+  graphics {
+    type        = "vnc"
+    listen_type = "address"
+  }
+
+  filesystem {
+    source = "${var.kubic_salt_dir}"
+    target = "salt"
+    readonly = true
+  }
+
+  filesystem {
+    source = "${var.kubic_caasp_container_manifests_dir}"
+    target = "caasp-container-manifests"
+    readonly = true
+  }
+}
+
+output "ip_admin" {
+  value = "${libvirt_domain.admin.network_interface.0.addresses.0}"
+}
+
+###################
+# Cluster masters #
+###################
+
+resource "libvirt_volume" "master" {
+  name           = "caasp_master_${count.index}.qcow2"
+  pool           = "${var.pool}"
+  base_volume_id = "${libvirt_volume.caasp_img.id}"
+  count          = "${var.caasp_master_count}"
+}
+
+data "template_file" "master_cloud_init_user_data" {
+  template = "${file("cloud-init/master.cfg.tpl")}"
+
+  vars {
+    admin_ip = "${libvirt_domain.admin.network_interface.0.addresses.0}"
+  }
+
+  depends_on = ["libvirt_domain.admin"]
+}
+
+resource "libvirt_cloudinit" "master" {
+  name      = "caasp_master_cloud_init.iso"
+  pool      = "${var.pool}"
+  user_data = "${data.template_file.master_cloud_init_user_data.rendered}"
+}
+
+resource "libvirt_domain" "master" {
+  count      = "${var.caasp_master_count}"
+  name       = "caasp_master_${count.index}"
+  memory     = "${var.caasp_master_memory}"
+  vcpu       = "${var.caasp_master_vcpu}"
+  cloudinit  = "${libvirt_cloudinit.master.id}"
+  metadata   = "caasp-master-${count.index}.${var.caasp_domain_name},master,${count.index}"
+  depends_on = ["libvirt_domain.admin"]
+
+  disk {
+    volume_id = "${element(libvirt_volume.master.*.id, count.index)}"
+  }
+
+  network_interface {
+    network_id     = "${libvirt_network.network.id}"
+    hostname       = "caasp-master-${count.index}"
+    addresses      = ["10.17.2.${count.index}"]
+    wait_for_lease = 1
+  }
+
+  graphics {
+    type        = "vnc"
+    listen_type = "address"
+  }
+}
+
+output "masters" {
+  value = ["${libvirt_domain.master.*.network_interface.0.addresses.0}"]
+}
+
+###################
+# Cluster workers #
+###################
+
+resource "libvirt_volume" "worker" {
+  name           = "caasp_worker_${count.index}.qcow2"
+  pool           = "${var.pool}"
+  base_volume_id = "${libvirt_volume.caasp_img.id}"
+  count          = "${var.caasp_worker_count}"
+}
+
+data "template_file" "worker_cloud_init_user_data" {
+  template = "${file("cloud-init/worker.cfg.tpl")}"
+
+  vars {
+    admin_ip = "${libvirt_domain.admin.network_interface.0.addresses.0}"
+  }
+
+  depends_on = ["libvirt_domain.admin"]
+}
+
+resource "libvirt_cloudinit" "worker" {
+  name      = "caasp_worker_cloud_init.iso"
+  pool      = "${var.pool}"
+  user_data = "${data.template_file.worker_cloud_init_user_data.rendered}"
+}
+
+resource "libvirt_domain" "worker" {
+  count      = "${var.caasp_worker_count}"
+  name       = "caasp_worker_${count.index}"
+  memory     = "${var.caasp_worker_memory}"
+  vcpu       = "${var.caasp_worker_vcpu}"
+  cloudinit  = "${libvirt_cloudinit.worker.id}"
+  metadata   = "caasp-worker-${count.index}.${var.caasp_domain_name},worker,${count.index}"
+  depends_on = ["libvirt_domain.admin"]
+
+  disk {
+    volume_id = "${element(libvirt_volume.worker.*.id, count.index)}"
+  }
+
+  network_interface {
+    network_id     = "${libvirt_network.network.id}"
+    hostname       = "caasp-worker-${count.index}"
+    addresses      = ["10.17.3.${count.index}"]
+    wait_for_lease = 1
+  }
+
+  graphics {
+    type        = "vnc"
+    listen_type = "address"
+  }
+}
+
+output "workers" {
+  value = ["${libvirt_domain.worker.*.network_interface.0.addresses.0}"]
+}
