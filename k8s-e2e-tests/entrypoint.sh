@@ -44,18 +44,31 @@ run_tests() {
     export PATH=$KUBE_ROOT/platforms/linux/amd64:$PATH
     export KUBE_ROOT=/usr/src/kubernetes
     export KUBERNETES_CONFORMANCE_TEST=y
-    export KUBE_TEST_AGRS="\
+    export E2E_REPORT_DIR=/tmp/artifacts
+    export KUBE_TEST_ARGS="\
         -v=5 \
         --alsologtostderr \
         --ginkgo.progress \
         --e2e-verify-service-account=false \
+        --report-dir=/tmp/artifacts \
         --clean-start=true \
         --dump-logs-on-failure \
         --delete-namespace=true \
-        --ginkgo.trace=true" 
-    
+        --ginkgo.trace=true"
+
     cd $KUBE_ROOT
-    go run hack/e2e.go -v --test --test_args="$KUBE_TEST_AGRS --ginkgo.focus=\[Conformance\]" 2>&1 | tee /root/e2e-tests-$(date +%F-%H%M%S).log
+
+    # first run the parallelizable tests
+    env GINKGO_PARALLEL=y E2E_REPORT_PREFIX=parallel \
+    go run hack/e2e.go -v --test \
+        --test_args="$KUBE_TEST_ARGS --ginkgo.focus=\[Conformance\] --ginkgo.skip=\[Serial\]" 2>&1 | \
+            tee /tmp/e2e-test.log
+
+    # now run the serial tests
+    env E2E_REPORT_PREFIX=serial \
+    go run hack/e2e.go -v --test \
+        --test_args="$KUBE_TEST_ARGS --ginkgo.focus=\[Serial\].*\[Conformance\]" 2>&1 | \
+            tee -a /tmp/e2e-test.log
 }
 
 # main

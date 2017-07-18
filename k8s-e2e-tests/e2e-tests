@@ -21,6 +21,11 @@ Certificates:
     --admin-crt <FILE>       the admin.crt file
     --admin-key <FILE>       the admin.key file
 
+Other:
+
+    --artifacts <DIR>        directory where junit XML files are stored
+    --log <FILE>             log file
+
 USAGE
 )
 
@@ -104,6 +109,18 @@ while [[ $# > 0 ]] ; do
       check_file $f
       DOCKER_RUN_ARGS="$DOCKER_RUN_ARGS -e KUBECONFIG=$2 -v $f:/root/.kube/config"
       K8S_CFG=1
+      shift
+      ;;
+    --artifacts)
+      mkdir -p "$2"
+      d="$(realpath $2)"
+      DOCKER_RUN_ARGS="$DOCKER_RUN_ARGS -v $d:/tmp/artifacts"
+      shift
+      ;;
+    --log)
+      :> "$2"
+      d="$(realpath $2)"
+      DOCKER_RUN_ARGS="$DOCKER_RUN_ARGS -v $d:/tmp/e2e-test.log"
       shift
       ;;
     -h|--help)
