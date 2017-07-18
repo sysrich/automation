@@ -38,14 +38,14 @@ feature "Boostrap cluster" do
     visit "/setup/discovery"
 
     puts ">>> Wait until all minions are pending to be accepted"
-    wait_for(timeout: 60, interval: 5) do
+    wait_for(timeout: 120, interval: 5) do
       minions = YAML.load(salt_master_container.command(list_salt_keys_command)[:stdout])
       minions["minions_pre"].length == node_number
     end
     puts "<<< All minions are pending to be accepted"
 
     puts ">>> Wait for accept-all button to be enabled"
-    wait_for(timeout: 20, interval: 5) do
+    wait_for(timeout: 120, interval: 5) do
       !find_button("accept-all").disabled? rescue false
     end
     puts "<<< accept-all button enabled"
@@ -54,7 +54,7 @@ feature "Boostrap cluster" do
     click_button("accept-all")
 
     puts ">>> Wait until Minion keys are accepted by salt"
-    wait_for(timeout: 60, interval: 5) do
+    wait_for(timeout: 120, interval: 5) do
       raw = salt_master_container.command(list_salt_keys_command)[:stdout]
       minions = YAML.load raw
       minions["minions_pre"].empty?
