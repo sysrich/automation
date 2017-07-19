@@ -8,7 +8,7 @@ Dir[File.join(File.dirname(File.dirname(__FILE__)), "spec", "support", "**", "*.
   each { |f| require f }
 
 def environment
-  env = JSON.parse(File.read(ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), '../../')}terraform/environment.json")))
+  env = JSON.parse(File.read(ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), '../../../')}terraform/environment.json")))
   abort("Please specify kubernetesHost in environment.json") unless env["kubernetesHost"]
   abort("Please specify at least 2 minions in environment.json") if env["minions"].count < 2
   # if run against a caasp-devenv we need to clear dashboardHost parameters
