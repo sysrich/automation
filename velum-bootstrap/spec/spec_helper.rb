@@ -12,7 +12,7 @@ def environment
   abort("Please specify kubernetesHost in environment.json") unless env["kubernetesHost"]
   abort("Please specify at least 2 minions in environment.json") if env["minions"].count < 2
   # if run against a caasp-devenv we need to clear dashboardHost parameters
-  return env unless ENV.fetch("DEVENV")
+  return env unless ENV.fetch("DEVENV", nil)
   env.tap { |h| h.delete("dashboardHost"); h.delete("sshKey") }
 rescue JSON::ParserError
   fail("Invalid JSON format")
