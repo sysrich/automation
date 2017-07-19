@@ -1,3 +1,4 @@
 caasp-kvm/*.qcow2
 caasp-kvm/terraform.tfvars
 caasp-kvm/environment.json
+velum-bootstrap/rspec.xml
