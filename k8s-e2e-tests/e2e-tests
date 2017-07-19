@@ -1,8 +1,12 @@
 #!/bin/sh
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # options
 IMAGE_NAME=k8s-e2e-tests
-DOCKER_RUN_ARGS=${DOCKER_RUN_ARGS:-"-ti"}
+DOCKER_RUN_ARGS=${DOCKER_RUN_ARGS:-"--net=host"}
+DOCKER_RUN_TTY_ARGS=${DOCKER_RUN_TTY_ARGS:-"-t"}
+BUILD=1
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -25,54 +29,19 @@ Other:
 
     --artifacts <DIR>        directory where junit XML files are stored
     --log <FILE>             log file
+    --no-tty                 do not use a TTY
+    --no-build               do not try to build the image from the Dockerfile
 
 USAGE
 )
 
+# logging and utils
 
-# logging
-log()   { (>&2 echo ">>> [e2e-tests] $@") ; }
-warn()  { log "WARNING: $@" ; }
-error() { log "ERROR: $@" ; exit 1 ; }
-abort() { log "FATAL: $@" ; exit 1 ; }
-
-# images
-
-image_cleanup() {
-  [ -n "$IMAGE_NAME" ] || abort "no IMAGE_NAME provided"
-
-  log "Stop container $IMAGE_NAME"
-  docker stop -t 5 "$IMAGE_NAME" 2>/dev/null || true
-  log "Remove container $IMAGE_NAME"
-  docker rm "$IMAGE_NAME" 2>/dev/null || true
-  log "Clean up image $IMAGE_NAME"
-  docker rmi "$IMAGE_NAME" 2>/dev/null || true
-}
-
-image_build() {
-  [ -n "$IMAGE_NAME" ] || abort "no IMAGE_NAME provided"
-
-  log "Building image"
-  docker build -t "$IMAGE_NAME" .
-  res=$?
-  return $res
-}
-
-image_run() {
-  [ -n "$IMAGE_NAME" ] || abort "no IMAGE_NAME provided"
-
-  log "Running the container..."
-  docker run --net=host \
-      --name "$IMAGE_NAME" \
-    $DOCKER_RUN_ARGS \
-    $IMAGE_NAME
-}
-
-check_file() {
-    if [ ! -f $1 ]; then
-        error "File $1 doesn't exist!"
-    fi
-}
+log()        { (>&2 echo ">>> [e2e-tests] $@") ; }
+warn()       { log "WARNING: $@" ; }
+error()      { log "ERROR: $@" ; exit 1 ; }
+abort()      { log "FATAL: $@" ; exit 1 ; }
+check_file() { [ -f "$1" ] || abort "File $1 doesn't exist!" ; }
 
 # options
 
@@ -107,7 +76,7 @@ while [[ $# > 0 ]] ; do
     -k|--kubeconfig)
       f="$(realpath $2)"
       check_file $f
-      DOCKER_RUN_ARGS="$DOCKER_RUN_ARGS -e KUBECONFIG=$2 -v $f:/root/.kube/config"
+      DOCKER_RUN_ARGS="$DOCKER_RUN_ARGS -e KUBECONFIG=/root/kubeconfig -v $f:/root/kubeconfig"
       K8S_CFG=1
       shift
       ;;
@@ -123,6 +92,12 @@ while [[ $# > 0 ]] ; do
       DOCKER_RUN_ARGS="$DOCKER_RUN_ARGS -v $d:/tmp/e2e-test.log"
       shift
       ;;
+    --no-tty)
+      DOCKER_RUN_TTY_ARGS=
+      ;;
+    --no-build)
+      BUILD=
+      ;;
     -h|--help)
       echo "$USAGE"
       exit 0
@@ -131,17 +106,63 @@ while [[ $# > 0 ]] ; do
   shift
 done
 
-if [ -z $URL ] && [ -z $K8S_CFG ]; then
-    error "Option -u|--url or -k|--kubeconfig is required"
+# images
+
+image_cleanup() {
+  log "Stop container $CONTAINER_NAME"
+  docker stop -t 5 "$CONTAINER_NAME" 2>/dev/null || true
+  log "Remove container $CONTAINER_NAME"
+  docker rm "$CONTAINER_NAME" 2>/dev/null || true
+  if [ -n "$BUILD" ] ; then
+    log "Clean up image $IMAGE_NAME"
+    docker rmi "$IMAGE_NAME" 2>/dev/null || true
+  fi
+}
+
+image_build() {
+  if [ -n "$BUILD" ] ; then
+    log "Building image"
+    cd $DIR && docker build -t "$IMAGE_NAME" .
+  fi
+}
+
+image_run() {
+  log "Running the container..."
+  local args="$DOCKER_RUN_TTY_ARGS --name $CONTAINER_NAME $DOCKER_RUN_ARGS $IMAGE_NAME"
+  if [ -n "$DOCKER_RUN_TTY_ARGS" ] ; then
+    docker run $args
+  else
+    docker run -d $args
+    trap image_cleanup EXIT
+    docker attach --no-stdin "$CONTAINER_NAME"
+  fi
+}
+
+# checks
+
+if [ -z "$URL" ] && [ -z "$K8S_CFG" ]; then
+  abort "Option -u|--url or -k|--kubeconfig is required"
 fi
-[ -z $CA_CRT ]  && error "Option --ca-crt is required"
-[ -z $ADM_CRT ] && error "Option --admin-crt is required"
-[ -z $ADM_KEY ] && error "Option --admin-key is required"
+
+if [ -n "$URL" ] ; then
+  [ -z "$CA_CRT" ]  && abort "Option --ca-crt is required"
+  [ -z "$ADM_CRT" ] && abort "Option --admin-crt is required"
+  [ -z "$ADM_KEY" ] && abort "Option --admin-key is required"
+else
+  [ -z "$CA_CRT" ]  && warn "--ca-crt not provided: certificate must be embeded"
+  [ -z "$ADM_CRT" ] && warn "--admin-crt not provided: certificate must be embeded"
+  [ -z "$ADM_KEY" ] && warn "--admin-key not provided: certificate must be embeded"
+fi
+
+[ -n "$IMAGE_NAME" ] || abort "no IMAGE_NAME provided"
 
 # main
 
+# generate a unique name for the container: we could run several instances in CI
+CONTAINER_NAME="$IMAGE_NAME-$(uuidgen)"
+
 image_cleanup || abort "could not cleanup"
-image_build   || abort "could not build image"
+image_build   || abort "could not build image $IMAGE_NAME"
 image_run     || abort "'docker run' failed"
 
 log "Done."

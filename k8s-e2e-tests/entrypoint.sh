@@ -1,17 +1,36 @@
 #!/bin/sh
 
-kubeconfig_certs_paths() {
+# some notes:
+#
+# * these tests do not try to pre-pull all the images needed, so you need a lot of
+#   bandwidth in order to pull images in time
+#
+
+# where the kubeconfig will be generated/copied to
+KUBECONFIG_TARGET="/root/.kube/config"
+
+log()        { (>&2 echo ">>> [e2e-tests] $@") ; }
+warn()       { log "WARNING: $@" ; }
+error()      { log "ERROR: $@" ; exit 1 ; }
+abort()      { log "FATAL: $@" ; exit 1 ; }
+check_file() { [ -f "$1" ] || abort "File $1 doesn't exist!" ; }
+
+kubeconfig_fix_certs_paths() {
+    log "Fixing certificates paths (if provided)"
     sed -i '
         /certificate-authority:/ s/.*/certificate-authority: \/root\/.kube\/ca.crt/
         /client-certificate:/ s/.*/client-certificate: \/root\/.kube\/admin.crt/
         /client-key:/ s/.*/client-key: \/root\/.kube\/admin.key/
-    ' /root/.kube/config
-
+    ' $KUBECONFIG_TARGET
 }
 
 kubeconfig_gen() {
-    mkdir -p /root/.kube
-    cat <<EOF > /root/.kube/config
+    check_file /root/.kube/ca.crt
+    check_file /root/.kube/admin.key
+    check_file /root/.kube/admin.crt
+
+    log "Generating a valid kubeconfig file"
+    cat <<EOF > $KUBECONFIG_TARGET
 apiVersion: v1
 clusters:
 - cluster:
@@ -35,11 +54,15 @@ EOF
 }
 
 deploy_kube_dns() {
+    log "Loading KubeDNS"
     kubectl apply -f https://raw.githubusercontent.com/SUSE/caasp-services/master/contrib/addons/kubedns/dns.yaml
+    log "Giving some time until DNS is available..."
+    sleep 60
+    log "... done!"
 }
 
 run_tests() {
-    export KUBECONFIG=/root/.kube/config
+    export KUBECONFIG=$KUBECONFIG_TARGET
     export KUBECTL_PATH=/usr/bin/kubectl
     export PATH=$KUBE_ROOT/platforms/linux/amd64:$PATH
     export KUBE_ROOT=/usr/src/kubernetes
@@ -49,12 +72,12 @@ run_tests() {
         -v=5 \
         --alsologtostderr \
         --ginkgo.progress \
-        --e2e-verify-service-account=false \
         --report-dir=/tmp/artifacts \
         --clean-start=true \
         --dump-logs-on-failure \
         --delete-namespace=true \
         --ginkgo.trace=true"
+#       --e2e-verify-service-account=false \
 
     cd $KUBE_ROOT
 
@@ -72,10 +95,15 @@ run_tests() {
 }
 
 # main
+
+mkdir -p "$(dirname $KUBECONFIG_TARGET)"
+
 if [ -n "$KUBE_API_URL" ] ; then
     kubeconfig_gen
 elif [ -n "$KUBECONFIG" ] ; then
-    kubeconfig_certs_paths
+    # copy the kubeconfig to $KUBECONFIG_TARGET: we cannot modify the host's kubeconfig
+    cp -f "$KUBECONFIG" "$KUBECONFIG_TARGET"
+    kubeconfig_fix_certs_paths
 else
     abort "we need either a --kubeconfig or a --url"
 fi
