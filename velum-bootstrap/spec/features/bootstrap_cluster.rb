@@ -21,11 +21,6 @@ feature "Boostrap cluster" do
     end
   end
 
-  after(:each) do
-    # this can be dropped after velum/puma can handle multiple concurrent connections
-#    Capybara.reset_session!
-  end
-
   scenario "User registers" do
     register
   end
