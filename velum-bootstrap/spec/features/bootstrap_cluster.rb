@@ -3,7 +3,7 @@ require 'yaml'
 
 feature "Boostrap cluster" do
 
-  let(:node_number) { environment["minions"].count }
+  let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
   let(:hostnames) { environment["minions"].map { |m| m["fqdn"] } }
   let(:master_minion) { environment["minions"].detect { |m| m["role"] == "master" } }
   let(:dashboard_container) { Container.new("velum-dashboard") }
