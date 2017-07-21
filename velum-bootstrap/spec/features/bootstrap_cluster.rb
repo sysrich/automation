@@ -6,14 +6,6 @@ feature "Boostrap cluster" do
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
   let(:hostnames) { environment["minions"].map { |m| m["fqdn"] if m["role"] != "admin" }.compact }
   let(:master_minion) { environment["minions"].detect { |m| m["role"] == "master" } }
-  let(:dashboard_container) { Container.new("velum-dashboard") }
-  let(:salt_master_container) { Container.new("salt-master") }
-  let(:list_salt_keys_command) { "salt-key --list all --out yaml" }
-  let(:minion_count_command) { "entrypoint.sh bundle exec rails runner \'ActiveRecord::Base.logger=nil; puts Minion.count\'" }
-  let(:orchestration_query) { "Minion.where(highstate: [Minion.highstates[:applied], Minion.highstates[:failed]]).count" }
-  let(:orchestration_check_command) { "entrypoint.sh bundle exec rails runner \'ActiveRecord::Base.logger=nil; puts #{orchestration_query}\'" }
-  let(:highstate_applied_query) { "Minion.where(highstate: Minion.highstates[:applied]).count" }
-  let(:highstate_applied_command) { "entrypoint.sh bundle exec rails runner \'ActiveRecord::Base.logger=nil; puts #{highstate_applied_query}\'" }
 
   before(:each) do
     unless self.inspect.include? "User registers"
@@ -39,8 +31,9 @@ feature "Boostrap cluster" do
 
     puts ">>> Wait until all minions are pending to be accepted"
     wait_for(timeout: 600, interval: 5) do
-      minions = YAML.load(salt_master_container.command(list_salt_keys_command)[:stdout])
-      minions["minions_pre"].length == node_number
+      within("div.pending-nodes-container") do
+        has_selector?("a", text: "Accept Node", count: node_number) rescue false
+      end rescue false
     end
     puts "<<< All minions are pending to be accepted"
 
@@ -55,18 +48,11 @@ feature "Boostrap cluster" do
 
     puts ">>> Wait until Minion keys are accepted by salt"
     wait_for(timeout: 600, interval: 5) do
-      raw = salt_master_container.command(list_salt_keys_command)[:stdout]
-      minions = YAML.load raw
-      minions["minions_pre"].empty?
+      within("div.discovery-nodes-panel") do
+        has_css?("input[type='radio']", count: node_number) rescue false
+      end rescue false
     end
     puts "<<< Minion keys accepted by salt"
-
-    puts ">>> Wait until Minions are registered in the Velum database"
-    minions_registered = wait_for(timeout: 600, interval: 5) do
-      dashboard_container.command(minion_count_command)[:stdout].to_i == node_number
-    end
-    expect(minions_registered).to be(true)
-    puts "<<< Minions registered in the Velum database"
 
     puts ">>> Waiting until Minions are accepted in Velum"
     minions_accepted = wait_for(timeout: 600, interval: 10) do
@@ -104,15 +90,29 @@ feature "Boostrap cluster" do
     end
     puts "<<< Cluster bootstrapped"
 
+    puts ">>> Wait until UI is loaded"
+    ui_loaded =  wait_for(timeout: 30, interval: 5) do
+      within(".nodes-container") do
+        !has_css?(".nodes-loading")
+      end
+    end
+    puts "<<< UI loaded"
+
     puts ">>> Wait until orchestration is complete"
     orchestration_completed = wait_for(timeout: 1500, interval: 5) do
-      dashboard_container.command(orchestration_check_command)[:stdout].to_i == node_number
+      within(".nodes-container") do
+        has_css?(".fa-spin", count: 0)
+      end
     end
     expect(orchestration_completed).to be(true)
     puts "<<< Orchestration completed"
 
-    # All Minions should have been applied the highstate successfully
-    puts ">>> Checking highstate"
-    expect(dashboard_container.command(highstate_applied_command)[:stdout].to_i).to eq(node_number)
+    puts ">>> Checking orchestration success"
+    orchestration_successful = wait_for(timeout: 30, interval: 5) do
+      within(".nodes-container") do
+        has_css?(".fa-check-circle-o", count: node_number)
+      end
+    end
+    expect(orchestration_successful).to be(true)
   end
 end
