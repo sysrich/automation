@@ -4,7 +4,7 @@ require 'yaml'
 feature "Boostrap cluster" do
 
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
-  let(:hostnames) { environment["minions"].map { |m| if m["role"] != "admin" then m["fqdn"] end } }
+  let(:hostnames) { environment["minions"].map { |m| m["fqdn"] if m["role"] != "admin" }.compact }
   let(:master_minion) { environment["minions"].detect { |m| m["role"] == "master" } }
   let(:dashboard_container) { Container.new("velum-dashboard") }
   let(:salt_master_container) { Container.new("salt-master") }
