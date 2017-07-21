@@ -30,7 +30,7 @@ feature "Boostrap cluster" do
     visit "/setup/discovery"
 
     puts ">>> Wait until all minions are pending to be accepted"
-    wait_for(timeout: 600, interval: 5) do
+    wait_for(timeout: 600, interval: 20) do
       within("div.pending-nodes-container") do
         has_selector?("a", text: "Accept Node", count: node_number) rescue false
       end rescue false
@@ -38,7 +38,7 @@ feature "Boostrap cluster" do
     puts "<<< All minions are pending to be accepted"
 
     puts ">>> Wait for accept-all button to be enabled"
-    wait_for(timeout: 600, interval: 5) do
+    wait_for(timeout: 600, interval: 10) do
       !find_button("accept-all").disabled? rescue false
     end
     puts "<<< accept-all button enabled"
@@ -46,13 +46,13 @@ feature "Boostrap cluster" do
     puts ">>> Click to accept all minion keys"
     click_button("accept-all")
 
-    puts ">>> Wait until Minion keys are accepted by salt"
-    wait_for(timeout: 600, interval: 5) do
+    puts ">>> Wait until Minion keys are accepted in Velum"
+    wait_for(timeout: 600, interval: 10) do
       within("div.discovery-nodes-panel") do
         has_css?("input[type='radio']", count: node_number) rescue false
       end rescue false
     end
-    puts "<<< Minion keys accepted by salt"
+    puts "<<< Minion keys accepted in Velum"
 
     puts ">>> Waiting until Minions are accepted in Velum"
     minions_accepted = wait_for(timeout: 600, interval: 10) do
@@ -91,7 +91,7 @@ feature "Boostrap cluster" do
     puts "<<< Cluster bootstrapped"
 
     puts ">>> Wait until UI is loaded"
-    ui_loaded =  wait_for(timeout: 30, interval: 5) do
+    ui_loaded =  wait_for(timeout: 30, interval: 10) do
       within(".nodes-container") do
         !has_css?(".nodes-loading")
       end
@@ -99,7 +99,7 @@ feature "Boostrap cluster" do
     puts "<<< UI loaded"
 
     puts ">>> Wait until orchestration is complete"
-    orchestration_completed = wait_for(timeout: 1500, interval: 5) do
+    orchestration_completed = wait_for(timeout: 1500, interval: 10) do
       within(".nodes-container") do
         has_css?(".fa-spin", count: 0)
       end
@@ -108,7 +108,7 @@ feature "Boostrap cluster" do
     puts "<<< Orchestration completed"
 
     puts ">>> Checking orchestration success"
-    orchestration_successful = wait_for(timeout: 30, interval: 5) do
+    orchestration_successful = wait_for(timeout: 30, interval: 10) do
       within(".nodes-container") do
         has_css?(".fa-check-circle-o", count: node_number)
       end
