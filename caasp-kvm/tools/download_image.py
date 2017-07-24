@@ -66,11 +66,15 @@ def download_file(url, expected_name, force_redownload):
     actual_name = get_filename(versioned_url)
 
     if not os.path.isfile(actual_name) or force_redownload:
+        # Get the sha of the file we are downloading - this file can be deleted
+        # while we download the qcow, and this would cause us to see the file
+        # as corrupted
+        remote_sha = requests.get(versioned_url + '.sha256')
+
         os.system(
             "wget %(url)s -O %(file)s --progress=dot:giga" %
             { "url": versioned_url, "file": actual_name} 
         )
-        remote_sha = requests.get(versioned_url + '.sha256')
         local_sha = os.popen('sha256sum %s' % actual_name).read()
 
         if local_sha.split(' ')[0] not in remote_sha.text:
