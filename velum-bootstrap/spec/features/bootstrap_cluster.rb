@@ -68,14 +68,14 @@ feature "Boostrap cluster" do
     puts ">>> Selecting all minions"
     find(".check-all").click
     puts "<<< All minions selected"
-    save_screenshot("minions_selected.png", full: true)
+    save_screenshot("screenshots/minions_selected.png", full: true)
 
     puts ">>> Selecting master minion"
     within("tr", text: master_minion["minionID"]) do
       find("input[type='radio']").click
     end
     puts "<<< Master minion selected"
-    save_screenshot("master_selected.png", full: true)
+    save_screenshot("screenshots/master_selected.png", full: true)
 
     puts ">>> Bootstrapping cluster"
     click_on 'Bootstrap cluster'
@@ -86,7 +86,7 @@ feature "Boostrap cluster" do
       click_button "Proceed anyway"
     end
     puts "<<< Cluster bootstrapped"
-    save_screenshot("cluster_bootstrapped.png", full: true)
+    save_screenshot("screenshots/cluster_bootstrapped.png", full: true)
 
     puts ">>> Wait until UI is loaded"
     ui_loaded = wait_for(timeout: 30, interval: 10, task: :ui_loaded) do

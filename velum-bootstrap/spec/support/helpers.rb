@@ -13,11 +13,11 @@ module Helpers
     start_time = Time.now
     loop do
       if Time.now - start_time > timeout
-        save_screenshot("timeout.png", full: true)
+        save_screenshot("screenshots/timeout.png", full: true)
         fail("Timed out")
       end
       if yield == true
-        save_screenshot("#{task}.png", full: true)
+        save_screenshot("screenshots/#{task}.png", full: true)
         return true
       end
       sleep interval
