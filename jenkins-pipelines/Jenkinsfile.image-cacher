@@ -5,11 +5,13 @@ properties(
 	[
 		[$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', numToKeepStr: '31']],
 		[$class: 'DisableConcurrentBuildsJobProperty'],
-		[$class: 'ParameterizedTimerTrigger',
-			parameterizedSpecification: 'H/15 * * * *  % CHANNEL=devel\nH/15 * * * *  % CHANNEL=release'
-		],
+		pipelineTriggers([
+			[$class: 'org.jenkinsci.plugins.parameterizedscheduler.ParameterizedTimerTrigger',
+				parameterizedSpecification: 'H/15 * * * *  % CHANNEL=devel\nH/15 * * * *  % CHANNEL=release'
+			]
+		]),
 		parameters([
-			choice(choices: ['devel', 'release'], description: 'What channel should the image be cached from?', name: 'CHANNEL')
+			choice(choices: 'devel\nrelease', description: 'What channel should the image be cached from?', name: 'CHANNEL')
 		])
 	]
 )
