@@ -7,7 +7,7 @@ properties(
 		[$class: 'DisableConcurrentBuildsJobProperty'],
 		[$class: 'ParameterizedTimerTrigger',
 			parameterizedSpecification: 'H/15 * * * *  % CHANNEL=devel\nH/15 * * * *  % CHANNEL=release'
-		]
+		],
 		parameters([
 			choice(choices: ['devel', 'release'], description: 'What channel should the image be cached from?', name: 'CHANNEL')
 		])
