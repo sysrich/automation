@@ -1,6 +1,13 @@
 # A module containing helper methods to create a testing environment
 # for end to end tests.
 module Helpers
+  def with_screenshot(name:, &block)
+    $counter ||= 0
+    save_screenshot("screenshots/#{format('%02d', $counter)}_before_#{name}.png")
+    yield
+    save_screenshot("screenshots/#{format('%02d', $counter)}_after_#{name}.png")
+    $counter += 1
+  end
 
   private
 

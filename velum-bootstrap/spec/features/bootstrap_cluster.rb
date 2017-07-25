@@ -14,33 +14,47 @@ feature "Boostrap cluster" do
   end
 
   scenario "User registers" do
-    register
+    with_screenshot(name: :register) do
+      register
+    end
   end
 
   scenario "User configures the cluster" do
-    configure
+    with_screenshot(name: :configure) do
+      configure
+    end
   end
 
   scenario "User accepts all minions" do
     visit "/setup/discovery"
 
     puts ">>> Wait until all minions are pending to be accepted"
-    expect(page).to have_selector("a", text: "Accept Node", count: node_number, wait: 120)
+    with_screenshot(name: :pending_minions) do
+      expect(page).to have_selector("a", text: "Accept Node", count: node_number, wait: 120)
+    end
     puts "<<< All minions are pending to be accepted"
 
     puts ">>> Wait for accept-all button to be enabled"
-    expect(page).to have_button("accept-all", disabled: false, wait: 20)
+    with_screenshot(name: :accept_button_enabled) do
+      expect(page).to have_button("accept-all", disabled: false, wait: 20)
+    end
     puts "<<< accept-all button enabled"
 
     puts ">>> Click to accept all minion keys"
-    click_button("accept-all")
+    with_screenshot(name: :accept_button_click) do
+      click_button("accept-all")
+    end
 
     puts ">>> Wait until Minion keys are accepted by salt"
-    expect(page).to have_css("input[type='radio']", count: node_number, wait: 120)
+    with_screenshot(name: :accepted_keys) do
+      expect(page).to have_css("input[type='radio']", count: node_number, wait: 240)
+    end
     puts "<<< Minion keys accepted in Velum"
 
     puts ">>> Waiting until Minions are accepted in Velum"
-    expect(page).to have_text("#{node_number} nodes found", wait: 30)
+    with_screenshot(name: :accepted_minions) do
+      expect(page).to have_text("#{node_number} nodes found", wait: 60)
+    end
     puts "<<< Minions accepted in Velum"
 
     # They should also appear in the UI
@@ -53,43 +67,54 @@ feature "Boostrap cluster" do
     visit "/setup/discovery"
 
     puts ">>> Selecting all minions"
-    find(".check-all").click
+    with_screenshot(name: :select_all_minions) do
+      find(".check-all").click
+    end
     puts "<<< All minions selected"
-    save_screenshot("screenshots/minions_selected.png", full: true)
 
     puts ">>> Selecting master minion"
-    within("tr", text: master_minion["minionID"]) do
-      find("input[type='radio']").click
+    with_screenshot(name: :select_master) do
+      within("tr", text: master_minion["minionID"]) do
+        find("input[type='radio']").click
+      end
     end
     puts "<<< Master minion selected"
-    save_screenshot("screenshots/master_selected.png", full: true)
 
     puts ">>> Bootstrapping cluster"
-    click_on 'Bootstrap cluster'
+    with_screenshot(name: :bootstrap_cluster) do
+      click_on "Bootstrap cluster"
+    end
 
     if node_number < 3
       # a modal with a warning will appear as we only have #{node_number} nodes
-      expect(page).to have_content("Cluster is too small")
-      click_button "Proceed anyway"
+      with_screenshot(name: :cluster_too_small) do
+        expect(page).to have_content("Cluster is too small")
+        click_button "Proceed anyway"
+      end
     end
     puts "<<< Cluster bootstrapped"
-    save_screenshot("screenshots/cluster_bootstrapped.png", full: true)
 
     puts ">>> Wait until UI is loaded"
-    within(".nodes-container") do
-      expect(page).to have_no_css(".nodes-loading", wait: 30)
+    with_screenshot(name: :ui_loaded) do
+      within(".nodes-container") do
+        expect(page).to have_no_css(".nodes-loading", wait: 30)
+      end
     end
     puts "<<< UI loaded"
 
     puts ">>> Wait until orchestration is complete"
-    within(".nodes-container") do
-      expect(page).to have_css(".fa-spin", count: 0, wait: 600)
+    with_screenshot(name: :orchestration_complete) do
+      within(".nodes-container") do
+        expect(page).to have_css(".fa-spin", count: 0, wait: 600)
+      end
     end
     puts "<<< Orchestration completed"
 
     puts ">>> Checking orchestration success"
-    within(".nodes-container") do
-      expect(page).to have_css(".fa-check-circle-o", count: node_number)
+    with_screenshot(name: :orchestration_success) do
+      within(".nodes-container") do
+        expect(page).to have_css(".fa-check-circle-o", count: node_number)
+      end
     end
   end
 end
