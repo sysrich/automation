@@ -1,28 +1,6 @@
 # A module containing helper methods to create a testing environment
 # for end to end tests.
 module Helpers
-  # This method can be used to wait for something to happen.
-  # E.g. Wait for a record to appear in the velum-dashboard database.
-  # timeout is the number of seconds before the loop is exited
-  # inteval is the number of seconds to wait before next invocation of the block
-  # block is the code that must return true to exit the loop
-  #
-  # The method return false if the timeout is reached or the block never returns
-  # true.
-  def wait_for(timeout:, interval: 1, task: :noname, &block)
-    start_time = Time.now
-    loop do
-      if Time.now - start_time > timeout
-        save_screenshot("screenshots/timeout.png", full: true)
-        fail("Timed out")
-      end
-      if yield == true
-        save_screenshot("screenshots/#{task}.png", full: true)
-        return true
-      end
-      sleep interval
-    end
-  end
 
   private
 

@@ -25,35 +25,22 @@ feature "Boostrap cluster" do
     visit "/setup/discovery"
 
     puts ">>> Wait until all minions are pending to be accepted"
-    wait_for(timeout: 600, interval: 20, task: :pending_minions) do
-      within("div.pending-nodes-container") do
-        has_selector?("a", text: "Accept Node", count: node_number) rescue false
-      end rescue false
-    end
+    expect(page).to have_selector("a", text: "Accept Node", count: node_number, wait: 120)
     puts "<<< All minions are pending to be accepted"
 
     puts ">>> Wait for accept-all button to be enabled"
-    wait_for(timeout: 600, interval: 10, task: :accept_all_button) do
-      !find_button("accept-all").disabled? rescue false
-    end
+    expect(page).to have_button("accept-all", disabled: false, wait: 20)
     puts "<<< accept-all button enabled"
 
     puts ">>> Click to accept all minion keys"
     click_button("accept-all")
 
     puts ">>> Wait until Minion keys are accepted by salt"
-    wait_for(timeout: 600, interval: 10, task: :keys_accepted) do
-      within("div.discovery-nodes-panel") do
-        has_css?("input[type='radio']", count: node_number) rescue false
-      end rescue false
-    end
+    expect(page).to have_css("input[type='radio']", count: node_number, wait: 120)
     puts "<<< Minion keys accepted in Velum"
 
     puts ">>> Waiting until Minions are accepted in Velum"
-    minions_accepted = wait_for(timeout: 600, interval: 10, task: :minions_accepted) do
-      first("h3").text == "#{node_number} nodes found"
-    end
-    expect(minions_accepted).to be(true)
+    expect(page).to have_text("#{node_number} nodes found", wait: 30)
     puts "<<< Minions accepted in Velum"
 
     # They should also appear in the UI
@@ -89,28 +76,20 @@ feature "Boostrap cluster" do
     save_screenshot("screenshots/cluster_bootstrapped.png", full: true)
 
     puts ">>> Wait until UI is loaded"
-    ui_loaded = wait_for(timeout: 30, interval: 10, task: :ui_loaded) do
-      within(".nodes-container") do
-        !has_css?(".nodes-loading")
-      end
+    within(".nodes-container") do
+      expect(page).to have_no_css(".nodes-loading", wait: 30)
     end
     puts "<<< UI loaded"
 
     puts ">>> Wait until orchestration is complete"
-    orchestration_completed = wait_for(timeout: 1500, interval: 10, task: :orchestration_completed) do
-      within(".nodes-container") do
-        has_css?(".fa-spin", count: 0)
-      end
+    within(".nodes-container") do
+      expect(page).to have_css(".fa-spin", count: 0, wait: 600)
     end
-    expect(orchestration_completed).to be(true)
     puts "<<< Orchestration completed"
 
     puts ">>> Checking orchestration success"
-    orchestration_successful = wait_for(timeout: 30, interval: 10, task: :orchestration_successful) do
-      within(".nodes-container") do
-        has_css?(".fa-check-circle-o", count: node_number)
-      end
+    within(".nodes-container") do
+      expect(page).to have_css(".fa-check-circle-o", count: node_number)
     end
-    expect(orchestration_successful).to be(true)
   end
 end
