@@ -9,11 +9,17 @@ module Helpers
   #
   # The method return false if the timeout is reached or the block never returns
   # true.
-  def wait_for(timeout:, interval: 1, &block)
+  def wait_for(timeout:, interval: 1, task: :noname, &block)
     start_time = Time.now
     loop do
-      fail("Timed out") if Time.now - start_time > timeout
-      return true if yield == true
+      if Time.now - start_time > timeout
+        save_screenshot("screenshots/timeout.png", full: true)
+        fail("Timed out")
+      end
+      if yield == true
+        save_screenshot("screenshots/#{task}.png", full: true)
+        return true
+      end
       sleep interval
     end
   end

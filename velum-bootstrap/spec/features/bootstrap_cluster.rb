@@ -25,7 +25,7 @@ feature "Boostrap cluster" do
     visit "/setup/discovery"
 
     puts ">>> Wait until all minions are pending to be accepted"
-    wait_for(timeout: 600, interval: 20) do
+    wait_for(timeout: 600, interval: 20, task: :pending_minions) do
       within("div.pending-nodes-container") do
         has_selector?("a", text: "Accept Node", count: node_number) rescue false
       end rescue false
@@ -33,7 +33,7 @@ feature "Boostrap cluster" do
     puts "<<< All minions are pending to be accepted"
 
     puts ">>> Wait for accept-all button to be enabled"
-    wait_for(timeout: 600, interval: 10) do
+    wait_for(timeout: 600, interval: 10, task: :accept_all_button) do
       !find_button("accept-all").disabled? rescue false
     end
     puts "<<< accept-all button enabled"
@@ -41,8 +41,8 @@ feature "Boostrap cluster" do
     puts ">>> Click to accept all minion keys"
     click_button("accept-all")
 
-    puts ">>> Wait until Minion keys are accepted in Velum"
-    wait_for(timeout: 600, interval: 10) do
+    puts ">>> Wait until Minion keys are accepted by salt"
+    wait_for(timeout: 600, interval: 10, task: :keys_accepted) do
       within("div.discovery-nodes-panel") do
         has_css?("input[type='radio']", count: node_number) rescue false
       end rescue false
@@ -50,7 +50,7 @@ feature "Boostrap cluster" do
     puts "<<< Minion keys accepted in Velum"
 
     puts ">>> Waiting until Minions are accepted in Velum"
-    minions_accepted = wait_for(timeout: 600, interval: 10) do
+    minions_accepted = wait_for(timeout: 600, interval: 10, task: :minions_accepted) do
       first("h3").text == "#{node_number} nodes found"
     end
     expect(minions_accepted).to be(true)
@@ -68,12 +68,14 @@ feature "Boostrap cluster" do
     puts ">>> Selecting all minions"
     find(".check-all").click
     puts "<<< All minions selected"
+    save_screenshot("screenshots/minions_selected.png", full: true)
 
     puts ">>> Selecting master minion"
     within("tr", text: master_minion["minionID"]) do
       find("input[type='radio']").click
     end
     puts "<<< Master minion selected"
+    save_screenshot("screenshots/master_selected.png", full: true)
 
     puts ">>> Bootstrapping cluster"
     click_on 'Bootstrap cluster'
@@ -84,9 +86,10 @@ feature "Boostrap cluster" do
       click_button "Proceed anyway"
     end
     puts "<<< Cluster bootstrapped"
+    save_screenshot("screenshots/cluster_bootstrapped.png", full: true)
 
     puts ">>> Wait until UI is loaded"
-    ui_loaded =  wait_for(timeout: 30, interval: 10) do
+    ui_loaded = wait_for(timeout: 30, interval: 10, task: :ui_loaded) do
       within(".nodes-container") do
         !has_css?(".nodes-loading")
       end
@@ -94,7 +97,7 @@ feature "Boostrap cluster" do
     puts "<<< UI loaded"
 
     puts ">>> Wait until orchestration is complete"
-    orchestration_completed = wait_for(timeout: 1500, interval: 10) do
+    orchestration_completed = wait_for(timeout: 1500, interval: 10, task: :orchestration_completed) do
       within(".nodes-container") do
         has_css?(".fa-spin", count: 0)
       end
@@ -103,7 +106,7 @@ feature "Boostrap cluster" do
     puts "<<< Orchestration completed"
 
     puts ">>> Checking orchestration success"
-    orchestration_successful = wait_for(timeout: 30, interval: 10) do
+    orchestration_successful = wait_for(timeout: 30, interval: 10, task: :orchestration_successful) do
       within(".nodes-container") do
         has_css?(".fa-check-circle-o", count: node_number)
       end

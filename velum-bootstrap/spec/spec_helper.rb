@@ -2,6 +2,9 @@
 require "json"
 require "capybara/rspec"
 require "capybara/poltergeist"
+require "fileutils"
+
+FileUtils.mkdir_p(File.join(File.dirname(__FILE__), "../", "screenshots"))
 
 # Automatically require all files in spec/support directory
 Dir[File.join(File.dirname(File.dirname(__FILE__)), "spec", "support", "**", "*.rb")].
