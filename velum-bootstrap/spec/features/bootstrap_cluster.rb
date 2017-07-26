@@ -47,7 +47,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Wait until Minion keys are accepted by salt"
     with_screenshot(name: :accepted_keys) do
-      expect(page).to have_css("input[type='radio']", count: node_number, wait: 240)
+      expect(page).to have_css("input[type='radio']", count: node_number, wait: 600)
     end
     puts "<<< Minion keys accepted in Velum"
 
