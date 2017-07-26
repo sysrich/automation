@@ -118,7 +118,7 @@ feature "Boostrap cluster" do
     puts ">>> Checking orchestration success"
     with_screenshot(name: :orchestration_success) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-check-circle-o", count: node_number)
+        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 120)
       end
     end
   end
