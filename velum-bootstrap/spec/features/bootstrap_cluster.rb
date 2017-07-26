@@ -13,6 +13,12 @@ feature "Boostrap cluster" do
     end
   end
 
+  # Using append after in place of after, as recommended by
+  # https://github.com/mattheworiordan/capybara-screenshot#common-problems
+  append_after(:each) do
+    Capybara.reset_sessions!
+  end
+
   scenario "User registers" do
     with_screenshot(name: :register) do
       register
