@@ -45,6 +45,11 @@ feature "Boostrap cluster" do
       click_button("accept-all")
     end
 
+    # ugly workaround for https://bugzilla.suse.com/show_bug.cgi?id=1050450
+    # FIXME: drop it when bug is fixed
+    sleep 30
+    visit "/setup/discovery"
+
     puts ">>> Wait until Minion keys are accepted by salt"
     with_screenshot(name: :accepted_keys) do
       expect(page).to have_css("input[type='radio']", count: node_number, wait: 600)
