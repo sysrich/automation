@@ -73,6 +73,75 @@ parameters:
     default: linux
 
 resources:
+  secgroup_base:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - protocol: icmp
+        - protocol: tcp
+          port_range_min: 22
+          port_range_max: 22
+        - protocol: tcp
+          port_range_min: 2379
+          port_range_max: 2379
+
+  secgroup_admin:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - protocol: tcp
+          port_range_min: 443
+          port_range_max: 443
+        - protocol: tcp
+          port_range_min: 4505
+          port_range_max: 4506
+
+  secgroup_master:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - protocol: tcp
+          port_range_min: 2380
+          port_range_max: 2380
+        - protocol: tcp
+          port_range_min: 6443
+          port_range_max: 6443
+        - protocol: udp
+          port_range_min: 8285
+          port_range_max: 8285
+
+  secgroup_worker:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - protocol: tcp
+          port_range_min: 80
+          port_range_max: 80
+        - protocol: tcp
+          port_range_min: 443
+          port_range_max: 443
+        - protocol: tcp
+          port_range_min: 8080
+          port_range_max: 8080
+        - protocol: tcp
+          port_range_min: 8081
+          port_range_max: 8081
+        - protocol: tcp
+          port_range_min: 2380
+          port_range_max: 2380
+        - protocol: tcp
+          port_range_min: 10250
+          port_range_max: 10250
+        - protocol: tcp
+          port_range_min: 30000
+          port_range_max: 32768
+        - protocol: udp
+          port_range_min: 8285
+          port_range_max: 8285
+        - protocol: udp
+          port_range_min: 30000
+          port_range_max: 32768
+
   admin:
     type: OS::Nova::Server
     properties:
@@ -106,7 +175,8 @@ resources:
     properties:
       network_id: { get_param: int_net_id }
       security_groups:
-        - default
+        - { get_resource: secgroup_base }
+        - { get_resource: secgroup_admin }
 
   admin_floating_ip:
     type: OS::Neutron::FloatingIP
@@ -154,7 +224,8 @@ resources:
     properties:
       network_id: { get_param: int_net_id }
       security_groups:
-        - default
+        - { get_resource: secgroup_base }
+        - { get_resource: secgroup_master }
 
   master_floating_ip:
     type: OS::Neutron::FloatingIP
@@ -181,6 +252,9 @@ resources:
           flavor: { get_param: worker_flavor }
           networks:
             - network: { get_param: int_net_id }
+          security_groups:
+            - { get_resource: secgroup_base }
+            - { get_resource: secgroup_worker }
           user_data_format: RAW
           user_data:
             str_replace:
