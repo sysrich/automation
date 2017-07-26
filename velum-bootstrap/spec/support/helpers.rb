@@ -3,9 +3,10 @@
 module Helpers
   def with_screenshot(name:, &block)
     $counter ||= 0
-    save_screenshot("screenshots/#{format('%02d', $counter)}_before_#{name}.png")
+    formatted_counter = format('%02d', $counter)
+    save_screenshot("screenshots/#{formatted_counter}_before_#{name}.png", full: true)
     yield
-    save_screenshot("screenshots/#{format('%02d', $counter)}_after_#{name}.png")
+    save_screenshot("screenshots/#{formatted_counter}_after_#{name}.png", full: true)
     $counter += 1
   end
 
