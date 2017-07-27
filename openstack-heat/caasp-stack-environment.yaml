@@ -8,4 +8,5 @@ parameters:
   worker_flavor: m1.large
   worker_count: 3
   external_net: <External Network Name or ID>
-  internal_net: <Internal Network Name or ID>
+  internal_net_cidr: <Internal Network Range>
+  dns_nameserver: <DNS Nameserver for CaaSP>
