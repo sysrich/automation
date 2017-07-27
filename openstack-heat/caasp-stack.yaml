@@ -21,8 +21,9 @@ parameter_groups:
   - label: network
     description: Network Parameters
     parameters:
-      - ext_net_id
-      - int_net_id
+      - external_net
+      - internal_net_cidr
+      - dns_nameserver
 
 parameters:
   key_name:
@@ -35,16 +36,19 @@ parameters:
     description: Name of image to use for servers
     constraints:
       - custom_constraint: glance.image
-  ext_net_id:
+  external_net:
     type: string
     description: >
-      ID of public network for which floating IP addresses will be allocated
-    default: 66ee2bc5-1464-4ce3-9386-52fe9a3d3518
-  int_net_id:
+      Name or ID of public network for which floating IP addresses will be allocated
+    default: floating
+  internal_net_cidr:
     type: string
-    description: ID of private network into which servers get deployed
-    constraints:
-      - custom_constraint: neutron.network
+    description: Private network range which servers get deployed
+    default: 192.168.100.0/24
+  dns_nameserver:
+    type: string
+    description: Address of a dns nameserver reachable
+    default: 8.8.8.8
   admin_flavor:
     type: string
     description: Admin Flavor
@@ -73,8 +77,104 @@ parameters:
     default: linux
 
 resources:
+  internal_network:
+    type: OS::Neutron::Net
+    properties:
+      name: caasp-int
+
+  internal_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      cidr: {get_param: internal_net_cidr}
+      network: {get_resource: internal_network}
+      dns_nameservers:
+        - {get_param: dns_nameserver}
+
+  external_router:
+    type: OS::Neutron::Router
+    properties:
+      external_gateway_info:
+        network: {get_param: external_net}
+
+  external_router_int:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: {get_resource: external_router}
+      subnet: {get_resource: internal_subnet}
+
+  secgroup_base:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - protocol: icmp
+        - protocol: tcp
+          port_range_min: 22
+          port_range_max: 22
+        - protocol: tcp
+          port_range_min: 2379
+          port_range_max: 2379
+
+  secgroup_admin:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - protocol: tcp
+          port_range_min: 443
+          port_range_max: 443
+        - protocol: tcp
+          port_range_min: 4505
+          port_range_max: 4506
+
+  secgroup_master:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - protocol: tcp
+          port_range_min: 2380
+          port_range_max: 2380
+        - protocol: tcp
+          port_range_min: 6443
+          port_range_max: 6443
+        - protocol: udp
+          port_range_min: 8285
+          port_range_max: 8285
+
+  secgroup_worker:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - protocol: tcp
+          port_range_min: 80
+          port_range_max: 80
+        - protocol: tcp
+          port_range_min: 443
+          port_range_max: 443
+        - protocol: tcp
+          port_range_min: 8080
+          port_range_max: 8080
+        - protocol: tcp
+          port_range_min: 8081
+          port_range_max: 8081
+        - protocol: tcp
+          port_range_min: 2380
+          port_range_max: 2380
+        - protocol: tcp
+          port_range_min: 10250
+          port_range_max: 10250
+        - protocol: tcp
+          port_range_min: 30000
+          port_range_max: 32768
+        - protocol: udp
+          port_range_min: 8285
+          port_range_max: 8285
+        - protocol: udp
+          port_range_min: 30000
+          port_range_max: 32768
+
   admin:
     type: OS::Nova::Server
+    depends_on:
+      - external_router_int
     properties:
       image: { get_param: image }
       key_name: { get_param: key_name }
@@ -103,15 +203,20 @@ resources:
 
   admin_port:
     type: OS::Neutron::Port
+    depends_on:
+      - external_router_int
     properties:
-      network_id: { get_param: int_net_id }
+      network: { get_resource: internal_network }
       security_groups:
-        - default
+        - { get_resource: secgroup_base }
+        - { get_resource: secgroup_admin }
 
   admin_floating_ip:
     type: OS::Neutron::FloatingIP
+    depends_on:
+      - external_router_int
     properties:
-      floating_network_id: { get_param: ext_net_id }
+      floating_network: { get_param: external_net }
 
   admin_floating_ip_association:
     type: OS::Neutron::FloatingIPAssociation
@@ -121,6 +226,8 @@ resources:
 
   master:
     type: OS::Nova::Server
+    depends_on:
+      - external_router_int
     properties:
       image: { get_param: image }
       key_name: { get_param: key_name }
@@ -151,15 +258,20 @@ resources:
 
   master_port:
     type: OS::Neutron::Port
+    depends_on:
+      - external_router_int
     properties:
-      network_id: { get_param: int_net_id }
+      network: { get_resource: internal_network }
       security_groups:
-        - default
+        - { get_resource: secgroup_base }
+        - { get_resource: secgroup_master }
 
   master_floating_ip:
     type: OS::Neutron::FloatingIP
+    depends_on:
+      - external_router_int
     properties:
-      floating_network_id: { get_param: ext_net_id }
+      floating_network: { get_param: external_net }
 
   master_floating_ip_association:
     type: OS::Neutron::FloatingIPAssociation
@@ -169,6 +281,8 @@ resources:
 
   worker:
     type: OS::Heat::AutoScalingGroup
+    depends_on:
+      - external_router_int
     properties:
       min_size: { get_param: worker_count }
       desired_capacity: { get_param: worker_count }
@@ -180,7 +294,10 @@ resources:
           key_name: { get_param: key_name }
           flavor: { get_param: worker_flavor }
           networks:
-            - network: { get_param: int_net_id }
+            - network: { get_resource: internal_network }
+          security_groups:
+            - { get_resource: secgroup_base }
+            - { get_resource: secgroup_worker }
           user_data_format: RAW
           user_data:
             str_replace:
