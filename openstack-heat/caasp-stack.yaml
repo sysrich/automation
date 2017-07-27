@@ -21,8 +21,8 @@ parameter_groups:
   - label: network
     description: Network Parameters
     parameters:
-      - ext_net_id
-      - int_net_id
+      - external_net
+      - internal_net
 
 parameters:
   key_name:
@@ -35,14 +35,14 @@ parameters:
     description: Name of image to use for servers
     constraints:
       - custom_constraint: glance.image
-  ext_net_id:
+  external_net:
     type: string
     description: >
-      ID of public network for which floating IP addresses will be allocated
-    default: 66ee2bc5-1464-4ce3-9386-52fe9a3d3518
-  int_net_id:
+      Name or ID of public network for which floating IP addresses will be allocated
+    default: floating
+  internal_net:
     type: string
-    description: ID of private network into which servers get deployed
+    description: Name or ID of private network into which servers get deployed
     constraints:
       - custom_constraint: neutron.network
   admin_flavor:
@@ -173,7 +173,7 @@ resources:
   admin_port:
     type: OS::Neutron::Port
     properties:
-      network_id: { get_param: int_net_id }
+      network: { get_param: internal_net }
       security_groups:
         - { get_resource: secgroup_base }
         - { get_resource: secgroup_admin }
@@ -181,7 +181,7 @@ resources:
   admin_floating_ip:
     type: OS::Neutron::FloatingIP
     properties:
-      floating_network_id: { get_param: ext_net_id }
+      floating_network: { get_param: external_net }
 
   admin_floating_ip_association:
     type: OS::Neutron::FloatingIPAssociation
@@ -222,7 +222,7 @@ resources:
   master_port:
     type: OS::Neutron::Port
     properties:
-      network_id: { get_param: int_net_id }
+      network: { get_param: internal_net }
       security_groups:
         - { get_resource: secgroup_base }
         - { get_resource: secgroup_master }
@@ -230,7 +230,7 @@ resources:
   master_floating_ip:
     type: OS::Neutron::FloatingIP
     properties:
-      floating_network_id: { get_param: ext_net_id }
+      floating_network: { get_param: external_net }
 
   master_floating_ip_association:
     type: OS::Neutron::FloatingIPAssociation
@@ -251,7 +251,7 @@ resources:
           key_name: { get_param: key_name }
           flavor: { get_param: worker_flavor }
           networks:
-            - network: { get_param: int_net_id }
+            - network: { get_param: internal_net }
           security_groups:
             - { get_resource: secgroup_base }
             - { get_resource: secgroup_worker }
