@@ -44,11 +44,11 @@ parameters:
   internal_net_cidr:
     type: string
     description: Private network range which servers get deployed
-    default: 192.168.100.0/24
+    default: 172.28.0.0/24
   dns_nameserver:
     type: string
     description: Address of a dns nameserver reachable
-    default: 8.8.8.8
+    default: 172.28.0.2
   admin_flavor:
     type: string
     description: Admin Flavor
