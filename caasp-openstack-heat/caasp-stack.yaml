@@ -7,7 +7,6 @@ parameter_groups:
     description: General Parameters
     parameters:
       - image
-      - key_name
       - root_password
 
   - label: sizing
@@ -26,11 +25,6 @@ parameter_groups:
       - dns_nameserver
 
 parameters:
-  key_name:
-    type: string
-    description: Name of keypair to assign to servers
-    constraints:
-      - custom_constraint: nova.keypair
   image:
     type: string
     description: Name of image to use for servers
@@ -77,6 +71,12 @@ parameters:
     default: linux
 
 resources:
+  keypair:
+    type: OS::Nova::KeyPair
+    properties:
+      name: caasp-keypair
+      public_key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC2G7k0zGAjd+0LzhbPcGLkdJrJ/LbLrFxtXe+LPAkrphizfRxdZpSC7Dvr5Vewrkd/kfYObiDc6v23DHxzcilVC2HGLQUNeUer/YE1mL4lnXC1M3cb4eU+vJ/Gyr9XVOOReDRDBCwouaL7IzgYNCsm0O5v2z/w9ugnRLryUY180/oIGeE/aOI1HRh6YOsIn7R3Rv55y8CYSqsbmlHWiDC6iZICZtvYLYmUmCgPX2Fg2eT+aRbAStUcUERm8h246fs1KxywdHHI/6o3E1NNIPIQ0LdzIn5aWvTCd6D511L4rf/k5zbdw/Gql0AygHBR/wnngB5gSDERLKfigzeIlCKf insecure-key
+
   internal_network:
     type: OS::Neutron::Net
     properties:
@@ -177,7 +177,7 @@ resources:
       - external_router_int
     properties:
       image: { get_param: image }
-      key_name: { get_param: key_name }
+      key_name: { get_resource: keypair }
       flavor: { get_param: admin_flavor }
       networks:
         - port: { get_resource: admin_port }
@@ -230,7 +230,7 @@ resources:
       - external_router_int
     properties:
       image: { get_param: image }
-      key_name: { get_param: key_name }
+      key_name: { get_resource: keypair }
       flavor: { get_param: master_flavor }
       networks:
         - port: { get_resource: master_port }
@@ -291,7 +291,7 @@ resources:
         type: OS::Nova::Server
         properties:
           image: { get_param: image }
-          key_name: { get_param: key_name }
+          key_name: { get_resource: keypair }
           flavor: { get_param: worker_flavor }
           networks:
             - network: { get_resource: internal_network }

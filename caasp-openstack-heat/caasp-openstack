@@ -1,0 +1,156 @@
+#!/bin/sh
+
+set -euo pipefail
+
+# options
+HAS_ACTION=false
+RUN_BUILD=false
+RUN_UPDATE=false
+RUN_DESTROY=false
+
+NAME=caasp-stack
+OPENRC_FILE=
+HEAT_ENVIRONMENT_FILE=heat-environment.yaml.example
+WORKERS=2
+IMAGE=
+
+
+USAGE=$(cat <<USAGE
+Usage:
+
+  * Building a cluster
+
+    -b|--build                       Run the Heat Stack Build Step
+    -w|--workers             <INT>   Number of workers to build
+    -i|--image               <STR>   Image to use
+
+  * Destroying a cluster
+
+    -d|--destroy                     Run the Heat Stack Destroy Step
+
+  * Common options
+
+    -o|--openrc             <STR>   Path to an openrc file
+    -e|--heat-environment   <STR>   Path to a heat environment file
+
+  * Examples:
+
+  Build a 2 worker cluster
+
+  $0 --build -w 2 --openrc my-openrc --image CaaSP-1.0.0-GM --name TestStack
+
+USAGE
+)
+
+# Utility methods
+log()        { (>&2 echo ">>> [caasp-stack] $@") ; }
+warn()       { log "WARNING: $@" ; }
+error()      { log "ERROR: $@" ; exit 1 ; }
+check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
+
+# parse options
+while [[ $# > 0 ]] ; do
+  case $1 in
+    -n|--name)
+      NAME="$2"
+      shift
+      ;;
+    -o|--openrc)
+      f="$(realpath $2)"
+      check_file $f
+      OPENRC_FILE="$f"
+      shift
+      ;;
+    -e|--heat-environment)
+      f="$(realpath $2)"
+      check_file $f
+      HEAT_ENVIRONMENT_FILE="$f"
+      shift
+      ;;
+    -b|--build)
+      RUN_BUILD=true
+      HAS_ACTION=true
+      ;;
+    -w|--workers)
+      WORKERS="$2"
+      shift
+      ;;
+    -i|--image)
+      IMAGE="$2"
+      shift
+      ;;
+    -u|--update)
+      RUN_UPDATE=true
+      HAS_ACTION=true
+      ;;
+    -d|--destroy)
+      RUN_DESTROY=true
+      HAS_ACTION=true
+      ;;
+    -h|--help)
+      echo "$USAGE"
+      exit 0
+      ;;
+  esac
+  shift
+done
+
+[ -z $OPENRC_FILE ]  && error "Option --openrc is required"
+
+# Core methods
+build_stack() {
+  [ -z $NAME ] && error "Option --name is required"
+  [ -z $IMAGE ] && error "Option --image is required"
+
+  log "Creating Stack"
+  local logfile=$(mktemp)
+
+  source $OPENRC_FILE
+  openstack stack create --wait -e $HEAT_ENVIRONMENT_FILE -t caasp-stack.yaml $NAME \
+    --parameter worker_count=$WORKERS \
+    --parameter image=$IMAGE | tee $logfile
+
+  local stack_id=$(cat $logfile | grep "| id  " | cut -d'|' -f3 | tr -d ' ')
+  echo -n "$stack_id" > .stack_id
+
+  log "CaaSP Stack Created with ID $stack_id"
+
+  ./tools/generate-environment $stack_id
+  ../misc-tools/generate-ssh-config environment.json
+
+  log "Waiting for Velum to start - this may take a while"
+  PYTHONUNBUFFERED=1 ../caasp-kvm/tools/wait_for_velum.py https://$(jq -r '.minions[] | select(.role == "admin") | .addresses.publicIpv4' environment.json)
+}
+
+update_stack() {
+  log "Updating Stack with ID $stack_id"
+  error "Not implemented"
+}
+
+destroy_stack() {
+  local stack_id=$(cat .stack_id)
+  log "Deleting Stack with ID $stack_id"
+  source $OPENRC_FILE
+  openstack stack delete --yes --wait $stack_id
+  rm .stack_id
+}
+
+# main
+if [ "$HAS_ACTION" != true ]; then
+  echo "$USAGE"
+  error "No action arguments were supplied"
+fi
+
+if [ "$RUN_BUILD" = true ]; then
+  build_stack
+fi
+
+if [ "$RUN_UPDATE" = true ]; then
+  update_stack
+fi
+
+if [ "$RUN_DESTROY" = true ] ; then
+  destroy_stack
+fi
+
+log "Done"
