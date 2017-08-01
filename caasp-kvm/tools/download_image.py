@@ -46,11 +46,15 @@ def get_channel_url(url):
     parser = ImageFinder()
 
     url_base = {
-        'release': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10/images/',
-        'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/A/images/',
-        'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/B/images/',
-        'devel': 'http://download.suse.de/ibs/Devel:/CASP:/1.0:/ControllerNode/images/',
+        # Release and Staging repos do not yet exist for Head/2.0
+        # 'release': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10/images/',
+        # 'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/A/images/',
+        # 'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/B/images/',
+        'devel': 'http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/images/',
     }
+
+    if channel not in url_base:
+        raise Exception("Unknown channel: %s" % channel)
 
     r = requests.get(url_base[channel])
     parser.feed(r.text)
