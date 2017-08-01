@@ -13,13 +13,20 @@ from HTMLParser import HTMLParser
 
 class ImageFinder(HTMLParser):
 
-    images = set()
+    def __init__(self, docker_image_name):
+        HTMLParser.__init__(self)
+        self.images = set()
+
+        if docker_image_name:
+            self.regexp = '{}.*x86_64-.*\.tar\.xz'.format(docker_image_name)
+        else:
+            self.regexp = '.*KVM.*x86_64-.*\.qcow2'
 
     def get_image(self):
         return self.images.pop()
 
     def handle_data(self, data):
-        m = re.search('.*KVM.*x86_64-.*\.qcow2', data)
+        m = re.search(self.regexp, data)
         if m:
             self.images.add(m.group(0))
 
@@ -39,27 +46,34 @@ def get_filename(url):
     return urlparse.urlparse(url).path.split('/')[-1]
 
 
-def get_channel_url(url):
+def get_channel_url(url, docker_image_name):
 
     channel = urlparse.urlparse(url).netloc
 
-    parser = ImageFinder()
+    parser = ImageFinder(docker_image_name)
 
     url_base = {
-        'release': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10/images/',
-        'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/A/images/',
-        'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/B/images/',
-        'devel': 'http://download.suse.de/ibs/Devel:/CASP:/1.0:/ControllerNode/images/',
+        'release': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10/',
+        'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/A/',
+        'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/B/',
+        'devel': 'http://download.suse.de/ibs/Devel:/CASP:/1.0:/ControllerNode/',
+        'head': 'http://download.suse.de/ibs/Devel:/CASP:/1.0:/ControllerNode/',
     }
 
     if channel not in url_base:
         raise Exception("Unknown channel: %s" % channel)
 
-    r = requests.get(url_base[channel])
+    base_url = url_base[channel]
+    if docker_image_name:
+        base_url += 'images_container_derived'
+    else:
+        base_url += 'images'
+
+    r = requests.get(base_url)
     parser.feed(r.text)
 
     return "%(base)s/%(image)s" % {
-        "base": url_base[channel],
+        "base": base_url,
         "image": parser.get_image()
     }
 
@@ -110,8 +124,10 @@ def use_local_file(url):
             os.unlink(expected_name)
         os.symlink(path, expected_name)
 
-def use_channel_file(url, force_redownload):
-    remote_url = get_channel_url(url)
+def use_channel_file(url, docker_image_name, force_redownload):
+    remote_url = get_channel_url(
+        url=url,
+        docker_image_name=docker_image_name)
     expected_name = urlparse.urlparse(url).netloc
     download_file(remote_url, expected_name, args.force_redownload)
 
@@ -119,6 +135,10 @@ def use_channel_file(url, force_redownload):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Download CaaSP Image')
     parser.add_argument('url', metavar='url', help='URL of image to download')
+    parser.add_argument(
+        '--docker-image-name',
+        metavar='docker_image_name',
+        help='Name of the Docker derived image to download (eg: "sles12-velum-devel").')
     parser.add_argument('--skip', action='store_true')
     parser.add_argument('--force-redownload', action='store_true')
     args = parser.parse_args()
@@ -132,3 +152,7 @@ if __name__ == "__main__":
         use_local_file(args.url)
     if urlparse.urlparse(args.url).scheme == "channel":
         use_channel_file(args.url, args.force_redownload)
+        use_channel_file(
+            url=args.url,
+            docker_image_name=args.docker_image_name,
+            force_redownload=args.force_redownload)
