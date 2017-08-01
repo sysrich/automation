@@ -57,7 +57,7 @@ def get_channel_url(url, docker_image_name):
         # Staging images do not yet exist for 2.0
         #'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/A/',
         #'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/B/',
-        'devel': 'http://download.suse.de/ibs/Devel:/CASP:/1.0:/ControllerNode/',
+        'devel': 'http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/',
         'head': 'http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/',
     }
 
@@ -152,7 +152,6 @@ if __name__ == "__main__":
     if urlparse.urlparse(args.url).scheme == "file":
         use_local_file(args.url)
     if urlparse.urlparse(args.url).scheme == "channel":
-        use_channel_file(args.url, args.force_redownload)
         use_channel_file(
             url=args.url,
             docker_image_name=args.docker_image_name,
