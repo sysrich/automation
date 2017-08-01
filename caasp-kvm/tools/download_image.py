@@ -52,6 +52,9 @@ def get_channel_url(url):
         'devel': 'http://download.suse.de/ibs/Devel:/CASP:/1.0:/ControllerNode/images/',
     }
 
+    if channel not in url_base:
+        raise Exception("Unknown channel: %s" % channel)
+
     r = requests.get(url_base[channel])
     parser.feed(r.text)
 
