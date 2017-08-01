@@ -151,7 +151,6 @@ if __name__ == "__main__":
     if urlparse.urlparse(args.url).scheme == "file":
         use_local_file(args.url)
     if urlparse.urlparse(args.url).scheme == "channel":
-        use_channel_file(args.url, args.force_redownload)
         use_channel_file(
             url=args.url,
             docker_image_name=args.docker_image_name,
