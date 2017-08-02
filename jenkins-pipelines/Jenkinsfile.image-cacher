@@ -18,9 +18,18 @@ properties(
 
 node('leap42.2') {
 	timeout(60){
-		cloneKubicRepo(gitBase: "https://github.com/kubic-project", branch: "master", credentialsId: "github-token", repo: "automation")
-		dir('automation/caasp-kvm') {
-			sh(script: "./tools/download_image.py channel://${params.CHANNEL}")
-		}	
+		stage('Preparation') {
+			step([$class: 'WsCleanup'])
+		}
+
+		stage('Retrieve Code') {
+			cloneKubicRepo(gitBase: "https://github.com/kubic-project", branch: env.BRANCH_NAME, credentialsId: "github-token", repo: "automation")
+		}
+
+		stage('Fetch Image') {
+			dir('automation/caasp-kvm') {
+				sh(script: "./tools/download_image.py channel://${params.CHANNEL}")
+			}
+		}
 	}
 }
