@@ -46,8 +46,8 @@ def get_channel_url(url):
     parser = ImageFinder()
 
     url_base = {
-        # Release and Staging repos do not yet exist for Head/2.0
-        # 'release': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10/images/',
+        'release': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20/images/',
+        # Staging images do not yet exist for 2.0
         # 'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/A/images/',
         # 'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/B/images/',
         'devel': 'http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/images/',
