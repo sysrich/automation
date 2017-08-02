@@ -58,7 +58,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Wait until Minion keys are accepted by salt"
     with_screenshot(name: :accepted_keys) do
-      expect(page).to have_css("input[type='radio']", count: node_number, wait: 600)
+      expect(page).to have_css("input[name='roles[worker][]']", count: node_number, wait: 600)
     end
     puts "<<< Minion keys accepted in Velum"
 
@@ -86,7 +86,7 @@ feature "Boostrap cluster" do
     puts ">>> Selecting master minion"
     with_screenshot(name: :select_master) do
       within("tr", text: master_minion["minionID"]) do
-        find("input[type='radio']").click
+        find("input[name='roles[master][]']").click
       end
     end
     puts "<<< Master minion selected"
