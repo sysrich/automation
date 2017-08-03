@@ -1,0 +1,125 @@
+#!/bin/sh
+
+set -euo pipefail
+
+# options
+HAS_ACTION=false
+RUN_BUILD=false
+RUN_DESTROY=false
+
+MASTERS=1
+WORKERS=2
+IMAGE=channel://devel
+PARALLELISM=1
+
+USAGE=$(cat <<USAGE
+Usage:
+
+  * Building a cluster
+
+    -b|--build                       Run the CaaSP KVM Build Step
+    -m|--masters             <INT>   Number of masters to build
+    -w|--workers             <INT>   Number of workers to build
+    -i|--image               <STR>   Image to use
+
+  * Destroying a cluster
+
+    -d|--destroy                     Run the CaaSP KVM Destroy Step
+
+  * Common options
+
+    -p|--parallelism                 Set terraform parallelism
+
+  * Examples:
+
+  Build a 1 master, 2 worker cluster
+
+  $0 --build -m 1 -w 2
+
+USAGE
+)
+
+# Utility methods
+log()        { (>&2 echo ">>> [caasp-kvm] $@") ; }
+warn()       { log "WARNING: $@" ; }
+error()      { log "ERROR: $@" ; exit 1 ; }
+check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
+
+# parse options
+while [[ $# > 0 ]] ; do
+  case $1 in
+    -b|--build)
+      RUN_BUILD=true
+      HAS_ACTION=true
+      ;;
+    -m|--masters)
+      MASTERS="$2"
+      shift
+      ;;
+    -w|--workers)
+      WORKERS="$2"
+      shift
+      ;;
+    -i|--image)
+      IMAGE="$2"
+      shift
+      ;;
+    -p|parallelism)
+      PARALLELISM="$2"
+      shift
+      ;;
+    -d|--destroy)
+      RUN_DESTROY=true
+      HAS_ACTION=true
+      ;;
+    -h|--help)
+      echo "$USAGE"
+      exit 0
+      ;;
+  esac
+  shift
+done
+
+# Core methods
+build() {
+  log "CaaS Platform Building"
+
+  terraform apply -parallelism=$PARALLELISM \
+    -var "caasp_img_source_url=${IMAGE}" \
+    -var "caasp_master_count=${MASTERS}" \
+    -var "caasp_worker_count=${WORKERS}" \
+    -var "kubic_salt_dir=$(realpath ../../salt)" \
+    -var "kubic_velum_dir=$(realpath ../../velum)" \
+    -var "kubic_caasp_container_manifests_dir=$(realpath ../../caasp-container-manifests)"
+
+  ./tools/generate_environment.sh
+  
+  log "Waiting for Velum to start - this may take a while"
+  ./tools/wait_for_velum.py https://$(jq -r '.dashboardHost' environment.json)
+
+  log "CaaS Platform Ready for bootstrap"
+}
+
+destroy() {
+  log "CaaS Platform Destroying"
+  terraform destroy -parallelism=$PARALLELISM \
+    -var "kubic_salt_dir=$(realpath ../../salt)" \
+    -var "kubic_velum_dir=$(realpath ../../velum)" \
+    -var "kubic_caasp_container_manifests_dir=$(realpath ../../caasp-container-manifests)"
+}
+
+# main
+if [ "$HAS_ACTION" != true ]; then
+  echo "$USAGE"
+  error "No action arguments were supplied"
+fi
+
+if [ "$RUN_BUILD" = true ]; then
+  build
+fi
+
+if [ "$RUN_DESTROY" = true ] ; then
+  destroy
+fi
+
+log "Done"
