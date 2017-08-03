@@ -182,6 +182,8 @@ resource "libvirt_volume" "master" {
 }
 
 data "template_file" "master_cloud_init_user_data" {
+  # needed when 0 master nodes are defined
+  count    = "${var.caasp_master_count}"
   template = "${file("cloud-init/master.cfg.tpl")}"
 
   vars {
@@ -192,6 +194,8 @@ data "template_file" "master_cloud_init_user_data" {
 }
 
 resource "libvirt_cloudinit" "master" {
+  # needed when 0 master nodes are defined
+  count     = "${var.caasp_master_count}"
   name      = "caasp_master_cloud_init.iso"
   pool      = "${var.pool}"
   user_data = "${data.template_file.master_cloud_init_user_data.rendered}"
@@ -252,6 +256,8 @@ resource "libvirt_volume" "worker" {
 }
 
 data "template_file" "worker_cloud_init_user_data" {
+  # needed when 0 worker nodes are defined
+  count    = "${var.caasp_worker_count}"
   template = "${file("cloud-init/worker.cfg.tpl")}"
 
   vars {
@@ -262,6 +268,8 @@ data "template_file" "worker_cloud_init_user_data" {
 }
 
 resource "libvirt_cloudinit" "worker" {
+  # needed when 0 worker nodes are defined
+  count     = "${var.caasp_worker_count}"
   name      = "caasp_worker_cloud_init.iso"
   pool      = "${var.pool}"
   user_data = "${data.template_file.worker_cloud_init_user_data.rendered}"
