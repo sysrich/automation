@@ -1,35 +1,33 @@
 library "kubic-jenkins-library@${env.BRANCH_NAME}"
 
 // Configure the build properties
-properties(
-	[
-		[$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', numToKeepStr: '31']],
-		[$class: 'DisableConcurrentBuildsJobProperty'],
-		pipelineTriggers([
-			[$class: 'org.jenkinsci.plugins.parameterizedscheduler.ParameterizedTimerTrigger',
-				parameterizedSpecification: 'H/15 * * * *  % CHANNEL=devel\nH/15 * * * *  % CHANNEL=release'
-			]
-		]),
-		parameters([
-			choice(choices: 'devel\nrelease', description: 'What channel should the image be cached from?', name: 'CHANNEL')
-		])
-	]
-)
+properties([
+    buildDiscarder(logRotator(numToKeepStr: '31')),
+    disableConcurrentBuilds(),
+    pipelineTriggers([
+        [$class: 'org.jenkinsci.plugins.parameterizedscheduler.ParameterizedTimerTrigger',
+            parameterizedSpecification: 'H/15 * * * *  % CHANNEL=devel\nH/15 * * * *  % CHANNEL=release'
+        ]
+    ]),
+    parameters([
+        choice(choices: 'devel\nrelease', description: 'What channel should the image be cached from?', name: 'CHANNEL')
+    ])
+])
 
 node('leap42.2') {
-	timeout(60){
-		stage('Preparation') {
-			step([$class: 'WsCleanup'])
-		}
+    timeout(60){
+        stage('Preparation') {
+            cleanWs()
+        }
 
-		stage('Retrieve Code') {
-			cloneKubicRepo(gitBase: "https://github.com/kubic-project", branch: env.BRANCH_NAME, credentialsId: "github-token", repo: "automation")
-		}
+        stage('Retrieve Code') {
+            cloneKubicRepo(gitBase: "https://github.com/kubic-project", branch: env.BRANCH_NAME, credentialsId: "github-token", repo: "automation")
+        }
 
-		stage('Fetch Image') {
-			dir('automation/caasp-kvm') {
-				sh(script: "./tools/download_image.py channel://${params.CHANNEL}")
-			}
-		}
-	}
+        stage('Fetch Image') {
+            dir('automation/caasp-kvm') {
+                sh(script: "./tools/download_image.py channel://${params.CHANNEL}")
+            }
+        }
+    }
 }
