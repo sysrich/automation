@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eux
+set -eu
 chmod 600 tools/id_docker
 if command -v jq; then
     echo "Generating environment.json file"
