@@ -221,6 +221,19 @@ resource "libvirt_domain" "master" {
     type        = "vnc"
     listen_type = "address"
   }
+
+  connection {
+    type     = "ssh"
+    user     = "root"
+    password = "linux"
+  }
+
+  # This ensures the VM is booted and SSH'able
+  provisioner "remote-exec" {
+    inline = [
+      "sleep 1"
+    ]
+  }
 }
 
 output "masters" {
@@ -277,6 +290,19 @@ resource "libvirt_domain" "worker" {
   graphics {
     type        = "vnc"
     listen_type = "address"
+  }
+
+  connection {
+    type     = "ssh"
+    user     = "root"
+    password = "linux"
+  }
+
+  # This ensures the VM is booted and SSH'able
+  provisioner "remote-exec" {
+    inline = [
+      "sleep 1"
+    ]
   }
 }
 
