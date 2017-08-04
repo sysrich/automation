@@ -109,10 +109,8 @@ done
 # images
 
 image_cleanup() {
-  log "Stop container $CONTAINER_NAME"
-  docker stop -t 5 "$CONTAINER_NAME" 2>/dev/null || true
   log "Remove container $CONTAINER_NAME"
-  docker rm "$CONTAINER_NAME" 2>/dev/null || true
+  docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
   if [ -n "$BUILD" ] ; then
     log "Clean up image $IMAGE_NAME"
     docker rmi "$IMAGE_NAME" 2>/dev/null || true
