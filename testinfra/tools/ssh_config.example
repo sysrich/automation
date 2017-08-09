@@ -1,0 +1,5 @@
+Host 10.17.*.*
+	User root
+	IdentityFile %PATH%/id_docker
+	UserKnownHostsFile /dev/null
+    StrictHostKeyChecking no
