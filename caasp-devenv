@@ -112,7 +112,7 @@ setup() {
   fi
 
   # || : is necessary, as Zypper exits non-zero for "no changes".
-  sudo zypper in --no-confirm python-tox ruby2.1-rubygem-bundler ruby2.1-devel libxml2-devel libxslt-devel terraform terraform-provider-libvirt || :
+  sudo zypper in --no-confirm python-tox ruby2.1-rubygem-bundler ruby2.1-devel phantomjs libxml2-devel libxslt-devel terraform terraform-provider-libvirt || :
 
   pushd velum-bootstrap
   bundle install
