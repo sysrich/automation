@@ -129,6 +129,7 @@ build() {
 bootstrap() {
   log "Bootstrap CaaSP Environment"
 
+  export ENVIRONMENT=$(realpath caasp-kvm/environment.json)
   pushd velum-bootstrap
   VERBOSE=true bundle exec rspec spec/**/*
   popd
@@ -137,6 +138,7 @@ bootstrap() {
 testinfra() {
   log "Testing CaaSP Environment using testinfra"
 
+  export ENVIRONMENT_JSON=$(realpath caasp-kvm/environment.json)
   # TODO: Testinfra tests should move to automation
   pushd ../testinfra
   tox
