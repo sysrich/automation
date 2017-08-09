@@ -1,10 +1,10 @@
-FROM opensuse:42.1
+FROM opensuse:42.3
 
 MAINTAINER Docker Team <docker-devel@suse.de>
 
-RUN zypper ar -fG http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10/standard CASP10 && zypper --gpg-auto-import-keys ref
+RUN zypper ar -fG http://download.opensuse.org/repositories/devel:/CaaSP:/Head:/ControllerNode/openSUSE_Leap_42.3/devel:CaaSP:Head:ControllerNode.repo && zypper --gpg-auto-import-keys ref
 
-RUN zypper -n install go
+RUN zypper -n install git go
 
 RUN zypper -n install etcdctl \
                       kubernetes-client \
