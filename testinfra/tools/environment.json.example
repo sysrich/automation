@@ -1,0 +1,28 @@
+
+{
+    "kubernetesHost": "10.17.3.77",
+    "minions": [
+        {
+            "fqdn": "minion0.k8s.local",
+            "id": "0",
+            "role": "master",
+            "minion_id": "776c585b779b4a78bc0627ee7515f36e",
+            "ipv4": "10.17.3.77"
+        },
+        {
+            "fqdn": "minion1.k8s.local",
+            "id": "1",
+            "role": "worker",
+            "minion_id": "cb68e296546940e087e6e5e3aae4dccd",
+            "ipv4": "10.17.3.66"
+        },
+        {
+            "fqdn": "minion2.k8s.local",
+            "id": "2",
+            "role": "worker",
+            "minion_id": "a4499f4d4f4c4d798279fee7eaea2eaf",
+            "ipv4": "10.17.3.62"
+        }
+    ],
+    "dashboardHost": "10.4.10.189"
+}

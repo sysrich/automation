@@ -139,8 +139,7 @@ testinfra() {
   log "Testing CaaSP Environment using testinfra"
 
   export ENVIRONMENT_JSON=$(realpath caasp-kvm/environment.json)
-  # TODO: Testinfra tests should move to automation
-  pushd ../testinfra
+  pushd testinfra
   tox
   popd
 }
