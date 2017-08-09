@@ -1,0 +1,182 @@
+#!/bin/sh
+
+set -euo pipefail
+
+# This script should be as dumb as possible, it should
+# contain the most commonly used options for each of the
+# other tools, and no more. If you need to customize the
+# options for a tool, use that tool directly instead!
+
+# options
+HAS_ACTION=false
+RUN_SETUP=false
+RUN_BUILD=false
+RUN_BOOTSTRAP=false
+RUN_TESTINFRA=false
+RUN_DESTROY=false
+
+MASTERS=1
+WORKERS=2
+
+USAGE=$(cat <<USAGE
+Usage:
+
+  * Setup your workstation
+
+    --setup                  Install Dev Env Dependencies
+
+  * Building a cluster
+
+    -b|--build               Run the CaaSP KVM Build Step
+    -m|--masters <INT>       Number of masters to build
+    -w|--workers <INT>       Number of workers to build
+    -d|--destroy             Run the CaaSP KVM Destroy Step
+
+  * Bootstraping a cluster
+
+    Velum Username: test@test.com
+    Velum Password: password
+
+    -B|--bootstrap           Bootstrap CaaSP cluster
+
+  * Testing a cluster
+
+    -T|--testinfra           Run testinfra tests
+
+  * Examples:
+
+  Build, Bootstrap and Test a cluster
+
+  $0 --build -m 1 -w 2 --bootstrap --testinfra
+
+  Bootstrap and Test a pre-made cluster
+
+  $0 --bootstrap --testinfra
+
+USAGE
+)
+
+# Utility methods
+log()        { (>&2 echo ">>> [caasp-devenv] $@") ; }
+warn()       { log "WARNING: $@" ; }
+error()      { log "ERROR: $@" ; exit 1 ; }
+check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
+
+# parse options
+while [[ $# > 0 ]] ; do
+  case $1 in
+    --setup)
+      RUN_SETUP=true
+      HAS_ACTION=true
+      ;;
+    -b|--build)
+      RUN_BUILD=true
+      HAS_ACTION=true
+      ;;
+    -m|--masters)
+      MASTERS="$2"
+      shift
+      ;;
+    -w|--workers)
+      WORKERS="$2"
+      shift
+      ;;
+    -d|--destroy)
+      RUN_DESTROY=true
+      HAS_ACTION=true
+      ;;
+    -B|--bootstrap)
+      RUN_BOOTSTRAP=true
+      HAS_ACTION=true
+      ;;
+    -T|--testinfra)
+      RUN_TESTINFRA=true
+      HAS_ACTION=true
+      ;;
+    -h|--help)
+      echo "$USAGE"
+      exit 0
+      ;;
+  esac
+  shift
+done
+
+# Core methods
+setup() {
+  log "Installing CaaSP Development Environment Requiemnts"
+  local dist=$(lsb-release -sd | tr -d '"' | tr " " "_")
+
+  if ! zypper lr -dU | grep --quiet "opensuse.org/repositories/Virtualization:/containers"; then
+    log "Adding Virtualization:containers Zypper repo"
+    sudo zypper ar --refresh http://download.opensuse.org/repositories/Virtualization:/containers/${dist}/Virtualization:containers.repo
+  fi
+
+  # || : is necessary, as Zypper exits non-zero for "no changes".
+  sudo zypper in --no-confirm python-tox ruby2.1-rubygem-bundler ruby2.1-devel phantomjs libxml2-devel libxslt-devel terraform terraform-provider-libvirt || :
+
+  pushd velum-bootstrap
+  bundle install
+  popd
+}
+
+build() {
+  pushd caasp-kvm
+  log "Starting CaaSP KVM Environment"
+  ./caasp-kvm --build -m $MASTERS -w $WORKERS
+  popd
+}
+
+bootstrap() {
+  log "Bootstrap CaaSP Environment"
+
+  export ENVIRONMENT=$(realpath caasp-kvm/environment.json)
+  pushd velum-bootstrap
+  VERBOSE=true bundle exec rspec spec/**/*
+  popd
+}
+
+testinfra() {
+  log "Testing CaaSP Environment using testinfra"
+
+  export ENVIRONMENT_JSON=$(realpath caasp-kvm/environment.json)
+  # TODO: Testinfra tests should move to automation
+  pushd ../testinfra
+  tox
+  popd
+}
+
+destroy() {
+  pushd caasp-kvm
+
+  log "Destroy CaaSP KVM Environment"
+  ./caasp-kvm --destroy
+  popd
+}
+
+# main
+if [ "$HAS_ACTION" != true ]; then
+  echo "$USAGE"
+  error "No action arguments were supplied"
+fi
+
+if [ "$RUN_SETUP" = true ]; then
+  setup
+fi
+
+if [ "$RUN_BUILD" = true ]; then
+  build
+fi
+
+if [ "$RUN_BOOTSTRAP" = true ] ; then
+  bootstrap
+fi
+
+if [ "$RUN_TESTINFRA" = true ] ; then
+  testinfra
+fi
+
+if [ "$RUN_DESTROY" = true ] ; then
+  destroy
+fi
+
+log "Done"
