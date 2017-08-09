@@ -104,7 +104,15 @@ done
 # Core methods
 setup() {
   log "Installing CaaSP Development Environment Requiemnts"
-  sudo zypper in --no-confirm python-tox ruby2.1-rubygem-bundler || true
+  local dist=$(lsb-release -sd | tr -d '"' | tr " " "_")
+
+  if ! zypper lr -dU | grep --quiet "opensuse.org/repositories/Virtualization:/containers"; then
+    log "Adding Virtualization:containers Zypper repo"
+    sudo zypper ar --refresh http://download.opensuse.org/repositories/Virtualization:/containers/${dist}/Virtualization:containers.repo
+  fi
+
+  # || : is necessary, as Zypper exits non-zero for "no changes".
+  sudo zypper in --no-confirm python-tox ruby2.1-rubygem-bundler ruby2.1-devel libxml2-devel libxslt-devel terraform terraform-provider-libvirt || :
 
   pushd velum-bootstrap
   bundle install
