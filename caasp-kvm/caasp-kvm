@@ -102,7 +102,7 @@ build() {
 
 destroy() {
   log "CaaS Platform Destroying"
-  terraform destroy -parallelism=$PARALLELISM \
+  terraform destroy -force -parallelism=$PARALLELISM \
     -var "kubic_salt_dir=$(realpath ../../salt)" \
     -var "kubic_velum_dir=$(realpath ../../velum)" \
     -var "kubic_caasp_container_manifests_dir=$(realpath ../../caasp-container-manifests)"
