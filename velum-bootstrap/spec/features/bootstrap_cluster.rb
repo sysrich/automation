@@ -127,5 +127,19 @@ feature "Boostrap cluster" do
         expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 120)
       end
     end
+
+    puts ">>> Download kubeconfig"
+    with_screenshot(name: :download_kubeconfig) do
+      data = page.evaluate_script("\
+        function() {
+          var url = window.location.protocol + '//' + window.location.host + '/kubectl-config';\
+          var xhr = new XMLHttpRequest();\
+          xhr.open('GET', url, false);\
+          xhr.send(null);\
+          return xhr.responseText;\
+        }()
+      ")
+      File.write("kubeconfig", data)
+    end
   end
 end
