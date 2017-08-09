@@ -116,7 +116,7 @@ feature "Boostrap cluster" do
     puts ">>> Wait until orchestration is complete"
     with_screenshot(name: :orchestration_complete) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-spin", count: 0, wait: 600)
+        expect(page).to have_css(".fa-spin", count: 0, wait: 900)
       end
     end
     puts "<<< Orchestration completed"
