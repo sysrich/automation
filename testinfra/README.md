@@ -9,17 +9,6 @@ You can install the necessary dependancy packages with:
 
     $ sudo zypper in jq python-tox
 
-## Running the tests
-
-First you need to have a running CaaSP cluster with `velum` already bootstrapped, you can do this
-either by hand, or by using the velum-bootstrap tool.
-
-This tool requires an "environment.json" file is supplied to it, providing details on the cluster
-to be tested. caasp-kvm, caasp-openstack-heat, and the legacy terraform repo will each generate
-this file for you as you build your cluster.
-
-    ENVIRONMENT_JSON=/home/$USER/caasp/automation/caasp-kvm/environment.json tox
-
 The default value for ENVIRONMENT_JSON is `../caasp-kvm/environment.json`, so in many cases, simply
 running `tox` will be enough to run the tests.
 
