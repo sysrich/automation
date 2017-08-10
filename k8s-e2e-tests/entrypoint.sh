@@ -76,16 +76,28 @@ run_tests() {
         --clean-start=true \
         --dump-logs-on-failure \
         --delete-namespace=true \
-        --ginkgo.trace=true"
-#       --e2e-verify-service-account=false \
+        --ginkgo.trace=true \
+        --ginkgo.flakeAttempts=3"
+        # --ginkgo.flakeAttempts is the time to retry when there is a test failure.
 
     cd $KUBE_ROOT
 
+    # Compute number of ready Kubernetes cluster nodes
+    export K8S_NODES=`kubectl get nodes 2> /dev/null | grep " Ready " | wc -l`
+    export GINKGO_PARALLEL=y
+    # The number of tests that can be run in parallel depends on
+    # size of the Kubernetes cluster and number of worker nodes. 
+    # Too many, and tests will fail due to resource contention.
+    export GINKGO_PARALLEL_NODES=$K8S_NODES
+ 
     # first run the parallelizable tests
-    env GINKGO_PARALLEL=y E2E_REPORT_PREFIX=parallel \
+    env E2E_REPORT_PREFIX=parallel \
     go run hack/e2e.go -v --test \
         --test_args="$KUBE_TEST_ARGS --ginkgo.focus=\[Conformance\] --ginkgo.skip=\[Serial\]" 2>&1 | \
             tee /tmp/e2e-test.log
+
+    # For serial tests we have to set GINKGO_PARALLEL_NODES=1
+    export GINKGO_PARALLEL_NODES=1
 
     # now run the serial tests
     env E2E_REPORT_PREFIX=serial \
