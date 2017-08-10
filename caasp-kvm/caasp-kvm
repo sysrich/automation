@@ -93,6 +93,7 @@ build() {
     -var "kubic_caasp_container_manifests_dir=$(realpath ../../caasp-container-manifests)"
 
   ./tools/generate_environment.sh
+  ../misc-tools/generate-ssh-config environment.json
   
   log "Waiting for Velum to start - this may take a while"
   ./tools/wait_for_velum.py https://$(jq -r '.dashboardHost' environment.json)

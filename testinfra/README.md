@@ -4,12 +4,12 @@ This is a collection of testinfra tests that can be used to ensure that the boot
 of a CaaSP install has been completed correctly
 
 ## Running tests
+
 This requires python-tox to be installed on your system.
 
 Running `tox` will run the tests against all nodes created by the `kubic-project/caasp-kvm` repository.
 
-It looks for an `environment.json` file in a path `../caasp-kvm/environment.json` - if your file is in a different location, use the 
-`ENVIRONMENT_JSON` enviroment variable to point to it.
+It looks for an `environment.json` file in a path `../caasp-kvm/environment.json` - if your file is in a different location, use the `ENVIRONMENT_JSON` enviroment variable to point to it.
 
 `tox -e linters` runs code syntax checks on the tests, and should be ran before a PR is opened
 
@@ -29,8 +29,7 @@ pytest --ssh-config=~/.ssh/config --sudo --hosts=master-ip -m "master or common"
 pytest --ssh-config=~/.ssh/config --sudo --hosts=worker-1-ip,worker-2-ip -m "worker or common" --junit-xml workers.xml -v
 ```
 
-Where `~/.ssh/config` is an ssh config file that tells ssh what key to use for the connection. 
-Have a look at `tools/ssh_config.example` and `tools/generate_ssh_config.sh` for an example
+Where `~/.ssh/config` is an ssh config file that tells ssh what key to use for the connection.
 
 ## File Structure
 
