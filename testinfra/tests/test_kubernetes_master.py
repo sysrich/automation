@@ -51,7 +51,7 @@ class TestKubernetesMaster(object):
 
         # Check the number of nodes
         # TODO(graham): Load this from env
-        assert (len(nodes["items"]) == 3)
+        assert (len(nodes["items"]) == 2)
 
         # Check all nodes are marked as "Ready" in k8s
         for node in nodes["items"]:
