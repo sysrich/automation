@@ -1,0 +1,48 @@
+{
+   "dashboardHost" : "172.24.0.5",
+   "sshUser" : "root",
+   "sshKey" : "/home/user/SUSE/caasp/automation/openstack-heat/tools/id_docker",
+   "kubernetesHost" : "10.84.72.173",
+   "minions" : [
+      {
+         "index" : "0",
+         "role" : "admin",
+         "addresses" : {
+            "publicIpv4" : "10.84.72.172",
+            "privateIpv4" : "172.24.0.5"
+         },
+         "fqdn" : "test2-admin-xpi3oesblxxc.k8s.local",
+         "minionId" : "67af839105f24307bb2bf55d603c55f0"
+      },
+      {
+         "minionId" : "ac93ab2058914fad88d87702f8efc863",
+         "addresses" : {
+            "publicIpv4" : "10.84.72.173",
+            "privateIpv4" : "172.24.0.6"
+         },
+         "fqdn" : "test2-master-7lydnr7r4sum.k8s.local",
+         "role" : "master",
+         "index" : "1"
+      },
+      {
+         "minionId" : "618fb2611cfe41239be7cbdab853793c",
+         "index" : "2",
+         "role" : "worker",
+         "proxyCommand" : "ssh root@10.84.72.172 -W %h:%p",
+         "fqdn" : "test2-worker-eorkpgetfvr6-oxup2sra6zrr-azgmmxgbnbz4.k8s.local",
+         "addresses" : {
+            "privateIpv4" : "172.24.0.7"
+         }
+      },
+      {
+         "minionId" : "3746ed898269450d8966543734da6554",
+         "proxyCommand" : "ssh root@10.84.72.172 -W %h:%p",
+         "addresses" : {
+            "privateIpv4" : "172.24.0.8"
+         },
+         "fqdn" : "test2-worker-eorkpgetfvr6-4rzhx3nww5fv-glz5hrejhktm.k8s.local",
+         "role" : "worker",
+         "index" : "3"
+      }
+   ]
+}
