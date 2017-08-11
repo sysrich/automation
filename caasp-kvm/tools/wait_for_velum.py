@@ -10,6 +10,12 @@ import time
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+# This assumes we'll never need a proxy to reach velum..
+PROXIES = {
+  "http": None,
+  "https": None,
+}
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Wait for velum to start')
     parser.add_argument('url', metavar='url', help='URL of dashboard')
@@ -26,7 +32,7 @@ if __name__ == "__main__":
             print("Timed out waiting for Velum to start")
             raise SystemExit(1)
         try:
-            r = requests.get(args.url, verify=False)
+            r = requests.get(args.url, verify=False, proxies=PROXIES)
         except requests.exceptions.ConnectionError:
             if counter%5 == 0:
                 print("Waiting for Velum to start")
