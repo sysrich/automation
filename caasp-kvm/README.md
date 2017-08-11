@@ -36,7 +36,7 @@ You can add this repo and install these packages with just
 ```
 $ # (replace openSUSE_Leap_42.2 with your distro)
 $ sudo zypper ar obs://Virtualization:containers/openSUSE_Leap_42.2 Virtualization:containers
-$ sudo zypper in terraform-provider-libvirt
+$ sudo zypper in terraform-provider-libvirt jq
 ```
 
 You are going to need a working libvirt daemon capable of using KVM.

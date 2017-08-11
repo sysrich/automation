@@ -82,6 +82,16 @@ variable "kubic_caasp_container_manifests_dir" {
   description = "Path to the directory where https://github.com/kubic-project/caasp-container-manifests has been cloned into"
 }
 
+variable "kubic_velum_dir" {
+  type = "string"
+  description = "Path to the directory where https://github.com/kubic-project/velum has been cloned into"
+}
+
+variable "kubic_force_rebuild_velum_image" {
+  default = true
+  description = "Force rebuilt of the velum image."
+}
+
 #######################
 # Cluster declaration #
 #######################
@@ -93,6 +103,24 @@ provider "libvirt" {
 resource "null_resource" "local_checkout_of_caasp_image" {
   provisioner "local-exec" {
     command = "./tools/download_image.py ${var.caasp_img_source_url}"
+  }
+}
+
+resource "null_resource" "local_build_velum_image" {
+  provisioner "local-exec" {
+    command = "./tools/build-velum-image.sh ${var.kubic_force_rebuild_velum_image ? "" : "-c"} ${var.kubic_velum_dir}"
+  }
+}
+
+resource "null_resource" "local_patch_kubelet_public_manifest" {
+  provisioner "local-exec" {
+    command = "./tools/kubelet_manifest_use_velum_devel.rb -o velum-resources/public.yaml ${var.kubic_caasp_container_manifests_dir}/public.yaml"
+  }
+}
+
+resource "null_resource" "local_create_velum_dirs" {
+  provisioner "local-exec" {
+    command = "mkdir -p ${var.kubic_velum_dir}/tmp ${var.kubic_velum_dir}/log ${var.kubic_velum_dir}/vendor/bundle"
   }
 }
 
@@ -164,6 +192,38 @@ resource "libvirt_domain" "admin" {
     target = "caasp-container-manifests"
     readonly = true
   }
+
+  filesystem {
+    source = "${var.kubic_velum_dir}"
+    target = "velum"
+    readonly = true
+  }
+
+  filesystem {
+    source = "${path.module}/velum-resources"
+    target = "velum_resources"
+    readonly = true
+  }
+
+  connection {
+    type     = "ssh"
+    user     = "root"
+    password = "linux"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "while [[ ! -f /var/run/docker.pid ]]; do echo waiting for docker to start; sleep 1; done",
+      "docker load -i /var/lib/misc/velum-resources/*.tar",
+      "cp /var/lib/misc/velum-resources/public.yaml /etc/kubernetes/manifests",
+    ]
+  }
+
+  depends_on = [
+    "null_resource.local_build_velum_image",
+    "null_resource.local_patch_kubelet_public_manifest",
+    "null_resource.local_create_velum_dirs",
+  ]
 }
 
 output "ip_admin" {
@@ -182,6 +242,8 @@ resource "libvirt_volume" "master" {
 }
 
 data "template_file" "master_cloud_init_user_data" {
+  # needed when 0 master nodes are defined
+  count    = "${var.caasp_master_count}"
   template = "${file("cloud-init/master.cfg.tpl")}"
 
   vars {
@@ -192,9 +254,11 @@ data "template_file" "master_cloud_init_user_data" {
 }
 
 resource "libvirt_cloudinit" "master" {
-  name      = "caasp_master_cloud_init.iso"
+  # needed when 0 master nodes are defined
+  count     = "${var.caasp_master_count}"
+  name      = "caasp_master_cloud_init_${count.index}.iso"
   pool      = "${var.pool}"
-  user_data = "${data.template_file.master_cloud_init_user_data.rendered}"
+  user_data = "${element(data.template_file.master_cloud_init_user_data.*.rendered, count.index)}"
 }
 
 resource "libvirt_domain" "master" {
@@ -252,6 +316,8 @@ resource "libvirt_volume" "worker" {
 }
 
 data "template_file" "worker_cloud_init_user_data" {
+  # needed when 0 worker nodes are defined
+  count    = "${var.caasp_worker_count}"
   template = "${file("cloud-init/worker.cfg.tpl")}"
 
   vars {
@@ -262,9 +328,11 @@ data "template_file" "worker_cloud_init_user_data" {
 }
 
 resource "libvirt_cloudinit" "worker" {
-  name      = "caasp_worker_cloud_init.iso"
+  # needed when 0 worker nodes are defined
+  count     = "${var.caasp_worker_count}"
+  name      = "caasp_worker_cloud_init_${count.index}.iso"
   pool      = "${var.pool}"
-  user_data = "${data.template_file.worker_cloud_init_user_data.rendered}"
+  user_data = "${element(data.template_file.worker_cloud_init_user_data.*.rendered, count.index)}"
 }
 
 resource "libvirt_domain" "worker" {
@@ -272,7 +340,7 @@ resource "libvirt_domain" "worker" {
   name       = "caasp_worker_${count.index}"
   memory     = "${var.caasp_worker_memory}"
   vcpu       = "${var.caasp_worker_vcpu}"
-  cloudinit  = "${libvirt_cloudinit.worker.id}"
+  cloudinit  = "${element(libvirt_cloudinit.worker.*.id, count.index)}"
   metadata   = "caasp-worker-${count.index}.${var.caasp_domain_name},worker,${count.index}"
   depends_on = ["libvirt_domain.admin"]
 
