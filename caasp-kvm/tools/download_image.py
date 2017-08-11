@@ -147,12 +147,16 @@ if __name__ == "__main__":
     if args.skip:
         raise SystemExit(0)
 
-    if urlparse.urlparse(args.url).scheme in ['http', 'https']:
-        use_remote_file(args.url, args.force_redownload)
-    if urlparse.urlparse(args.url).scheme == "file":
-        use_local_file(args.url)
-    if urlparse.urlparse(args.url).scheme == "channel":
-        use_channel_file(
-            url=args.url,
-            docker_image_name=args.docker_image_name,
-            force_redownload=args.force_redownload)
+    try:
+        if urlparse.urlparse(args.url).scheme in ['http', 'https']:
+            use_remote_file(args.url, args.force_redownload)
+        if urlparse.urlparse(args.url).scheme == "file":
+            use_local_file(args.url)
+        if urlparse.urlparse(args.url).scheme == "channel":
+            use_channel_file(
+                url=args.url,
+                docker_image_name=args.docker_image_name,
+                force_redownload=args.force_redownload)
+    except Exception as e:
+        print("Failed: %s" % e)
+        raise SystemExit(1)
