@@ -95,7 +95,7 @@ build() {
   ./tools/generate_environment.sh
   
   log "Waiting for Velum to start - this may take a while"
-  ./tools/wait_for_velum.py https://$(jq -r '.dashboardHost' environment.json)
+  PYTHONUNBUFFERED=1 ./tools/wait_for_velum.py https://$(jq -r '.dashboardHost' environment.json)
 
   log "CaaS Platform Ready for bootstrap"
 }
