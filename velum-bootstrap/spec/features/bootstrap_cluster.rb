@@ -93,6 +93,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Bootstrapping cluster"
     with_screenshot(name: :bootstrap_cluster) do
+      expect(page).to have_button(value: "Bootstrap cluster", disabled: false)
       click_on "Bootstrap cluster"
     end
 
@@ -116,7 +117,7 @@ feature "Boostrap cluster" do
     puts ">>> Wait until orchestration is complete"
     with_screenshot(name: :orchestration_complete) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-spin", count: 0, wait: 900)
+        expect(page).to have_css(".fa-spin", count: 0, wait: 1800)
       end
     end
     puts "<<< Orchestration completed"
