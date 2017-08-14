@@ -93,6 +93,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Bootstrapping cluster"
     with_screenshot(name: :bootstrap_cluster) do
+      expect(page).to have_button(value: "Bootstrap cluster", disabled: false)
       click_on "Bootstrap cluster"
     end
 
