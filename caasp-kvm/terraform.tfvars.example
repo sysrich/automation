@@ -13,7 +13,7 @@
 # Cluster variables #
 #####################
 # The latest version of the CaaSP image in the devel channel:
-caasp_img_source_url = "channel://devel"
+#caasp_img_source_url = "channel://devel"
 #caasp_img_source_url = "channel://staging_a"
 #caasp_img_source_url = "channel://staging_b"
 #caasp_img_source_url = "channel://release"
