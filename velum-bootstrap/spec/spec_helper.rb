@@ -14,13 +14,15 @@ def environment
   env = JSON.parse(File.read(ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), '../../../')}terraform/environment.json")))
   abort("Please specify kubernetesHost in environment.json") unless env["kubernetesHost"]
   abort("Please specify at least 2 minions in environment.json") if env["minions"].count < 2
-  # if run against a caasp-devenv we need to clear dashboardHost parameters
-  return env unless ENV.fetch("DEVENV", nil)
-  env.tap { |h| h.delete("dashboardHost"); h.delete("sshKey") }
+  return env
 rescue JSON::ParserError
   fail("Invalid JSON format")
 rescue
   fail("Please specify ENVIRONMENT to point to a valid environment.json path")
+end
+
+def admin_minion
+  environment["minions"].detect { |m| m["role"] == "admin" }
 end
 
 Capybara.register_driver :poltergeist do |app|
@@ -48,7 +50,11 @@ Capybara.configure do |config|
   config.visible_text_only = true
   config.default_selector = :css
 
-  config.app_host = "https://#{environment['dashboardHost'] || 'localhost'}"
+  if admin_minion
+    config.app_host = "https://#{admin_minion['addresses']['publicIpv4']}"
+  else
+    config.app_host = "https://localhost"
+  end
 end
 
 RSpec.configure do |config|

@@ -4,7 +4,7 @@ require 'yaml'
 feature "Boostrap cluster" do
 
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
-  let(:hostnames) { environment["minions"].map { |m| m["fqdn"] if m["role"] != "admin" }.compact }
+  let(:hostnames) { environment["minions"].map { |m| m["fqdn"].downcase if m["role"] != "admin" }.compact }
   let(:master_minion) { environment["minions"].detect { |m| m["role"] == "master" } }
 
   before(:each) do
@@ -85,7 +85,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Selecting master minion"
     with_screenshot(name: :select_master) do
-      within("tr", text: master_minion["minionID"]) do
+      within("tr", text: master_minion["minionId"] || master_minion["minionID"]) do
         find("input[name='roles[master][]']").click
       end
     end
