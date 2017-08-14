@@ -17,6 +17,7 @@ RUN_DESTROY=false
 
 MASTERS=1
 WORKERS=2
+PARALLELISM=1
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -42,6 +43,10 @@ Usage:
   * Testing a cluster
 
     -T|--testinfra           Run testinfra tests
+
+  * Common options
+
+    -p|--parallelism         Set terraform parallelism
 
   * Examples:
 
@@ -93,6 +98,10 @@ while [[ $# > 0 ]] ; do
       RUN_TESTINFRA=true
       HAS_ACTION=true
       ;;
+    -p|parallelism)
+      PARALLELISM="$2"
+      shift
+      ;;
     -h|--help)
       echo "$USAGE"
       exit 0
@@ -122,7 +131,7 @@ setup() {
 build() {
   pushd caasp-kvm
   log "Starting CaaSP KVM Environment"
-  ./caasp-kvm --build -m $MASTERS -w $WORKERS
+  ./caasp-kvm --build -m $MASTERS -w $WORKERS -parallelism=$PARALLELISM
   popd
 }
 
