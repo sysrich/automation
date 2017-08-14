@@ -23,12 +23,12 @@ variable "caasp_img_source_url" {
 }
 
 variable "caasp_admin_memory" {
-  default     = 2048
+  default     = 4096
   description = "The amount of RAM for a admin node"
 }
 
 variable "caasp_admin_vcpu" {
-  default     = 2
+  default     = 4
   description = "The amount of virtual CPUs for a admin node"
 }
 
