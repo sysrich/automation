@@ -110,6 +110,7 @@ feature "Boostrap cluster" do
     with_screenshot(name: :ui_loaded) do
       within(".nodes-container") do
         expect(page).to have_no_css(".nodes-loading", wait: 30)
+        expect(page).to have_css(".fa-spin", count: node_number, wait: 120)
       end
     end
     puts "<<< UI loaded"
