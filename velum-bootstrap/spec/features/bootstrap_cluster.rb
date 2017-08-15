@@ -91,6 +91,12 @@ feature "Boostrap cluster" do
     end
     puts "<<< Master minion selected"
 
+    puts ">>> Waiting for page to settle"
+    with_screenshot(name: :wait_for_settle) do
+      expect(page).to have_no_css(".discovery-minimum-nodes-alert", wait: 30)
+    end
+    puts "<<< Page has settled"
+
     puts ">>> Bootstrapping cluster"
     with_screenshot(name: :bootstrap_cluster) do
       expect(page).to have_button(value: "Bootstrap cluster", disabled: false)
