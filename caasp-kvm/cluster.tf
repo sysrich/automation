@@ -102,7 +102,7 @@ provider "libvirt" {
 
 resource "null_resource" "local_checkout_of_caasp_image" {
   provisioner "local-exec" {
-    command = "./tools/download_image.py ${var.caasp_img_source_url}"
+    command = "../misc-tools/download_image.py ../downloads kvm ${var.caasp_img_source_url}"
   }
 }
 
@@ -127,7 +127,7 @@ resource "null_resource" "local_create_velum_dirs" {
 # This is the CaaSP kvm image that has been created by IBS
 resource "libvirt_volume" "caasp_img" {
   name   = "${basename(var.caasp_img_source_url)}"
-  source = "${basename(var.caasp_img_source_url)}"
+  source = "../downloads/kvm-${basename(var.caasp_img_source_url)}"
   pool   = "${var.pool}"
 
   depends_on = ["null_resource.local_checkout_of_caasp_image"]

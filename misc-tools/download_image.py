@@ -57,7 +57,6 @@ def get_channel_url(url, docker_image_name):
         'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20:/Staging:/A/',
         'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20:/Staging:/B/',
         'devel': 'http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/',
-        'head': 'http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/',
     }
 
     if channel not in url_base:
@@ -78,7 +77,7 @@ def get_channel_url(url, docker_image_name):
     }
 
 
-def download_file(url, expected_name, force_redownload):
+def download_file(path, type, url, expected_name, force_redownload):
     versioned_url = get_versioned_image_link(url)
     actual_name = get_filename(versioned_url)
 
@@ -89,26 +88,28 @@ def download_file(url, expected_name, force_redownload):
         remote_sha = requests.get(versioned_url + '.sha256')
 
         os.system(
-            "wget %(url)s -O %(file)s --progress=dot:giga" %
-            { "url": versioned_url, "file": actual_name} 
+            "wget %(url)s -O %(path)s/%(file)s --progress=dot:giga" %
+            { "url": versioned_url, "path": path, "file": actual_name}
         )
-        local_sha = os.popen('sha256sum %s' % actual_name).read()
+        local_sha = os.popen(
+            'sha256sum %(path)s/%(file)s' %
+            { "path": path, "file": actual_name}
+        ).read()
 
         if local_sha.split(' ')[0] not in remote_sha.text:
             print("Local SHA: %s" % local_sha)
             print("Remote SHA: %s" % remote_sha.text)
             raise Exception("Download corrupted - please retry.")
 
-
     if not expected_name == actual_name:
-        if os.path.islink(expected_name):
-            os.unlink(expected_name)
-        os.symlink(actual_name, expected_name)
+        if os.path.islink(path + "/" + type + "-" + expected_name):
+            os.unlink(path + "/" + type + "-" + expected_name)
+        os.symlink(actual_name, path + "/" + type + "-" + expected_name)
 
 
-def use_remote_file(url, force_redownload):
+def use_remote_file(path, type, url, force_redownload):
     expected_name = get_filename(url)
-    download_file(url, expected_name, force_redownload)
+    download_file(path, type, url, expected_name, force_redownload)
 
 def use_local_file(url):
     expected_name = get_filename(url)
@@ -124,16 +125,18 @@ def use_local_file(url):
             os.unlink(expected_name)
         os.symlink(path, expected_name)
 
-def use_channel_file(url, docker_image_name, force_redownload):
+def use_channel_file(path, type, url, docker_image_name, force_redownload):
     remote_url = get_channel_url(
         url=url,
         docker_image_name=docker_image_name)
     expected_name = urlparse.urlparse(url).netloc
-    download_file(remote_url, expected_name, args.force_redownload)
+    download_file(path, type, remote_url, expected_name, args.force_redownload)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Download CaaSP Image')
+    parser.add_argument('path', metavar='path', help='Folder to store download in')
+    parser.add_argument('type', metavar='type', help='Type of file being downloaded')
     parser.add_argument('url', metavar='url', help='URL of image to download')
     parser.add_argument(
         '--docker-image-name',
@@ -147,11 +150,16 @@ if __name__ == "__main__":
         raise SystemExit(0)
 
     if urlparse.urlparse(args.url).scheme in ['http', 'https']:
-        use_remote_file(args.url, args.force_redownload)
-    if urlparse.urlparse(args.url).scheme == "file":
+        use_remote_file(args.path, args.type, args.url, args.force_redownload)
+    elif urlparse.urlparse(args.url).scheme == "file":
         use_local_file(args.url)
-    if urlparse.urlparse(args.url).scheme == "channel":
+    elif urlparse.urlparse(args.url).scheme == "channel":
         use_channel_file(
+            path=args.path,
+            type=args.type,
             url=args.url,
             docker_image_name=args.docker_image_name,
             force_redownload=args.force_redownload)
+    else:
+        print "Unknown URL Type: " + args.url
+        raise SystemExit(1)

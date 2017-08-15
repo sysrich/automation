@@ -9,8 +9,8 @@ set -euo pipefail
 function download_velum_development_image() {
   #TODO: ensure the name of the image downloaded is returned. The wrong image name
   # might be returned if multiple tarballs are into the directory
-  $1/download_image.py --docker-image-name sles12-velum-developmen channel://head
-  echo $(realpath sles12-velum-development.*.tar.xz)
+  $1/../../misc-tools/download_image.py --docker-image-name sles12-velum-development $(realpath $1/../../downloads) velum-development channel://devel
+  echo $(realpath $1/../../downloads/sles12-velum-development.*.tar.xz)
 }
 
 # docker load of the velum-development image tarball
