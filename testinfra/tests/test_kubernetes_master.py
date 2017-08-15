@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 
 import pytest
 import json
@@ -60,9 +61,11 @@ class TestKubernetesMaster(object):
             host.file("/tmp/cluster_info/nodes.json").content_string
         )
 
-        # Check the number of nodes
-        # TODO(graham): Load this from env
-        assert (len(nodes["Items"]) == 3)
+        env_file = os.environ['ENVIRONMENT_JSON']
+        with open(env_file, 'r') as f:
+            env = json.load(f)
+
+        assert (len(nodes["Items"]) == sum(1 for i in env["minions"] if i["role"] != "admin" ))
 
         # Check all nodes are marked as "Ready" in k8s
         for node in nodes["Items"]:
