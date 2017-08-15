@@ -6,6 +6,7 @@ properties([
     disableConcurrentBuilds(),
     pipelineTriggers([cron('@daily')]),
     parameters([
+        string(name: 'OPENSTACK_IMAGE', defaultValue: null, description: 'OpenStack Image To Use'),
         string(name: 'MASTER_COUNT', defaultValue: '1', description: 'Number of Master Nodes'),
         string(name: 'WORKER_COUNT', defaultValue: '50', description: 'Number of Worker Nodes')
     ])
@@ -13,6 +14,7 @@ properties([
 
 coreKubicProjectPeriodic(
     environmentType: 'openstack',
+    openstackImage: env.OPENSTACK_IMAGE,
     masterCount: env.MASTER_COUNT.toInteger(),
     workerCount: env.WORKER_COUNT.toInteger()
 )
