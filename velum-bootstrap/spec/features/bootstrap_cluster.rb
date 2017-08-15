@@ -129,6 +129,9 @@ feature "Boostrap cluster" do
     end
     puts "<<< Orchestration completed"
 
+    # ugly hack to ensure the page is current before the final check for success
+    visit "/"
+
     puts ">>> Checking orchestration success"
     with_screenshot(name: :orchestration_success) do
       within(".nodes-container") do
