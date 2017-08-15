@@ -119,7 +119,7 @@ build_stack() {
   ../misc-tools/generate-ssh-config environment.json
 
   log "Waiting for Velum to start - this may take a while"
-  PYTHONUNBUFFERED=1 ../caasp-kvm/tools/wait_for_velum.py https://$(jq -r '.minions[] | select(.role == "admin") | .addresses.publicIpv4' environment.json)
+  PYTHONUNBUFFERED=1 ../misc-tools/wait_for_velum.py https://$(jq -r '.minions[] | select(.role == "admin") | .addresses.publicIpv4' environment.json)
 }
 
 update_stack() {
