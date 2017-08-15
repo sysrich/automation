@@ -124,20 +124,10 @@ feature "Boostrap cluster" do
     puts ">>> Wait until orchestration is complete"
     with_screenshot(name: :orchestration_complete) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-spin", count: 0, wait: 1800)
+        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 600)
       end
     end
     puts "<<< Orchestration completed"
-
-    # ugly hack to ensure the page is current before the final check for success
-    visit "/"
-
-    puts ">>> Checking orchestration success"
-    with_screenshot(name: :orchestration_success) do
-      within(".nodes-container") do
-        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 120)
-      end
-    end
 
     puts ">>> Download kubeconfig"
     with_screenshot(name: :download_kubeconfig) do
