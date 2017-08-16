@@ -93,7 +93,7 @@ build() {
   log "CaaS Platform Building"
 
   log "Downloading CaaSP KVM Image"
-  ./tools/download_image.py $IMAGE
+  ../misc-tools/download_image.py --type kvm $IMAGE
 
   log "Building Velum Development Image"
   local velum=$(realpath ../../velum)
