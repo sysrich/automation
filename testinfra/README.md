@@ -1,35 +1,38 @@
 # testinfra tests for kubic nodes
 
 This is a collection of testinfra tests that can be used to ensure that the bootstraping 
-of a CaaSP install has been completed correctly
+of a CaaSP install has been completed successfully.
 
-## Running tests
+## Requirements
 
-This requires python-tox to be installed on your system.
+You can install the necessary dependancy packages with:
 
-Running `tox` will run the tests against all nodes created by the `kubic-project/caasp-kvm` repository.
+    $ sudo zypper in jq python-tox
 
-It looks for an `environment.json` file in a path `../caasp-kvm/environment.json` - if your file is in a different location, use the `ENVIRONMENT_JSON` enviroment variable to point to it.
+## Running the tests
 
-`tox -e linters` runs code syntax checks on the tests, and should be ran before a PR is opened
+First you need to have a running CaaSP cluster with `velum` already bootstrapped, you can do this
+either by hand, or by using the velum-bootstrap tool.
 
-## Development
+This tool requires an "environment.json" file is supplied to it, providing details on the cluster
+to be tested. caasp-kvm, caasp-openstack-heat, and the legacy terraform repo will each generate
+this file for you as you build your cluster.
 
-If you are working on a test for a role, you can run single role tests by running 
+    ENVIRONMENT_JSON=/home/$USER/caasp/automation/caasp-kvm/environment.json tox
 
-`tox -e <role> -- --hosts <ip of node>` where `<role>` is one of admin, worker or master.
+The default value for ENVIRONMENT_JSON is `../caasp-kvm/environment.json`, so in many cases, simply
+running `tox` will be enough to run the tests.
 
 ## Manually Running
 
 To manually run the tests, you need to do a test run per node type right now in the following form:
 
 ```
-pytest --ssh-config=~/.ssh/config --sudo --hosts=admin-ip -m "admin or common" --junit-xml admin.xml -v
-pytest --ssh-config=~/.ssh/config --sudo --hosts=master-ip -m "master or common" --junit-xml master.xml -v
-pytest --ssh-config=~/.ssh/config --sudo --hosts=worker-1-ip,worker-2-ip -m "worker or common" --junit-xml workers.xml -v
+tox -e admin -- --hosts <admin-node-ip>
+tox -e master -- --hosts <master-node-ip>
+tox -e worker -- --hosts <worker-node-ip>
+tox -e worker -- --hosts <worker-node-ip>,<worker-node-ip>
 ```
-
-Where `~/.ssh/config` is an ssh config file that tells ssh what key to use for the connection.
 
 ## File Structure
 

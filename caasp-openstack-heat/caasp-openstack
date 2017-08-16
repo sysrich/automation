@@ -37,7 +37,7 @@ Usage:
 
   Build a 2 worker cluster
 
-  $0 --build -w 2 --openrc my-openrc --image CaaSP-1.0.0-GM --name TestStack
+  $0 --build -w 2 --openrc my-openrc --image CaaSP-1.0.0-GM --name test-stack
 
 USAGE
 )
