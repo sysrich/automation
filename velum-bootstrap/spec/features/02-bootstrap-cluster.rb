@@ -4,7 +4,7 @@ require 'yaml'
 feature "Boostrap cluster" do
 
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
-  let(:hostnames) { environment["minions"].map { |m| m["fqdn"].downcase if m["role"] != "admin" }.compact }
+  let(:hostnames) { environment["minions"].map { |m| m["fqdn"] if m["role"] != "admin" }.compact }
 
   before(:each) do
     unless self.inspect.include? "User registers"
@@ -18,11 +18,8 @@ feature "Boostrap cluster" do
     Capybara.reset_sessions!
   end
 
-  scenario "User registers" do
-    with_screenshot(name: :register) do
-      register
-    end
-  end
+  # User registration and cluster configuration has already been done in 01-setup-velum.rb
+  # After login we need to do the configure steps again to reach the minion discovery page
 
   scenario "User configures the cluster" do
     with_screenshot(name: :configure) do
@@ -35,7 +32,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Wait until all minions are pending to be accepted"
     with_screenshot(name: :pending_minions) do
-      expect(page).to have_selector("a", text: "Accept Node", count: node_number, wait: 120)
+      expect(page).to have_selector("a", text: "Accept Node", count: node_number, wait: 400)
     end
     puts "<<< All minions are pending to be accepted"
 
