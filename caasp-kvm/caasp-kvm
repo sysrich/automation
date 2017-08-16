@@ -84,6 +84,19 @@ done
 build() {
   log "CaaS Platform Building"
 
+  log "Downloading CaaSP KVM Image"
+  ./tools/download_image.py $IMAGE
+
+  log "Building Velum Development Image"
+  local velum=$(realpath ../../velum)
+  ./tools/build-velum-image.sh $velum
+
+  log "Creating Velum Directories"
+  mkdir -p $velum/tmp $velum/log $velum/vendor/bundle
+
+  log "Patching Container Manifests"
+  ./tools/kubelet_manifest_use_velum_devel.rb -o velum-resources/public.yaml $(realpath ../../caasp-container-manifests)/public.yaml
+
   terraform apply -parallelism=$PARALLELISM \
     -var "caasp_img_source_url=${IMAGE}" \
     -var "caasp_master_count=${MASTERS}" \
