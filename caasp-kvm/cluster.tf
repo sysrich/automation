@@ -87,11 +87,6 @@ variable "kubic_velum_dir" {
   description = "Path to the directory where https://github.com/kubic-project/velum has been cloned into"
 }
 
-variable "kubic_force_rebuild_velum_image" {
-  default = true
-  description = "Force rebuilt of the velum image."
-}
-
 #######################
 # Cluster declaration #
 #######################
@@ -100,37 +95,11 @@ provider "libvirt" {
   uri = "${var.libvirt_uri}"
 }
 
-resource "null_resource" "local_checkout_of_caasp_image" {
-  provisioner "local-exec" {
-    command = "./tools/download_image.py ${var.caasp_img_source_url}"
-  }
-}
-
-resource "null_resource" "local_build_velum_image" {
-  provisioner "local-exec" {
-    command = "./tools/build-velum-image.sh ${var.kubic_force_rebuild_velum_image ? "" : "-c"} ${var.kubic_velum_dir}"
-  }
-}
-
-resource "null_resource" "local_patch_kubelet_public_manifest" {
-  provisioner "local-exec" {
-    command = "./tools/kubelet_manifest_use_velum_devel.rb -o velum-resources/public.yaml ${var.kubic_caasp_container_manifests_dir}/public.yaml"
-  }
-}
-
-resource "null_resource" "local_create_velum_dirs" {
-  provisioner "local-exec" {
-    command = "mkdir -p ${var.kubic_velum_dir}/tmp ${var.kubic_velum_dir}/log ${var.kubic_velum_dir}/vendor/bundle"
-  }
-}
-
 # This is the CaaSP kvm image that has been created by IBS
 resource "libvirt_volume" "caasp_img" {
   name   = "${basename(var.caasp_img_source_url)}"
   source = "${basename(var.caasp_img_source_url)}"
   pool   = "${var.pool}"
-
-  depends_on = ["null_resource.local_checkout_of_caasp_image"]
 }
 
 ##############
@@ -218,12 +187,6 @@ resource "libvirt_domain" "admin" {
       "cp /var/lib/misc/velum-resources/public.yaml /etc/kubernetes/manifests",
     ]
   }
-
-  depends_on = [
-    "null_resource.local_build_velum_image",
-    "null_resource.local_patch_kubelet_public_manifest",
-    "null_resource.local_create_velum_dirs",
-  ]
 }
 
 output "ip_admin" {
