@@ -88,16 +88,21 @@ def download_file(url, expected_name, force_redownload):
         # as corrupted
         remote_sha = requests.get(versioned_url + '.sha256')
 
-        os.system(
-            "wget %(url)s -O %(file)s --progress=dot:giga" %
-            { "url": versioned_url, "file": actual_name} 
-        )
-        local_sha = os.popen('sha256sum %s' % actual_name).read()
+        try:
+            os.system(
+                "wget %(url)s -O %(file)s --progress=dot:giga" %
+                { "url": versioned_url, "file": actual_name}
+            )
+            local_sha = os.popen('sha256sum %s' % actual_name).read()
 
-        if local_sha.split(' ')[0] not in remote_sha.text:
-            print("Local SHA: %s" % local_sha)
-            print("Remote SHA: %s" % remote_sha.text)
-            raise Exception("Download corrupted - please retry.")
+            if local_sha.split(' ')[0] not in remote_sha.text:
+                print("Local SHA: %s" % local_sha)
+                print("Remote SHA: %s" % remote_sha.text)
+                raise Exception("Download corrupted - please retry.")
+        except:
+            print("Deleting failed download")
+            os.remove(actual_name)
+            raise
 
 
     if not expected_name == actual_name:
