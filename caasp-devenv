@@ -19,6 +19,14 @@ MASTERS=1
 WORKERS=2
 PARALLELISM=1
 
+# READ THIS BEFORE ADDING ANYTHING HERE.
+#
+# This script should remain as simple as possible, with
+# options only for the most commonly used options of the
+# tools it orchestrates. If it's not something most
+# developers would use at least once a week, then it doesn't
+# belong here.
+
 USAGE=$(cat <<USAGE
 Usage:
 
