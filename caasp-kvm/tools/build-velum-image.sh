@@ -9,8 +9,7 @@ set -euo pipefail
 function download_velum_development_image() {
   #TODO: ensure the name of the image downloaded is returned. The wrong image name
   # might be returned if multiple tarballs are into the directory
-  $1/download_image.py --docker-image-name sles12-velum-developmen channel://head
-  echo $(realpath sles12-velum-development.*.tar.xz)
+  echo $($1/download_image.py --type docker --image-name sles12-velum-development channel://devel | grep "File on Disk" | cut -d ":" -f2)
 }
 
 # docker load of the velum-development image tarball
@@ -156,7 +155,7 @@ if [[ $USE_CACHE -eq 1 && -f $(dirname $0)/../velum-resources/velum-development.
 fi
 
 echo "Downloading latest build of the velum development image"
-TARBALL=$(download_velum_development_image $(dirname $0))
+TARBALL=$(download_velum_development_image $(dirname $0)/../../misc-tools)
 load_velum_development_image $TARBALL
 
 build_fresh_image
