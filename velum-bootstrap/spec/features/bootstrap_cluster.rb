@@ -77,6 +77,12 @@ feature "Boostrap cluster" do
   scenario "User selects a master and bootstraps the cluster" do
     visit "/setup/discovery"
 
+    puts ">>> Waiting for page to settle"
+    with_screenshot(name: :wait_for_settle) do
+      expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 120)
+    end
+    puts "<<< Page has settled"
+
     puts ">>> Selecting all minions"
     with_screenshot(name: :select_all_minions) do
       find(".select-nodes-btn").click
