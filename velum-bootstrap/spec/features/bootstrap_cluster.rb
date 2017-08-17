@@ -79,14 +79,14 @@ feature "Boostrap cluster" do
 
     puts ">>> Selecting all minions"
     with_screenshot(name: :select_all_minions) do
-      find(".check-all").click
+      find(".select-nodes-btn").click
     end
     puts "<<< All minions selected"
 
     puts ">>> Selecting master minion"
     with_screenshot(name: :select_master) do
       within("tr", text: master_minion["minionId"] || master_minion["minionID"]) do
-        find("input[name='roles[master][]']").click
+        find(".master-btn").click
       end
     end
     puts "<<< Master minion selected"
