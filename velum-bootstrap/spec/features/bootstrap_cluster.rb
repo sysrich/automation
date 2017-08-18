@@ -5,7 +5,6 @@ feature "Boostrap cluster" do
 
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
   let(:hostnames) { environment["minions"].map { |m| m["fqdn"].downcase if m["role"] != "admin" }.compact }
-  let(:master_minion) { environment["minions"].detect { |m| m["role"] == "master" } }
 
   before(:each) do
     unless self.inspect.include? "User registers"
@@ -74,7 +73,7 @@ feature "Boostrap cluster" do
     end
   end
 
-  scenario "User selects a master and bootstraps the cluster" do
+  scenario "User selects minion roles and bootstraps the cluster" do
     visit "/setup/discovery"
 
     puts ">>> Waiting for page to settle"
@@ -83,19 +82,17 @@ feature "Boostrap cluster" do
     end
     puts "<<< Page has settled"
 
-    puts ">>> Selecting all minions"
-    with_screenshot(name: :select_all_minions) do
-      find(".select-nodes-btn").click
-    end
-    puts "<<< All minions selected"
-
-    puts ">>> Selecting master minion"
-    with_screenshot(name: :select_master) do
-      within("tr", text: master_minion["minionId"] || master_minion["minionID"]) do
-        find(".master-btn").click
+    puts ">>> Selecting minion roles"
+    with_screenshot(name: :select_minion_roles) do
+      environment["minions"].each do |minion|
+        if ["master", "worker"].include?(minion["role"])
+          within("tr", text: minion["minionId"] || minion["minionID"]) do
+            find(".#{minion["role"]}-btn").click
+          end
+        end
       end
     end
-    puts "<<< Master minion selected"
+    puts "<<< Minion roles selected"
 
     puts ">>> Waiting for page to settle"
     with_screenshot(name: :wait_for_settle) do
