@@ -98,7 +98,7 @@ provider "libvirt" {
 # This is the CaaSP kvm image that has been created by IBS
 resource "libvirt_volume" "caasp_img" {
   name   = "${basename(var.caasp_img_source_url)}"
-  source = "${basename(var.caasp_img_source_url)}"
+  source = "../downloads/kvm-${basename(var.caasp_img_source_url)}"
   pool   = "${var.pool}"
 }
 
