@@ -229,7 +229,7 @@ resource "libvirt_domain" "master" {
   name       = "caasp_master_${count.index}"
   memory     = "${var.caasp_master_memory}"
   vcpu       = "${var.caasp_master_vcpu}"
-  cloudinit  = "${libvirt_cloudinit.master.id}"
+  cloudinit  = "${element(libvirt_cloudinit.master.*.id, count.index)}"
   metadata   = "caasp-master-${count.index}.${var.caasp_domain_name},master,${count.index}"
   depends_on = ["libvirt_domain.admin"]
 
