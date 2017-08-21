@@ -19,7 +19,6 @@ import pytest
 class TestKubernetesWorker(object):
 
     @pytest.mark.parametrize("service", [
-        "flanneld",
         "docker",
         "containerd",
         "container-feeder",
@@ -31,7 +30,6 @@ class TestKubernetesWorker(object):
         assert host_service.is_running
 
     @pytest.mark.parametrize("service", [
-        "flanneld",
         "docker",
         "container-feeder",
         "kubelet",
