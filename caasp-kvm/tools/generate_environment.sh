@@ -1,6 +1,10 @@
 #!/bin/bash
 set -eu
+
 chmod 600 tools/id_docker
+
+
+
 if command -v jq; then
     echo "Generating environment.json file"
     environment=$(cat terraform.tfstate | \
@@ -10,7 +14,10 @@ if command -v jq; then
         machine_id=$(ssh root@$node -i tools/id_docker  -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no cat /etc/machine-id)
         environment=$(echo "$environment" | jq ".minions | map(if (.addresses.publicIpv4 == \"$node\") then . + {\"minionID\": \"$machine_id\"} else . end) | {minions: .}")
     done
-    environment=$(echo "$environment" | jq " . + nth(0; {dashboardHost: .minions[] | select(.role==\"admin\") | .addresses.publicIpv4, kubernetesHost: .minions[] | select(.role==\"master\") | .addresses.publicIpv4})")
+
+    masters=$(echo "$environment" | jq -r '[.minions[] | select(.role=="master")] | length')
+
+    environment=$(echo "$environment" | jq " . + {dashboardHost: .minions[] | select(.role==\"admin\") | .addresses.publicIpv4, kubernetesHost: \"kube-api-x${masters}.devenv.caasp.suse.net\"}")
     environment=$(echo "$environment" | jq " . + {sshKey: \"`pwd`/tools/id_docker\", sshUser: \"root\"}")
     echo "$environment" | tee environment.json
 else
