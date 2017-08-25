@@ -105,6 +105,9 @@ build() {
   log "Patching Container Manifests"
   ./tools/kubelet_manifest_use_velum_devel.rb -o velum-resources/public.yaml $(realpath ../../caasp-container-manifests)/public.yaml
 
+  log "Replacing __TAG__ by latest in manifest file"
+  sed -e "s/__TAG__/latest/g" -i "velum-resources/public.yaml"
+
   terraform apply -parallelism=$PARALLELISM \
     -var "caasp_img_source_url=${IMAGE}" \
     -var "caasp_master_count=${MASTERS}" \
