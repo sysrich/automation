@@ -43,7 +43,6 @@ module Helpers
     puts ">>> Setting up velum"
     visit "/setup"
     fill_in "settings_dashboard", with: environment["dashboardHost"] || default_ip_address
-    fill_in "settings_apiserver", with: environment["kubernetesHost"]
     click_on "Next"
     puts "<<< Velum set up"
   end

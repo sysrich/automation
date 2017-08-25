@@ -70,7 +70,7 @@ feature "Boostrap cluster" do
     end
   end
 
-  scenario "User selects minion roles and bootstraps the cluster" do
+  scenario "User selects minion roles" do
     visit "/setup/discovery"
 
     puts ">>> Waiting for page to settle"
@@ -91,16 +91,9 @@ feature "Boostrap cluster" do
     end
     puts "<<< Minion roles selected"
 
-    puts ">>> Waiting for page to settle"
-    with_screenshot(name: :wait_for_settle) do
-      expect(page).to have_no_css(".discovery-minimum-nodes-alert", wait: 30)
-    end
-    puts "<<< Page has settled"
-
-    puts ">>> Bootstrapping cluster"
-    with_screenshot(name: :bootstrap_cluster) do
-      expect(page).to have_button(value: "Bootstrap cluster", disabled: false)
-      click_on "Bootstrap cluster"
+    puts ">>> Confirm roles selection"
+    with_screenshot(name: :roles_selection) do
+      click_button("set-roles")
     end
 
     if node_number < 3
@@ -110,7 +103,22 @@ feature "Boostrap cluster" do
         click_button "Proceed anyway"
       end
     end
-    puts "<<< Cluster bootstrapped"
+  end
+
+  scenario "User bootstraps the cluster" do
+    visit "/setup/bootstrap"
+
+    puts ">>> Configuring last settings"
+    with_screenshot(name: :bootstrap_cluster_settings) do
+      fill_in "settings_apiserver", with: environment["kubernetesHost"]
+    end
+    puts "<<< Last settings configured"
+
+    puts ">>> Bootstrapping cluster"
+    with_screenshot(name: :bootstrap_cluster) do
+      expect(page).to have_button(value: "Bootstrap cluster", disabled: false)
+      click_on "Bootstrap cluster"
+    end
 
     puts ">>> Wait until UI is loaded"
     with_screenshot(name: :ui_loaded) do
