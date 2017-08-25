@@ -13,7 +13,7 @@
 # Cluster variables #
 #####################
 # The latest version of the CaaSP image in the devel channel:
-caasp_img_source_url = "channel://devel"
+#caasp_img_source_url = "channel://devel"
 #caasp_img_source_url = "channel://staging_a"
 #caasp_img_source_url = "channel://staging_b"
 #caasp_img_source_url = "channel://release"
@@ -21,8 +21,8 @@ caasp_img_source_url = "channel://devel"
 #caasp_img_source_url = "http://download.suse.de/ibs/Devel:/CASP:/1.0:/ControllerNode/images/SUSE-CaaS-Platform-1.0-KVM-and-Xen.x86_64.qcow2"
 
 # Admin Variables
-#caasp_admin_memory = 2048
-#caasp_admin_vcpu = 2
+#caasp_admin_memory = 4096
+#caasp_admin_vcpu = 4
 
 # Master Variables
 #caasp_master_count  = 1
@@ -39,3 +39,5 @@ caasp_img_source_url = "channel://devel"
 ####################
 #kubic_salt_dir                      = "/home/user/caasp/salt/"
 #kubic_caasp_container_manifests_dir = "/home/user/caasp/caasp-container-manifests/"
+#kubic_velum_dir                     = "/home/user/caasp/velum"
+#kubic_force_rebuild_velum_image     = false

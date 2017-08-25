@@ -23,12 +23,12 @@ variable "caasp_img_source_url" {
 }
 
 variable "caasp_admin_memory" {
-  default     = 2048
+  default     = 4096
   description = "The amount of RAM for a admin node"
 }
 
 variable "caasp_admin_vcpu" {
-  default     = 2
+  default     = 4
   description = "The amount of virtual CPUs for a admin node"
 }
 
@@ -82,6 +82,11 @@ variable "kubic_caasp_container_manifests_dir" {
   description = "Path to the directory where https://github.com/kubic-project/caasp-container-manifests has been cloned into"
 }
 
+variable "kubic_velum_dir" {
+  type = "string"
+  description = "Path to the directory where https://github.com/kubic-project/velum has been cloned into"
+}
+
 #######################
 # Cluster declaration #
 #######################
@@ -90,19 +95,11 @@ provider "libvirt" {
   uri = "${var.libvirt_uri}"
 }
 
-resource "null_resource" "local_checkout_of_caasp_image" {
-  provisioner "local-exec" {
-    command = "./tools/download_image.py ${var.caasp_img_source_url}"
-  }
-}
-
 # This is the CaaSP kvm image that has been created by IBS
 resource "libvirt_volume" "caasp_img" {
   name   = "${basename(var.caasp_img_source_url)}"
   source = "${basename(var.caasp_img_source_url)}"
   pool   = "${var.pool}"
-
-  depends_on = ["null_resource.local_checkout_of_caasp_image"]
 }
 
 ##############
@@ -164,6 +161,32 @@ resource "libvirt_domain" "admin" {
     target = "caasp-container-manifests"
     readonly = true
   }
+
+  filesystem {
+    source = "${var.kubic_velum_dir}"
+    target = "velum"
+    readonly = true
+  }
+
+  filesystem {
+    source = "${path.module}/velum-resources"
+    target = "velum_resources"
+    readonly = true
+  }
+
+  connection {
+    type     = "ssh"
+    user     = "root"
+    password = "linux"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "while [[ ! -f /var/run/docker.pid ]]; do echo waiting for docker to start; sleep 1; done",
+      "docker load -i /var/lib/misc/velum-resources/*.tar",
+      "cp /var/lib/misc/velum-resources/public.yaml /etc/kubernetes/manifests",
+    ]
+  }
 }
 
 output "ip_admin" {
@@ -182,6 +205,8 @@ resource "libvirt_volume" "master" {
 }
 
 data "template_file" "master_cloud_init_user_data" {
+  # needed when 0 master nodes are defined
+  count    = "${var.caasp_master_count}"
   template = "${file("cloud-init/master.cfg.tpl")}"
 
   vars {
@@ -192,9 +217,11 @@ data "template_file" "master_cloud_init_user_data" {
 }
 
 resource "libvirt_cloudinit" "master" {
-  name      = "caasp_master_cloud_init.iso"
+  # needed when 0 master nodes are defined
+  count     = "${var.caasp_master_count}"
+  name      = "caasp_master_cloud_init_${count.index}.iso"
   pool      = "${var.pool}"
-  user_data = "${data.template_file.master_cloud_init_user_data.rendered}"
+  user_data = "${element(data.template_file.master_cloud_init_user_data.*.rendered, count.index)}"
 }
 
 resource "libvirt_domain" "master" {
@@ -221,6 +248,19 @@ resource "libvirt_domain" "master" {
     type        = "vnc"
     listen_type = "address"
   }
+
+  connection {
+    type     = "ssh"
+    user     = "root"
+    password = "linux"
+  }
+
+  # This ensures the VM is booted and SSH'able
+  provisioner "remote-exec" {
+    inline = [
+      "sleep 1"
+    ]
+  }
 }
 
 output "masters" {
@@ -239,6 +279,8 @@ resource "libvirt_volume" "worker" {
 }
 
 data "template_file" "worker_cloud_init_user_data" {
+  # needed when 0 worker nodes are defined
+  count    = "${var.caasp_worker_count}"
   template = "${file("cloud-init/worker.cfg.tpl")}"
 
   vars {
@@ -249,9 +291,11 @@ data "template_file" "worker_cloud_init_user_data" {
 }
 
 resource "libvirt_cloudinit" "worker" {
-  name      = "caasp_worker_cloud_init.iso"
+  # needed when 0 worker nodes are defined
+  count     = "${var.caasp_worker_count}"
+  name      = "caasp_worker_cloud_init_${count.index}.iso"
   pool      = "${var.pool}"
-  user_data = "${data.template_file.worker_cloud_init_user_data.rendered}"
+  user_data = "${element(data.template_file.worker_cloud_init_user_data.*.rendered, count.index)}"
 }
 
 resource "libvirt_domain" "worker" {
@@ -259,7 +303,7 @@ resource "libvirt_domain" "worker" {
   name       = "caasp_worker_${count.index}"
   memory     = "${var.caasp_worker_memory}"
   vcpu       = "${var.caasp_worker_vcpu}"
-  cloudinit  = "${libvirt_cloudinit.worker.id}"
+  cloudinit  = "${element(libvirt_cloudinit.worker.*.id, count.index)}"
   metadata   = "caasp-worker-${count.index}.${var.caasp_domain_name},worker,${count.index}"
   depends_on = ["libvirt_domain.admin"]
 
@@ -277,6 +321,19 @@ resource "libvirt_domain" "worker" {
   graphics {
     type        = "vnc"
     listen_type = "address"
+  }
+
+  connection {
+    type     = "ssh"
+    user     = "root"
+    password = "linux"
+  }
+
+  # This ensures the VM is booted and SSH'able
+  provisioner "remote-exec" {
+    inline = [
+      "sleep 1"
+    ]
   }
 }
 

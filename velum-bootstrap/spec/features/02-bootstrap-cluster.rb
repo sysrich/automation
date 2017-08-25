@@ -19,11 +19,8 @@ feature "Boostrap cluster" do
     Capybara.reset_sessions!
   end
 
-  scenario "User registers" do
-    with_screenshot(name: :register) do
-      register
-    end
-  end
+  # User registration and cluster configuration has already been done in 01-setup-velum.rb
+  # After login we need to do the configure steps again to reach the minion discovery page
 
   scenario "User configures the cluster" do
     with_screenshot(name: :configure) do
@@ -36,7 +33,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Wait until all minions are pending to be accepted"
     with_screenshot(name: :pending_minions) do
-      expect(page).to have_selector("a", text: "Accept Node", count: node_number, wait: 120)
+      expect(page).to have_selector("a", text: "Accept Node", count: node_number, wait: 400)
     end
     puts "<<< All minions are pending to be accepted"
 
@@ -58,7 +55,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Wait until Minion keys are accepted by salt"
     with_screenshot(name: :accepted_keys) do
-      expect(page).to have_css("input[type='radio']", count: node_number, wait: 600)
+      expect(page).to have_css("input[name='roles[worker][]']", count: node_number, wait: 600)
     end
     puts "<<< Minion keys accepted in Velum"
 
@@ -77,6 +74,12 @@ feature "Boostrap cluster" do
   scenario "User selects a master and bootstraps the cluster" do
     visit "/setup/discovery"
 
+    puts ">>> Waiting for page to settle"
+    with_screenshot(name: :wait_for_settle) do
+      expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 120)
+    end
+    puts "<<< Page has settled"
+
     puts ">>> Selecting all minions"
     with_screenshot(name: :select_all_minions) do
       find(".check-all").click
@@ -85,14 +88,21 @@ feature "Boostrap cluster" do
 
     puts ">>> Selecting master minion"
     with_screenshot(name: :select_master) do
-      within("tr", text: master_minion["minionID"]) do
+      within("tr", text: master_minion["minionId"] || master_minion["minionID"]) do
         find("input[type='radio']").click
       end
     end
     puts "<<< Master minion selected"
 
+    puts ">>> Waiting for page to settle"
+    with_screenshot(name: :wait_for_settle) do
+      expect(page).to have_no_css(".discovery-minimum-nodes-alert", wait: 30)
+    end
+    puts "<<< Page has settled"
+
     puts ">>> Bootstrapping cluster"
     with_screenshot(name: :bootstrap_cluster) do
+      expect(page).to have_button(value: "Bootstrap cluster", disabled: false)
       click_on "Bootstrap cluster"
     end
 
@@ -109,6 +119,7 @@ feature "Boostrap cluster" do
     with_screenshot(name: :ui_loaded) do
       within(".nodes-container") do
         expect(page).to have_no_css(".nodes-loading", wait: 30)
+        expect(page).to have_css(".fa-spin", count: node_number, wait: 120)
       end
     end
     puts "<<< UI loaded"
@@ -116,17 +127,10 @@ feature "Boostrap cluster" do
     puts ">>> Wait until orchestration is complete"
     with_screenshot(name: :orchestration_complete) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-spin", count: 0, wait: 900)
+        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 1800)
       end
     end
     puts "<<< Orchestration completed"
-
-    puts ">>> Checking orchestration success"
-    with_screenshot(name: :orchestration_success) do
-      within(".nodes-container") do
-        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 120)
-      end
-    end
 
     puts ">>> Download kubeconfig"
     with_screenshot(name: :download_kubeconfig) do
