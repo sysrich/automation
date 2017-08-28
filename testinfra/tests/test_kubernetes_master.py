@@ -54,7 +54,7 @@ class TestKubernetesMaster(object):
         with open(env_file, 'r') as f:
             env = json.load(f)
 
-        assert (len(nodes["Items"]) == sum(1 for i in env["minions"] if i["role"] == "worker" ))
+        assert (len(nodes["items"]) == sum(1 for i in env["minions"] if i["role"] == "worker" ))
 
         # Check all nodes are marked as "Ready" in k8s
         for node in nodes["items"]:
