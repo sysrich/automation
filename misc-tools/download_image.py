@@ -115,14 +115,8 @@ def download_file(args, canonical_url=None):
     canonical_url = canonical_url or get_canonical_url(args.url)
     expected_path = get_expected_path(args)
     actual_path = get_actual_path(args, canonical_url)
-    remote_etag = requests.head(canonical_url).headers["ETag"]
-    try:
-        with open(actual_path + ".etag", 'r') as f:
-            local_etag = f.read()
-    except IOError:
-        local_etag = ''
 
-    if not os.path.isfile(actual_path) or (args.type == "docker" and local_etag != remote_etag):
+    if not os.path.isfile(actual_path):
         print(" >> Downloading File")
         print(" >> Remote File         : " + canonical_url)
         print(" >> Local File (On Disk): " + actual_path)
@@ -144,9 +138,6 @@ def download_file(args, canonical_url=None):
             if local_sha not in [remote_sha_post, remote_sha_pre]:
                 print(" >> Download corrupted - please retry.")
                 raise SystemExit(3)
-
-            with open(actual_path + ".etag", 'w') as f:
-                f.write(remote_etag)
 
         except:
             print(" >> Deleting failed download")
