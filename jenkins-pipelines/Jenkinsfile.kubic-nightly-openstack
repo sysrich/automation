@@ -6,7 +6,7 @@ properties([
     disableConcurrentBuilds(),
     pipelineTriggers([cron('@daily')]),
     parameters([
-        string(name: 'OPENSTACK_IMAGE', defaultValue: null, description: 'OpenStack Image To Use'),
+        string(name: 'OPENSTACK_IMAGE', defaultValue: '', description: 'OpenStack Image To Use'),
         string(name: 'MASTER_COUNT', defaultValue: '1', description: 'Number of Master Nodes'),
         string(name: 'WORKER_COUNT', defaultValue: '25', description: 'Number of Worker Nodes')
     ])
