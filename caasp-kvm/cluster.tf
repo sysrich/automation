@@ -157,7 +157,7 @@ resource "libvirt_domain" "admin" {
   }
 
   filesystem {
-    source = "${path.module}/injected-caasp-container-manifests"
+    source = "${var.kubic_caasp_container_manifests_dir}"
     target = "caasp-container-manifests"
     readonly = true
   }
@@ -184,6 +184,7 @@ resource "libvirt_domain" "admin" {
     inline = [
       "while [[ ! -f /var/run/docker.pid ]]; do echo waiting for docker to start; sleep 1; done",
       "docker load -i /var/lib/misc/velum-resources/*.tar",
+      "cp /var/lib/misc/velum-resources/public.yaml /etc/kubernetes/manifests",
     ]
   }
 }
