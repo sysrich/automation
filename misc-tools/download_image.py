@@ -11,18 +11,10 @@ import re
 from HTMLParser import HTMLParser
 
 URL_BASE = {
-    1: {
-        'release': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10/',
-        'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/A/',
-        'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/B/',
-        'devel': 'http://download.suse.de/ibs/Devel:/CASP:/1.0:/ControllerNode/',
-    },
-    2: {
-        'release': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20/',
-        'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20:/Staging:/A/',
-        'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20:/Staging:/B/',
-        'devel': 'http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/',
-    }
+    'release': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10/',
+    'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/A/',
+    'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP2:/Update:/Products:/CASP10:/Staging:/B/',
+    'devel': 'http://download.suse.de/ibs/Devel:/CASP:/1.0:/ControllerNode/',
 }
 
 QCOW_REGEX = '.*KVM.*x86_64-.*\.qcow2'
@@ -152,10 +144,10 @@ def get_channel_url(args):
 
     parser = ImageFinder(args)
 
-    if not URL_BASE.get(args.caasp_version, {}).get(channel, False):
+    if not URL_BASE.get(channel, False):
         raise Exception("Unknown channel: %s" % channel)
 
-    base_url = URL_BASE[args.caasp_version][channel]
+    base_url = URL_BASE[channel]
     if args.type == "docker":
         base_url += 'images_container_derived'
     elif args.type == "kvm":
@@ -177,7 +169,6 @@ if __name__ == "__main__":
     parser.add_argument('--type', choices=["docker", "kvm"], help="Type of image to download", required=True)
     parser.add_argument('--path', help="Where should the image be downloaded and linked (default: '../downloads')", default='../downloads')
     parser.add_argument('--image-name', help='Name of the Docker derived image to download (eg: "sles12-velum-devel").')
-    parser.add_argument('--caasp-version', help='Version of caasp (Needed for "channel://" URLs) (default: 2)', choices=[1, 2], type=int, default=1)
     parser.add_argument('url', metavar='url', help='URL of image to download')
     args = parser.parse_args()
 
