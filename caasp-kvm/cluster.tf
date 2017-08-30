@@ -98,7 +98,7 @@ provider "libvirt" {
 # This is the CaaSP kvm image that has been created by IBS
 resource "libvirt_volume" "caasp_img" {
   name   = "${basename(var.caasp_img_source_url)}"
-  source = "${basename(var.caasp_img_source_url)}"
+  source = "../downloads/kvm-${basename(var.caasp_img_source_url)}"
   pool   = "${var.pool}"
 }
 
@@ -229,7 +229,7 @@ resource "libvirt_domain" "master" {
   name       = "caasp_master_${count.index}"
   memory     = "${var.caasp_master_memory}"
   vcpu       = "${var.caasp_master_vcpu}"
-  cloudinit  = "${libvirt_cloudinit.master.id}"
+  cloudinit  = "${element(libvirt_cloudinit.master.*.id, count.index)}"
   metadata   = "caasp-master-${count.index}.${var.caasp_domain_name},master,${count.index}"
   depends_on = ["libvirt_domain.admin"]
 
