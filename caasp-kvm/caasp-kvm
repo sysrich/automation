@@ -102,8 +102,12 @@ build() {
   log "Creating Velum Directories"
   mkdir -p $velum/tmp $velum/log $velum/vendor/bundle
 
+  log "Copying CaaSP Container Manifests"
+  rm -rf $(realpath injected-caasp-container-manifests)/*
+  cp -r $(realpath ../../caasp-container-manifests)/* $(realpath injected-caasp-container-manifests)/
+
   log "Patching Container Manifests"
-  ./tools/kubelet_manifest_use_velum_devel.rb -o velum-resources/public.yaml $(realpath ../../caasp-container-manifests)/public.yaml
+  ./tools/kubelet_manifest_use_velum_devel.rb -o $(realpath injected-caasp-container-manifests)/public.yaml $(realpath injected-caasp-container-manifests)/public.yaml
 
   terraform apply -parallelism=$PARALLELISM \
     -var "caasp_img_source_url=${IMAGE}" \
