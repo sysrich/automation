@@ -129,10 +129,10 @@ setup() {
   fi
 
   # || : is necessary, as Zypper exits non-zero for "no changes".
-  sudo zypper in --no-confirm jq python-tox python-openstackclient python-novaclient python-heatclient ruby2.1-rubygem-bundler ruby2.1-devel phantomjs libxml2-devel libxslt-devel terraform terraform-provider-libvirt || :
+  sudo zypper in --no-confirm jq python-tox python-openstackclient python-novaclient python-heatclient terraform terraform-provider-libvirt || :
 
   pushd velum-bootstrap
-  bundle install --path .bundler
+  ./velum-interactions --setup
   popd
 }
 
@@ -148,7 +148,7 @@ bootstrap() {
 
   export ENVIRONMENT=$(realpath caasp-kvm/environment.json)
   pushd velum-bootstrap
-  VERBOSE=true bundle exec rspec spec/**/*
+  ./velum-interactions --configure --bootstrap
   popd
 }
 
