@@ -1,0 +1,106 @@
+#!/bin/sh
+
+set -euo pipefail
+
+# options
+HAS_ACTION=false
+HAS_INTERACTION=false
+RUN_SETUP=false
+RUN_CONFIGURE=false
+RUN_BOOTSTRAP=false
+
+USAGE=$(cat <<USAGE
+Usage:
+
+  * Setup your workstation
+
+    --setup                          Install Dependencies
+
+  * Building a cluster
+
+    -c|--configure                   Configure Velum
+    -b|--bootstrap                   Bootstrap
+
+  * Examples:
+
+  Bootstrap a cluster
+
+  $0 --configure --bootstrap
+
+USAGE
+)
+
+# Utility methods
+log()        { (>&2 echo ">>> [velum-bootstrap] $@") ; }
+warn()       { log "WARNING: $@" ; }
+error()      { log "ERROR: $@" ; exit 1 ; }
+check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
+
+# parse options
+while [[ $# > 0 ]] ; do
+  case $1 in
+    --setup)
+      RUN_SETUP=true
+      HAS_ACTION=true
+      ;;
+    -c|--configure)
+      RUN_CONFIGURE=true
+      HAS_INTERACTION=true
+      HAS_ACTION=true
+      ;;
+    -b|--bootstrap)
+      RUN_BOOTSTRAP=true
+      HAS_INTERACTION=true
+      HAS_ACTION=true
+      ;;
+    -h|--help)
+      echo "$USAGE"
+      exit 0
+      ;;
+  esac
+  shift
+done
+
+# Core methods
+setup() {
+  log "Installing Velum Interaction Requiemnts"
+
+  # || : is necessary, as Zypper exits non-zero for "no changes".
+  sudo zypper in --no-confirm ruby2.1-rubygem-bundler ruby2.1-devel phantomjs libxml2-devel libxslt-devel || :
+
+  bundle install --path .bundler
+}
+
+interact() {
+  log "Running Velum Interactions"
+
+  # TODO: Fix the logging throughout the specs to use `documentation` output rather than
+  # `puts`
+  local args="--format documentation --format RspecJunitFormatter --out velum-bootstrap.xml"
+
+  if [ "$RUN_CONFIGURE" = true ]; then
+    args="$args spec/**/01-*"
+  fi
+
+  if [ "$RUN_BOOTSTRAP" = true ]; then
+    args="$args spec/**/02-*"
+  fi
+
+  VERBOSE=true bundle exec rspec $args
+}
+
+# main
+if [ "$HAS_ACTION" != true ]; then
+  echo "$USAGE"
+  error "No action arguments were supplied"
+fi
+
+if [ "$RUN_SETUP" = true ]; then
+  setup
+fi
+
+if [ "$HAS_INTERACTION" = true ]; then
+  interact
+fi
+
+log "Done"
