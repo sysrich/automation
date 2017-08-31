@@ -8,6 +8,8 @@ HAS_INTERACTION=false
 RUN_SETUP=false
 RUN_CONFIGURE=false
 RUN_BOOTSTRAP=false
+RUN_UPDATE_ADMIN=false
+RUN_UPDATE_MINIONS=false
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -21,11 +23,20 @@ Usage:
     -c|--configure                   Configure Velum
     -b|--bootstrap                   Bootstrap
 
+  * Updating a cluster
+
+    -a|--update-admin                Update admin node
+    -m|--update-minions              Update masters and workers
+
   * Examples:
 
   Bootstrap a cluster
 
   $0 --configure --bootstrap
+
+  Update a cluster
+
+  $0 --update-admin --update-minions
 
 USAGE
 )
@@ -50,6 +61,16 @@ while [[ $# > 0 ]] ; do
       ;;
     -b|--bootstrap)
       RUN_BOOTSTRAP=true
+      HAS_INTERACTION=true
+      HAS_ACTION=true
+      ;;
+    -a|--update-admin)
+      RUN_UPDATE_ADMIN=true
+      HAS_INTERACTION=true
+      HAS_ACTION=true
+      ;;
+    -m|--update-minions)
+      RUN_UPDATE_MINIONS=true
       HAS_INTERACTION=true
       HAS_ACTION=true
       ;;
@@ -84,6 +105,14 @@ interact() {
 
   if [ "$RUN_BOOTSTRAP" = true ]; then
     args="$args spec/**/02-*"
+  fi
+
+  if [ "$RUN_UPDATE_ADMIN" = true ]; then
+    args="$args spec/**/03-*"
+  fi
+
+  if [ "$RUN_UPDATE_MINIONS" = true ]; then
+    args="$args spec/**/04-*"
   fi
 
   VERBOSE=true bundle exec rspec $args
