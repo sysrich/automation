@@ -19,7 +19,7 @@ URL_BASE = {
 
 QCOW_REGEX = '.*KVM.*x86_64-.*\.qcow2'
 DOCKER_REGEX = '%(docker_image)s.*x86_64-.*\.tar\.xz'
-
+OPENSTACK_REGEX = '.*OpenStack-Cloud.*x86_64-.*\.qcow2'
 
 class ImageFinder(HTMLParser):
 
@@ -31,6 +31,11 @@ class ImageFinder(HTMLParser):
             self.regexp = DOCKER_REGEX % {"docker_image": args.image_name}
         elif args.type == "kvm":
             self.regexp = QCOW_REGEX
+        elif args.type == "openstack":
+            self.regexp = OPENSTACK_REGEX
+        else:
+            print(" >> Unknown Image Type: " + args.type)
+            raise SystemExit(1)
 
     def get_image(self):
         return self.images.pop()
@@ -84,9 +89,9 @@ def get_actual_path(args, url=None):
     )
 
 def link_file(actual_path, expected_path):
-    print(" >> File on Disk  :" + actual_path)
-    if not expected_path == actual_path and args.type == "kvm":
-        print(" >> Terraform Path:" + expected_path)
+    print(" >> File on Disk  : " + actual_path)
+    if not expected_path == actual_path and args.type in ["kvm", "openstack"]:
+        print(" >> Static Path : " + expected_path)
         if os.path.islink(expected_path):
             os.unlink(expected_path)
         os.symlink(actual_path, expected_path)
@@ -150,8 +155,12 @@ def get_channel_url(args):
     base_url = URL_BASE[channel]
     if args.type == "docker":
         base_url += 'images_container_derived'
-    elif args.type == "kvm":
+    elif args.type in ["kvm", "openstack"]:
         base_url += 'images'
+    else:
+        print(" >> Unknown Image Type: " + args.type)
+        raise SystemExit(1)
+
 
     r = requests.get(base_url)
     parser.feed(r.text)
@@ -166,7 +175,7 @@ def get_channel_url(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Download CaaSP Image')
-    parser.add_argument('--type', choices=["docker", "kvm"], help="Type of image to download", required=True)
+    parser.add_argument('--type', choices=["docker", "kvm", "openstack"], help="Type of image to download", required=True)
     parser.add_argument('--path', help="Where should the image be downloaded and linked (default: '../downloads')", default='../downloads')
     parser.add_argument('--image-name', help='Name of the Docker derived image to download (eg: "sles12-velum-devel").')
     parser.add_argument('url', metavar='url', help='URL of image to download')
@@ -179,9 +188,7 @@ if __name__ == "__main__":
         use_local_file(args)
 
     elif urlparse.urlparse(args.url).scheme == "channel":
-        if args.type == "docker":
-            use_channel_file(args)
-        elif args.type == "kvm":
+        if args.type in ["docker", "kvm", "openstack"]:
             use_channel_file(args)
         else:
             print(" >> Unknown Image Type: " + args.type)
