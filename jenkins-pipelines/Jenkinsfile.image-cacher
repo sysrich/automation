@@ -25,8 +25,8 @@ node('leap42.3') {
         }
 
         stage('Fetch Image') {
-            dir('automation/caasp-kvm') {
-                sh(script: "./tools/download_image.py channel://${params.CHANNEL}")
+            dir('automation/caasp-kvm/misc-tools') {
+                sh(script: "./download_image.py --type kvm channel://${params.CHANNEL}")
             }
         }
     }
