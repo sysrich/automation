@@ -1,0 +1,41 @@
+library "kubic-jenkins-library@${env.BRANCH_NAME}"
+
+// Configure the build properties
+properties([
+    buildDiscarder(logRotator(numToKeepStr: '31')),
+    disableConcurrentBuilds(),
+    pipelineTriggers([
+        [$class: 'org.jenkinsci.plugins.parameterizedscheduler.ParameterizedTimerTrigger',
+            parameterizedSpecification: '@midnight % CHANNEL=devel\n@midnight % CHANNEL=release'
+        ]
+    ]),
+    parameters([
+        choice(choices: 'devel\nrelease', description: 'What channel should the image be loaded from?', name: 'CHANNEL')
+    ])
+])
+
+node('leap42.3') {
+    timeout(60){
+        stage('Preparation') {
+            cleanWs()
+        }
+
+        stage('Retrieve Code') {
+            cloneKubicRepo(gitBase: "https://github.com/kubic-project", branch: env.BRANCH_NAME, credentialsId: "github-token", repo: "automation")
+        }
+
+        stage('Fetch Image') {
+            dir('automation/misc-tools') {
+                sh(script: "./download_image.py --type openstack channel://${params.CHANNEL}")
+            }
+        }
+
+        stage('Upload Image') {
+            dir('automation/misc-tools') {
+                withCredentials([file(credentialsId: 'prvcld-cloud-shared', variable: 'OPENRC')]) {
+                    sh(script: "./upload-image-openstack.sh ${OPENRC} ${CHANNEL}")
+                }
+            }
+        }
+    }
+}
