@@ -76,10 +76,18 @@ def get_filename(url):
 
 def get_expected_path(args, filename=None):
     filename = filename or get_filename(args.url)
-    return  os.path.abspath(
-        "%(path)s/%(type)s-%(filename)s" %
-        {'path': args.path, 'filename': filename, 'type': args.type}
-    )
+
+    if args.type == "docker":
+        return os.path.abspath(
+            "%(path)s/%(type)s-%(docker_image)s-%(filename)s" %
+            {'path': args.path, 'filename': filename, 'type': args.type,
+             'docker_image': args.image_name}
+        )
+    else:
+        return os.path.abspath(
+            "%(path)s/%(type)s-%(filename)s" %
+            {'path': args.path, 'filename': filename, 'type': args.type}
+        )
 
 def get_actual_path(args, url=None):
     url = url or args.url
@@ -90,7 +98,7 @@ def get_actual_path(args, url=None):
 
 def link_file(actual_path, expected_path):
     print(" >> File on Disk  : " + actual_path)
-    if not expected_path == actual_path and args.type in ["kvm", "openstack"]:
+    if not expected_path == actual_path:
         print(" >> Static Path : " + expected_path)
         if os.path.islink(expected_path):
             os.unlink(expected_path)
