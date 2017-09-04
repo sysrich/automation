@@ -20,6 +20,8 @@ URL_BASE = {
 QCOW_REGEX = '.*KVM.*x86_64-.*\.qcow2'
 DOCKER_REGEX = '%(docker_image)s.*x86_64-.*\.tar\.xz'
 OPENSTACK_REGEX = '.*OpenStack-Cloud.*x86_64-.*\.qcow2'
+ISO_REGEX = '.*-DVD-x86_64-.*-Media1\.iso'
+
 
 class ImageFinder(HTMLParser):
 
@@ -33,6 +35,8 @@ class ImageFinder(HTMLParser):
             self.regexp = QCOW_REGEX
         elif args.type == "openstack":
             self.regexp = OPENSTACK_REGEX
+        elif args.type == "iso":
+            self.regexp = ISO_REGEX
         else:
             print(" >> Unknown Image Type: " + args.type)
             raise SystemExit(1)
@@ -165,6 +169,8 @@ def get_channel_url(args):
         base_url += 'images_container_derived'
     elif args.type in ["kvm", "openstack"]:
         base_url += 'images'
+    elif args.type == "iso":
+        base_url += 'images/iso'
     else:
         print(" >> Unknown Image Type: " + args.type)
         raise SystemExit(1)
@@ -183,7 +189,7 @@ def get_channel_url(args):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Download CaaSP Image')
-    parser.add_argument('--type', choices=["docker", "kvm", "openstack"], help="Type of image to download", required=True)
+    parser.add_argument('--type', choices=["docker", "kvm", "openstack", "iso"], help="Type of image to download", required=True)
     parser.add_argument('--path', help="Where should the image be downloaded and linked (default: '../downloads')", default='../downloads')
     parser.add_argument('--image-name', help='Name of the Docker derived image to download (eg: "sles12-velum-devel").')
     parser.add_argument('url', metavar='url', help='URL of image to download')
@@ -196,7 +202,7 @@ if __name__ == "__main__":
         use_local_file(args)
 
     elif urlparse.urlparse(args.url).scheme == "channel":
-        if args.type in ["docker", "kvm", "openstack"]:
+        if args.type in ["docker", "kvm", "openstack", "iso"]:
             use_channel_file(args)
         else:
             print(" >> Unknown Image Type: " + args.type)
