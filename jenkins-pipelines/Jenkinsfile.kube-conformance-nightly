@@ -7,7 +7,10 @@ properties([
     pipelineTriggers([cron('@daily')]),
 ])
 
-coreKubicProjectPeriodic() {
+// Without at least one argument, Jenkins fails to find a matching
+// method signature which contains the closure. Unsure why at the
+// moment.
+coreKubicProjectPeriodic(foo: "bar") {
     stage('Run K8S Conformance Tests') {
         runTestK8sConformance(environment: environment)
     }
