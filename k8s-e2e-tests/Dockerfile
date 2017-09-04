@@ -1,4 +1,4 @@
-FROM opensuse:42.1
+FROM opensuse:42.2
 
 MAINTAINER Docker Team <docker-devel@suse.de>
 
