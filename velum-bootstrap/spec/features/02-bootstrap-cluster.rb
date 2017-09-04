@@ -18,15 +18,6 @@ feature "Boostrap cluster" do
     Capybara.reset_sessions!
   end
 
-  # User registration and cluster configuration has already been done in 01-setup-velum.rb
-  # After login we need to do the configure steps again to reach the minion discovery page
-
-  scenario "User configures the cluster" do
-    with_screenshot(name: :configure) do
-      configure
-    end
-  end
-
   scenario "User accepts all minions" do
     visit "/setup/discovery"
 
