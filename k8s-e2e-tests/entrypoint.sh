@@ -53,14 +53,6 @@ users:
 EOF
 }
 
-deploy_kube_dns() {
-    log "Loading KubeDNS"
-    kubectl apply -f https://raw.githubusercontent.com/SUSE/caasp-services/master/contrib/addons/kubedns/dns.yaml
-    log "Giving some time until DNS is available..."
-    sleep 60
-    log "... done!"
-}
-
 run_tests() {
     export KUBECONFIG=$KUBECONFIG_TARGET
     export KUBECTL_PATH=/usr/bin/kubectl
@@ -119,7 +111,5 @@ elif [ -n "$KUBECONFIG" ] ; then
 else
     abort "we need either a --kubeconfig or a --url"
 fi
-
-deploy_kube_dns
 
 run_tests
