@@ -97,7 +97,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_master" {
 
   rule {
     from_port   = 6443
-    to_port     = 6443
+    to_port     = 6444
     ip_protocol = "tcp"
     cidr        = "0.0.0.0/0"
   }
