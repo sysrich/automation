@@ -17,8 +17,4 @@ coreKubicProjectPeriodic(
     openstackImage: env.OPENSTACK_IMAGE,
     masterCount: env.MASTER_COUNT.toInteger(),
     workerCount: env.WORKER_COUNT.toInteger()
-) {
-    stage('Run K8S Conformance Tests') {
-        runTestK8sConformance(environment: environment)
-    }
-}
+)
