@@ -25,4 +25,7 @@ suse_caasp:
   role: cluster
   admin_node: ${admin_ip}
 
+bootcmd:
+  - ip link set dev eth0 mtu 1400
+
 final_message: "The system is finally up, after $UPTIME seconds"
