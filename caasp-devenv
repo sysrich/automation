@@ -17,6 +17,7 @@ RUN_DESTROY=false
 
 MASTERS=1
 WORKERS=2
+PROXY=${CAASP_HTTP_PROXY:-}
 PARALLELISM=1
 
 # READ THIS BEFORE ADDING ANYTHING HERE.
@@ -55,6 +56,7 @@ Usage:
   * Common options
 
     -p|--parallelism         Set terraform parallelism
+    -P|--proxy               Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
 
   * Examples:
 
@@ -106,8 +108,12 @@ while [[ $# > 0 ]] ; do
       RUN_TESTINFRA=true
       HAS_ACTION=true
       ;;
-    -p|parallelism)
+    -p|--parallelism)
       PARALLELISM="$2"
+      shift
+      ;;
+    -P|--proxy)
+      PROXY="$2"
       shift
       ;;
     -h|--help)
@@ -139,7 +145,7 @@ setup() {
 build() {
   pushd caasp-kvm
   log "Starting CaaSP KVM Environment"
-  ./caasp-kvm --build -m $MASTERS -w $WORKERS -parallelism=$PARALLELISM
+  ./caasp-kvm --build -m $MASTERS -w $WORKERS --parallelism=$PARALLELISM --proxy "${PROXY}"
   popd
 }
 
@@ -165,7 +171,7 @@ destroy() {
   pushd caasp-kvm
 
   log "Destroy CaaSP KVM Environment"
-  ./caasp-kvm --destroy
+  ./caasp-kvm --destroy --parallelism=$PARALLELISM --proxy "${PROXY}"
   popd
 }
 

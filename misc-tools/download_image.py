@@ -66,7 +66,7 @@ def use_remote_file(args):
 
 def use_channel_file(args):
     remote_url = get_channel_url(args)
-    remote_canonical_url = get_canonical_url(remote_url)
+    remote_canonical_url = get_canonical_url(args, remote_url)
     expected_path = urlparse.urlparse(args.url).netloc
     download_file(args, remote_canonical_url)
     link_file(get_actual_path(args, remote_canonical_url), get_expected_path(args, urlparse.urlparse(args.url).netloc))
@@ -110,18 +110,23 @@ def link_file(actual_path, expected_path):
 
 # Remote Downloading functions
 
-def get_canonical_url(url):
-    image = requests.head(url)
+def get_canonical_url(args, url):
+    proxies = {
+      'http': args.proxy,
+      'https': args.proxy,
+    }
+
+    image = requests.head(url, proxies=proxies)
     
     if image.status_code == 302 or image.status_code == 301:
-        return get_canonical_url(image.headers.get('Location'))
+        return get_canonical_url(args, image.headers.get('Location'))
     elif image.status_code == 200:
         return url
     else:
         raise Exception("Cannot find image location")
 
 def download_file(args, canonical_url=None):
-    canonical_url = canonical_url or get_canonical_url(args.url)
+    canonical_url = canonical_url or get_canonical_url(args, args.url)
     expected_path = get_expected_path(args)
     actual_path = get_actual_path(args, canonical_url)
 
@@ -129,16 +134,24 @@ def download_file(args, canonical_url=None):
         print(" >> Downloading File")
         print(" >> Remote File         : " + canonical_url)
         print(" >> Local File (On Disk): " + actual_path)
+
+        proxies = {
+          'http': args.proxy,
+          'https': args.proxy,
+        }
+
         try:
-            remote_sha_pre = requests.get(canonical_url + '.sha256').text.split('\n')[3]
+            remote_sha_pre = requests.get(canonical_url + '.sha256', proxies=proxies).text.split('\n')[3]
+
+            proxy_flag =  '--no-proxy' if args.proxy == '' else '-e use_proxy=yes -e http_proxy=' + args.proxy
 
             os.system(
-                "wget %(url)s -O %(file)s --progress=dot:giga" %
-                { "url": canonical_url, "file": actual_path}
+                "wget %(proxy_flag)s %(url)s -O %(file)s --progress=dot:giga" %
+                { "url": canonical_url, "file": actual_path, "proxy_flag": proxy_flag}
             )
 
             local_sha = os.popen('sha256sum %s' % actual_path).read().split(' ')[0]
-            remote_sha_post = requests.get(canonical_url + '.sha256').text.split('\n')[3]
+            remote_sha_post = requests.get(canonical_url + '.sha256', proxies=proxies).text.split('\n')[3]
 
             print(" >> Local SHA:                  %s" % local_sha)
             print(" >> Remote SHA (Pre Download):  %s" % remote_sha_pre)
@@ -175,8 +188,12 @@ def get_channel_url(args):
         print(" >> Unknown Image Type: " + args.type)
         raise SystemExit(1)
 
+    proxies = {
+      'http': args.proxy,
+      'https': args.proxy,
+    }
 
-    r = requests.get(base_url)
+    r = requests.get(base_url, proxies=proxies)
     parser.feed(r.text)
 
     return "%(base)s/%(image)s" % {
@@ -192,6 +209,7 @@ if __name__ == "__main__":
     parser.add_argument('--type', choices=["docker", "kvm", "openstack", "iso"], help="Type of image to download", required=True)
     parser.add_argument('--path', help="Where should the image be downloaded and linked (default: '../downloads')", default='../downloads')
     parser.add_argument('--image-name', help='Name of the Docker derived image to download (eg: "sles12-velum-devel").')
+    parser.add_argument('--proxy', help="Proxy server to use", default='')
     parser.add_argument('url', metavar='url', help='URL of image to download')
     args = parser.parse_args()
 

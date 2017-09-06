@@ -10,6 +10,7 @@ RUN_DESTROY=false
 MASTERS=1
 WORKERS=2
 IMAGE=channel://devel
+PROXY=${CAASP_HTTP_PROXY:-}
 PARALLELISM=1
 
 USAGE=$(cat <<USAGE
@@ -29,7 +30,7 @@ Usage:
   * Common options
 
     -p|--parallelism                 Set terraform parallelism
-
+    -P|--proxy                       Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
   * Examples:
 
   Build a 1 master, 2 worker cluster
@@ -72,8 +73,12 @@ while [[ $# > 0 ]] ; do
       IMAGE="$2"
       shift
       ;;
-    -p|parallelism)
+    -p|--parallelism)
       PARALLELISM="$2"
+      shift
+      ;;
+    -P|--proxy)
+      PROXY="$2"
       shift
       ;;
     -d|--destroy)
@@ -93,11 +98,11 @@ build() {
   log "CaaS Platform Building"
 
   log "Downloading CaaSP KVM Image"
-  ../misc-tools/download_image.py --type kvm $IMAGE
+  ../misc-tools/download_image.py --proxy "${PROXY}" --type kvm $IMAGE
 
   log "Building Velum Development Image"
   local velum=$(realpath ../../velum)
-  ./tools/build-velum-image.sh $velum
+  ./tools/build-velum-image.sh $velum "${PROXY}"
 
   log "Creating Velum Directories"
   mkdir -p $velum/tmp $velum/log $velum/vendor/bundle
