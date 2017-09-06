@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-chmod 600 tools/id_docker
+chmod 600 ../misc-files/id_shared
 
 STACK_ID=${1:?A stack id must be provided}
 ENVIRONMENT='{"minions": []}'
@@ -41,12 +41,12 @@ for worker_id in $WORKER_IDS; do
 
   machine_id=$(set -o pipefail; echo "$worker_nova_json" | jq -r '.id' | tr -d '-')
 
-  worker_minion_json=$(set -o pipefail; echo "$worker_nova_json" | jq -c "{role: \"worker\", fqdn: .name, addresses: {privateIpv4: .addresses | split(\"=\") | .[1]}, index: \"$INDEX\", minionId: \"$machine_id\", proxyCommand: (\"ssh -i `pwd`/tools/id_docker -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ADMIN_PUBLIC_IPV4 -W %h:%p\")}")
+  worker_minion_json=$(set -o pipefail; echo "$worker_nova_json" | jq -c "{role: \"worker\", fqdn: .name, addresses: {privateIpv4: .addresses | split(\"=\") | .[1]}, index: \"$INDEX\", minionId: \"$machine_id\", proxyCommand: (\"ssh -i `pwd`/../misc-files/id_shared -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ADMIN_PUBLIC_IPV4 -W %h:%p\")}")
   ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".minions |= . + [$worker_minion_json]")
   INDEX=$((INDEX + 1))
 done
 
 # Add some extra top level fields
-ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ". + {sshUser: \"root\", sshKey: \"`pwd`/tools/id_docker\"}")
+ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ". + {sshUser: \"root\", sshKey: \"`pwd`/../misc-files/id_shared\"}")
 
 echo $ENVIRONMENT | json_pp | tee environment.json
