@@ -65,7 +65,7 @@ as necessary:
 
     Host 10.17.*
         User root
-        IdentityFile /home/kiall/SUSE/caasp/automation/caasp-kvm/tools/id_docker
+        IdentityFile /home/kiall/SUSE/caasp/automation/misc-files/id_shared
         UserKnownHostsFile /dev/null
         StrictHostKeyChecking no
 

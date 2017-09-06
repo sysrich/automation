@@ -1,7 +1,7 @@
 {
    "dashboardHost" : "172.24.0.5",
    "sshUser" : "root",
-   "sshKey" : "/home/user/SUSE/caasp/automation/openstack-heat/tools/id_docker",
+   "sshKey" : "/home/user/SUSE/caasp/automation/misc-files/id_shared",
    "kubernetesHost" : "10.84.72.173",
    "minions" : [
       {
