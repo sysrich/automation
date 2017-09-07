@@ -103,7 +103,6 @@ build_stack() {
   [ -z $IMAGE ] && error "Option --image is required"
 
   log "Creating Stack"
-  local logfile=$(mktemp)
 
   # Keep track of the stack name (which Heat enforces as being unique) for
   # later use in commands like delete.
@@ -112,7 +111,7 @@ build_stack() {
   source $OPENRC_FILE
   openstack stack create --wait -e $HEAT_ENVIRONMENT_FILE -t caasp-stack.yaml $NAME \
     --parameter worker_count=$WORKERS \
-    --parameter image=$IMAGE | tee $logfile
+    --parameter image=$IMAGE
 
   log "CaaSP Stack Created with name $NAME"
 
@@ -124,10 +123,15 @@ build_stack() {
 }
 
 update_stack() {
+  [ -z $IMAGE ] && error "Option --image is required"
+
   local stack_name=$(cat .stack_name)
   log "Updating Stack with ID $stack_name"
 
-  error "Not implemented"
+  source $OPENRC_FILE
+  openstack stack update --wait -e $HEAT_ENVIRONMENT_FILE -t caasp-stack.yaml $stack_name \
+    --parameter worker_count=$WORKERS \
+    --parameter image=$IMAGE
 }
 
 destroy_stack() {
