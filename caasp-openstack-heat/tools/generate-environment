@@ -23,19 +23,21 @@ ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".dashboardExternalHost 
 
 INDEX=$((INDEX + 1))
 
-# Get Master Node
-echo "Building Master Details"
-MASTER_ID=$(set -o pipefail; echo "$STACK_RESOURCES" | jq -r '.[] | select(.resource_name=="master") | .physical_resource_id')
-MASTER_NOVA_JSON=$(set -o pipefail; openstack server show -f json $MASTER_ID)
-MASTER_MINION_JSON=$(set -o pipefail; echo "$MASTER_NOVA_JSON" | jq -c "{role: \"master\", fqdn: .name, addresses: {publicIpv4: .addresses | split(\"=\") | .[1] | split(\",\") | .[1] | gsub(\" \"; \"\"), privateIpv4: .addresses | split(\"=\") | .[1] | split(\",\") | .[0]}, index: \"$INDEX\", minionId: (.id | gsub(\"-\"; \"\"))}")
-MASTER_PUBLIC_IPV4=$(set -o pipefail; echo "$MASTER_NOVA_JSON" | jq -r ".addresses | split(\"=\") | .[1] | split(\",\") | .[1] | gsub(\" \"; \"\")")
-ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".minions |= . + [$MASTER_MINION_JSON]")
-ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".kubernetesExternalHost |= \"$MASTER_PUBLIC_IPV4\"")
+# Iterate all the masters
+MASTER_IDS=$(set -o pipefail; echo "$STACK_RESOURCES" | jq -r '.[] | select(.stack_name | contains("-masters-")) | select(.resource_type == "OS::Nova::Server") | .physical_resource_id')
+for master_id in $MASTER_IDS; do
+  echo "Building Master Details: $master_id"
+  master_nova_json=$(set -o pipefail; openstack server show -f json $master_id)
 
-INDEX=$((INDEX + 1))
+  machine_id=$(set -o pipefail; echo "$master_nova_json" | jq -r '.id' | tr -d '-')
+
+  master_minion_json=$(set -o pipefail; echo "$master_nova_json" | jq -c "{role: \"master\", fqdn: .name, addresses: {publicIpv4: .addresses | split(\"=\") | .[1] | split(\",\") | .[1] | gsub(\" \"; \"\"), privateIpv4: .addresses | split(\"=\") | .[1] | split(\",\") | .[0]}, index: \"$INDEX\", minionId: \"$machine_id\"}")
+  ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".minions |= . + [$master_minion_json]")
+  INDEX=$((INDEX + 1))
+done
 
 # Iterate all the workers
-WORKER_IDS=$(set -o pipefail; echo "$STACK_RESOURCES" | jq -r '.[] | select(.stack_name | contains("-worker-")) | .physical_resource_id')
+WORKER_IDS=$(set -o pipefail; echo "$STACK_RESOURCES" | jq -r '.[] | select(.stack_name | contains("-workers-")) | select(.resource_type == "OS::Nova::Server") | .physical_resource_id')
 for worker_id in $WORKER_IDS; do
   echo "Building Worker Details: $worker_id"
   worker_nova_json=$(set -o pipefail; openstack server show -f json $worker_id)

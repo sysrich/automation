@@ -11,6 +11,7 @@ RUN_DESTROY=false
 NAME=caasp-stack
 OPENRC_FILE=
 HEAT_ENVIRONMENT_FILE=heat-environment.yaml.example
+MASTERS=3
 WORKERS=2
 IMAGE=
 
@@ -21,6 +22,7 @@ Usage:
   * Building a cluster
 
     -b|--build                       Run the Heat Stack Build Step
+    -m|--masters             <INT>   Number of masters to build
     -w|--workers             <INT>   Number of workers to build
     -i|--image               <STR>   Image to use
 
@@ -73,6 +75,10 @@ while [[ $# > 0 ]] ; do
       RUN_BUILD=true
       HAS_ACTION=true
       ;;
+    -m|--masters)
+      MASTERS="$2"
+      shift
+      ;;
     -w|--workers)
       WORKERS="$2"
       shift
@@ -111,7 +117,8 @@ build_stack() {
   echo -n "$NAME" > .stack_name
 
   source $OPENRC_FILE
-  openstack stack create --wait -e $HEAT_ENVIRONMENT_FILE -t caasp-stack.yaml $NAME \
+  openstack stack create --verbose --wait -e $HEAT_ENVIRONMENT_FILE -t caasp-stack.yaml $NAME \
+    --parameter master_count=$MASTERS \
     --parameter worker_count=$WORKERS \
     --parameter image=$IMAGE
 
@@ -132,6 +139,7 @@ update_stack() {
 
   source $OPENRC_FILE
   openstack stack update --wait -e $HEAT_ENVIRONMENT_FILE -t caasp-stack.yaml $stack_name \
+    --parameter master_count=$MASTERS \
     --parameter worker_count=$WORKERS \
     --parameter image=$IMAGE
 }
