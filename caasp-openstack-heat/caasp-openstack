@@ -105,17 +105,18 @@ build_stack() {
   log "Creating Stack"
   local logfile=$(mktemp)
 
+  # Keep track of the stack name (which Heat enforces as being unique) for
+  # later use in commands like delete.
+  echo -n "$NAME" > .stack_name
+
   source $OPENRC_FILE
   openstack stack create --wait -e $HEAT_ENVIRONMENT_FILE -t caasp-stack.yaml $NAME \
     --parameter worker_count=$WORKERS \
     --parameter image=$IMAGE | tee $logfile
 
-  local stack_id=$(cat $logfile | grep "| id  " | cut -d'|' -f3 | tr -d ' ')
-  echo -n "$stack_id" > .stack_id
+  log "CaaSP Stack Created with name $NAME"
 
-  log "CaaSP Stack Created with ID $stack_id"
-
-  ./tools/generate-environment $stack_id
+  ./tools/generate-environment $NAME
   ../misc-tools/generate-ssh-config environment.json
 
   log "Waiting for Velum to start - this may take a while"
@@ -123,16 +124,19 @@ build_stack() {
 }
 
 update_stack() {
-  log "Updating Stack with ID $stack_id"
+  local stack_name=$(cat .stack_name)
+  log "Updating Stack with ID $stack_name"
+
   error "Not implemented"
 }
 
 destroy_stack() {
-  local stack_id=$(cat .stack_id)
-  log "Deleting Stack with ID $stack_id"
+  local stack_name=$(cat .stack_name)
+  log "Deleting Stack with name $stack_name"
+
   source $OPENRC_FILE
-  openstack stack delete --yes --wait $stack_id
-  rm .stack_id
+  openstack stack delete --yes --wait $stack_name
+  rm .stack_name
 }
 
 # main

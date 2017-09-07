@@ -4,11 +4,11 @@ set -euo pipefail
 
 chmod 600 ../misc-files/id_shared
 
-STACK_ID=${1:?A stack id must be provided}
+STACK_NAME=${1:?A stack name must be provided}
 ENVIRONMENT='{"minions": []}'
 INDEX=0
 
-STACK_RESOURCES=$(openstack stack resource list -f json -n 10 $STACK_ID)
+STACK_RESOURCES=$(openstack stack resource list -f json -n 10 $STACK_NAME)
 
 # Get Admin Node
 echo "Building Admin Details"
