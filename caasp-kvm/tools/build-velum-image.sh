@@ -9,7 +9,7 @@ set -euo pipefail
 function download_velum_development_image() {
   #TODO: ensure the name of the image downloaded is returned. The wrong image name
   # might be returned if multiple tarballs are into the directory
-  echo $($1/download_image.py --type docker --image-name sles12-velum-development channel://devel | grep "File on Disk" | cut -d ":" -f2)
+  echo $($1/download_image.py  --proxy "${2:-}" --type docker --image-name sles12-velum-development channel://devel | grep "File on Disk" | cut -d ":" -f2)
 }
 
 # docker load of the velum-development image tarball

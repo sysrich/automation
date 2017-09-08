@@ -26,7 +26,7 @@ node('leap42.3') {
 
         stage('Fetch Image') {
             dir('automation/misc-tools') {
-                sh(script: "./download_image.py --type kvm channel://${params.CHANNEL}")
+                sh(script: "./download_image.py --proxy ${env.http_proxy} --type kvm channel://${params.CHANNEL}")
             }
         }
     }
