@@ -179,7 +179,7 @@ def get_channel_url(args):
 
     base_url = URL_BASE[channel]
     if args.type == "docker":
-        base_url += 'images_container_derived'
+        base_url += 'images_container_base'
     elif args.type in ["kvm", "openstack"]:
         base_url += 'images'
     elif args.type == "iso":
