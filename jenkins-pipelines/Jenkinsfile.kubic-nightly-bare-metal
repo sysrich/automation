@@ -1,0 +1,18 @@
+library "kubic-jenkins-library@${env.BRANCH_NAME}"
+
+// Configure the build properties
+properties([
+    buildDiscarder(logRotator(numToKeepStr: '31')),
+    disableConcurrentBuilds(),
+    pipelineTriggers([cron('@daily')]),
+    parameters([
+        string(name: 'MASTER_COUNT', defaultValue: '1', description: 'Number of Master Nodes'),
+        string(name: 'WORKER_COUNT', defaultValue: '3', description: 'Number of Worker Nodes')
+    ])
+])
+
+coreKubicProjectPeriodic(
+    environmentType: 'bare-metal',
+    masterCount: env.MASTER_COUNT.toInteger(),
+    workerCount: env.WORKER_COUNT.toInteger()
+)
