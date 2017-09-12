@@ -20,6 +20,8 @@ WORKERS=2
 PROXY=${CAASP_HTTP_PROXY:-}
 PARALLELISM=1
 
+ENABLE_TILLER=false
+
 # READ THIS BEFORE ADDING ANYTHING HERE.
 #
 # This script should remain as simple as possible, with
@@ -40,6 +42,7 @@ Usage:
     -b|--build               Run the CaaSP KVM Build Step
     -m|--masters <INT>       Number of masters to build
     -w|--workers <INT>       Number of workers to build
+    --enable-tiller          Enable Helm Tiller
     -d|--destroy             Run the CaaSP KVM Destroy Step
 
   * Bootstraping a cluster
@@ -95,6 +98,9 @@ while [[ $# > 0 ]] ; do
     -w|--workers)
       WORKERS="$2"
       shift
+      ;;
+    --enable-tiller)
+      ENABLE_TILLER=true
       ;;
     -d|--destroy)
       RUN_DESTROY=true
@@ -152,9 +158,14 @@ build() {
 bootstrap() {
   log "Bootstrap CaaSP Environment"
 
+  local extra_flags=""
+  if [ "$ENABLE_TILLER" == "true" ]; then
+    extra_flags="$extra_flags --enable-tiller"
+  fi
+
   export ENVIRONMENT=$(realpath caasp-kvm/environment.json)
   pushd velum-bootstrap
-  ./velum-interactions --configure --bootstrap
+  ./velum-interactions --configure --bootstrap ${extra_flags}
   popd
 }
 

@@ -10,6 +10,7 @@ RUN_CONFIGURE=false
 RUN_BOOTSTRAP=false
 RUN_UPDATE_ADMIN=false
 RUN_UPDATE_MINIONS=false
+ENABLE_TILLER=false
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -22,6 +23,7 @@ Usage:
 
     -c|--configure                   Configure Velum
     -b|--bootstrap                   Bootstrap
+    --enable-tiller                  Enable Helm Tiller
 
   * Updating a cluster
 
@@ -63,6 +65,9 @@ while [[ $# > 0 ]] ; do
       RUN_BOOTSTRAP=true
       HAS_INTERACTION=true
       HAS_ACTION=true
+      ;;
+    --enable-tiller)
+      ENABLE_TILLER=true
       ;;
     -a|--update-admin)
       RUN_UPDATE_ADMIN=true
@@ -115,7 +120,7 @@ interact() {
     args="$args spec/**/04-*"
   fi
 
-  VERBOSE=true bundle exec rspec $args
+  VERBOSE=true ENABLE_TILLER=${ENABLE_TILLER} bundle exec rspec $args
 }
 
 # main
