@@ -111,11 +111,6 @@ feature "Boostrap cluster" do
     puts ">>> Configuring last settings"
     with_screenshot(name: :bootstrap_cluster_settings) do
       fill_in "settings_apiserver", with: environment["kubernetesHost"]
-      if ENV.fetch("ENABLE_TILLER", false)
-        check "settings[tiller]"
-      else
-        uncheck "settings[tiller]"
-      end
     end
     puts "<<< Last settings configured"
 
