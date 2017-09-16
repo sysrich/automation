@@ -9,12 +9,21 @@ properties([
         string(name: 'OPENSTACK_IMAGE', defaultValue: '', description: 'OpenStack Image To Use'),
         string(name: 'MASTER_COUNT', defaultValue: '1', description: 'Number of Master Nodes'),
         string(name: 'WORKER_COUNT', defaultValue: '25', description: 'Number of Worker Nodes')
+        string(name: 'ADMIN_FLAVOR', defaultValue: 'm1.xxlarge', description: 'Flavor for Admin Node'),
+        string(name: 'MASTER_FLAVOR', defaultValue: 'm1.xxlarge', description: 'Flavor for Master Nodes'),
+        string(name: 'WORKER_FLAVOR', defaultValue: 'm1.large', description: 'Flavor for Worker Nodes'),
     ])
 ])
 
+OpenstackTypeOptions openstackTypeOptions = new OpenstackTypeOptions();
+openstackTypeOptions.image = env.OPENSTACK_IMAGE
+openstackTypeOptions.adminFlavor = env.ADMIN_FLAVOR
+openstackTypeOptions.masterFlavor = env.MASTER_FLAVOR
+openstackTypeOptions.workerFlavor = env.WORKER_FLAVOR
+
 coreKubicProjectPeriodic(
     environmentType: 'openstack',
-    openstackImage: env.OPENSTACK_IMAGE,
+    environmentTypeOptions: openstackTypeOptions,
     masterCount: env.MASTER_COUNT.toInteger(),
     workerCount: env.WORKER_COUNT.toInteger()
 )
