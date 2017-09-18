@@ -1,5 +1,7 @@
 library "kubic-jenkins-library@${env.BRANCH_NAME}"
 
+import com.suse.kubic.OpenstackTypeOptions
+
 // Configure the build properties
 properties([
     buildDiscarder(logRotator(numToKeepStr: '31')),
