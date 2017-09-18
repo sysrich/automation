@@ -1,6 +1,4 @@
-library "kubic-jenkins-library@${env.BRANCH_NAME}"
-
-import com.suse.kubic.OpenstackTypeOptions
+def kubicLib = library "kubic-jenkins-library@${env.BRANCH_NAME}"
 
 // Configure the build properties
 properties([
@@ -17,7 +15,7 @@ properties([
     ])
 ])
 
-OpenstackTypeOptions openstackTypeOptions = new OpenstackTypeOptions();
+kubicLib.com.suse.kubic.OpenstackTypeOptions openstackTypeOptions = new kubicLib.com.suse.kubic.OpenstackTypeOptions();
 openstackTypeOptions.image = env.OPENSTACK_IMAGE
 openstackTypeOptions.adminFlavor = env.ADMIN_FLAVOR
 openstackTypeOptions.masterFlavor = env.MASTER_FLAVOR
