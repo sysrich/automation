@@ -149,6 +149,12 @@ resources:
         - protocol: udp
           port_range_min: 8285
           port_range_max: 8285
+        - protocol: tcp
+          port_range_min: 30000
+          port_range_max: 32768
+        - protocol: udp
+          port_range_min: 30000
+          port_range_max: 32768
 
   secgroup_worker:
     type: OS::Neutron::SecurityGroup
@@ -172,12 +178,12 @@ resources:
         - protocol: tcp
           port_range_min: 10250
           port_range_max: 10250
-        - protocol: tcp
-          port_range_min: 30000
-          port_range_max: 32768
         - protocol: udp
           port_range_min: 8285
           port_range_max: 8285
+        - protocol: tcp
+          port_range_min: 30000
+          port_range_max: 32768
         - protocol: udp
           port_range_min: 30000
           port_range_max: 32768
