@@ -135,6 +135,9 @@ resources:
         - protocol: tcp
           port_range_min: 4505
           port_range_max: 4506
+        - protocol: tcp
+          port_range_min: 389
+          port_range_max: 389
 
   secgroup_master:
     type: OS::Neutron::SecurityGroup
