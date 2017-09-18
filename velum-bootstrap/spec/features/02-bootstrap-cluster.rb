@@ -122,15 +122,6 @@ feature "Boostrap cluster" do
       click_on "Bootstrap cluster"
     end
 
-    puts ">>> Wait until UI is loaded"
-    with_screenshot(name: :ui_loaded) do
-      within(".nodes-container") do
-        expect(page).to have_no_css(".nodes-loading", wait: 30)
-        expect(page).to have_css(".fa-spin", count: node_number, wait: 120)
-      end
-    end
-    puts "<<< UI loaded"
-
     # Min of 1800 seconds, Max of 7200 seconds, ideal = nodes * 120 seconds
     orchestration_timeout = [[1800, node_number * 120].max, 7200].min
     puts ">>> Wait until orchestration is complete (Timeout: #{orchestration_timeout})"
