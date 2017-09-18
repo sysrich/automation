@@ -413,16 +413,6 @@ def fetch_and_mangle_worker_autoyast(admin_host_ipaddr):
         '    </chroot-scripts>\n',
         AUTOYAST_AUTHORIZED_KEYS_CHUNK + '    </chroot-scripts>\n'
     )
-
-    # Remove SCC/SMT error - see https://github.com/kubic-project/velum/pull/270
-    xml = xml.replace("""
-      <ask>
-        <default>This system will not be registered. Reason: Missing credentials for SCC/SMT</default>
-        <type>static_text</type>
-      </ask>
-    """, "")
-    assert 'Missing credentials for SCC/SMT' not in xml
-
     tsclient.upload_worker_mangled_xml(xml)
 
 
