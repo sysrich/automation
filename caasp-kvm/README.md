@@ -4,7 +4,7 @@ This directory contains the caasp-kvm tool, aimed at replacing the existing caas
 and terraform repositories.
 
 A primary goal of caasp-kvm is to reduce the number of places where our development
-enviroments differ from a customer environemnt, allowing us to more easily ensure our
+enviroments differ from a customer enviroment, allowing us to more easily ensure our
 changes really will work in the final product.
 
 ## Requirements
@@ -42,6 +42,7 @@ You can add this repo and install these packages with just
       * Common options
 
         -p|--parallelism                 Set terraform parallelism
+        -P|--proxy                       Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
 
       * Examples:
 
