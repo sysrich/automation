@@ -23,7 +23,6 @@ def create_environment_json(admin_host_ipaddr, available_hosts):
         "dashboardHost": admin_host_ipaddr,
         "sshUser" : "root",
         "sshKey" : ssh_key_path,
-        "kubernetesHost" : admin_host_ipaddr,
         "minions": []
     }
     # FIXME: this is picking a macaddr    master_ipaddr = available_hosts[1][2]
@@ -43,6 +42,7 @@ def create_environment_json(admin_host_ipaddr, available_hosts):
             d["minions"][-1]["role"] = "admin"
         elif idx == 1:
             d["minions"][-1]["role"] = "master"
+            d["kubernetesHost"] = ipaddr
         else:
             d["minions"][-1]["role"] = "worker"
             # unneded
