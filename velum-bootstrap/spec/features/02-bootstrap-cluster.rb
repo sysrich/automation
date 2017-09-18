@@ -52,9 +52,11 @@ feature "Boostrap cluster" do
     sleep 30
     visit "/setup/discovery"
 
-    puts ">>> Wait until Minion keys are accepted by salt"
+    # Min of 120 seconds, Max of 600 seconds, ideal = nodes * 30
+    accept_timeout = [[120, node_number * 30].max, 600].min
+    puts ">>> Wait until Minion keys are accepted by salt (Timeout: #{accept_timeout})"
     with_screenshot(name: :accepted_keys) do
-      expect(page).to have_css("input[name='roles[worker][]']", count: node_number, wait: 600)
+      expect(page).to have_css("input[name='roles[worker][]']", count: node_number, wait: accept_timeout)
     end
     puts "<<< Minion keys accepted in Velum"
 
@@ -129,10 +131,12 @@ feature "Boostrap cluster" do
     end
     puts "<<< UI loaded"
 
-    puts ">>> Wait until orchestration is complete"
+    # Min of 1800 seconds, Max of 7200 seconds, ideal = nodes * 120 seconds
+    orchestration_timeout = [[1800, node_number * 120].max, 7200].min
+    puts ">>> Wait until orchestration is complete (Timeout: #{orchestration_timeout})"
     with_screenshot(name: :orchestration_complete) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 1800)
+        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: orchestration_timeout)
       end
     end
     puts "<<< Orchestration completed"
