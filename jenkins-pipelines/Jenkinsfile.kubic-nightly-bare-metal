@@ -7,12 +7,14 @@ properties([
     pipelineTriggers([cron('@daily')]),
     parameters([
         string(name: 'MASTER_COUNT', defaultValue: '1', description: 'Number of Master Nodes'),
-        string(name: 'WORKER_COUNT', defaultValue: '3', description: 'Number of Worker Nodes')
+        string(name: 'WORKER_COUNT', defaultValue: '3', description: 'Number of Worker Nodes'),
+        booleanParam(name: 'ENVIRONMENT_DESTROY', defaultValue: true, description: 'Destroy env once done?')
     ])
 ])
 
 coreKubicProjectPeriodic(
     environmentType: 'bare-metal',
+    environmentDestroy: env.ENVIRONMENT_DESTROY,
     masterCount: env.MASTER_COUNT.toInteger(),
     workerCount: env.WORKER_COUNT.toInteger()
 )
