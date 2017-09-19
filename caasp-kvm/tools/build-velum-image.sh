@@ -155,7 +155,7 @@ if [[ $USE_CACHE -eq 1 && -f $(dirname $0)/../velum-resources/velum-development.
 fi
 
 echo "Downloading latest build of the velum development image"
-TARBALL=$(download_velum_development_image $(dirname $0)/../../misc-tools)
+TARBALL=$(download_velum_development_image $(dirname $0)/../../misc-tools "${2:-}")
 load_velum_development_image $TARBALL
 
 build_fresh_image
