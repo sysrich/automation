@@ -1,0 +1,111 @@
+#!/bin/sh
+
+set -euo pipefail
+
+# actions
+HAS_ACTION=false
+RUN_GIT_BRANCH=false
+
+# options
+GIT_BRANCH_NAME=
+GIT_BRANCH_FORCE=false
+
+# Constants
+GIT_REPOS=(
+  automation
+  jenkins-library
+  terraform
+  caasp-devenv
+  salt
+  velum
+  caasp-container-manifests
+  supportutils-plugin-suse-caasp
+  container-feeder
+  caasp-cli
+)
+
+USAGE=$(cat <<USAGE
+Usage:
+
+  --git-branch             Branch each GitHub repo
+  --git-branch-name <STR>  Name of the new branch
+  --git-branch-force       Force push branches
+
+USAGE
+)
+
+# Utility methods
+log()        { (>&2 echo ">>> [caasp-kvm] $@") ; }
+warn()       { log "WARNING: $@" ; }
+error()      { log "ERROR: $@" ; exit 1 ; }
+check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
+
+# parse options
+while [[ $# > 0 ]] ; do
+  case $1 in
+    --git-branch)
+      RUN_GIT_BRANCH=true
+      HAS_ACTION=true
+      ;;
+    --git-branch-name)
+      GIT_BRANCH_NAME="$2"
+      shift
+      ;;
+    --git-branch-force)
+      GIT_BRANCH_FORCE=true
+      ;;
+    -h|--help)
+      echo "$USAGE"
+      exit 0
+      ;;
+  esac
+  shift
+done
+
+# Core methods
+git_branch() {
+  [ -z $GIT_BRANCH_NAME ] && error "Option --git-branch-name is required"
+
+  log "Branching GitHub Repos"
+
+  local tmpdir=$(mktemp -d)
+  log "Working directory: $tmpdir"
+  pushd $tmpdir
+
+  for git_repo in "${GIT_REPOS[@]}"; do
+    _git_branch_repo $git_repo
+  done
+
+  warn "Please ensure download links in the automation repo are updated!"
+  popd
+}
+
+_git_branch_repo() {
+  local git_repo=$1
+
+  log "Branching ${git_repo} GitHub Repo"
+    git clone git@github.com:kubic-project/${git_repo}.git
+    pushd ${git_repo}
+    git checkout -b $GIT_BRANCH_NAME
+
+    # todo .. actually run the command...
+    if [ "$GIT_BRANCH_FORCE" = true ]; then
+      warn "git push --force origin ${GIT_BRANCH_NAME}"
+    else
+      warn "git push origin ${GIT_BRANCH_NAME}"
+    fi
+
+    popd
+}
+
+# main
+if [ "$HAS_ACTION" != true ]; then
+  echo "$USAGE"
+  error "No action arguments were supplied"
+fi
+
+if [ "$RUN_GIT_BRANCH" = true ]; then
+  git_branch
+fi
+
+log "Done"
