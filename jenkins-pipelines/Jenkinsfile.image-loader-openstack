@@ -26,7 +26,9 @@ node('leap42.3') {
 
         stage('Fetch Image') {
             dir('automation/misc-tools') {
-                sh(script: "./download_image.py --type openstack channel://${params.CHANNEL}")
+                withCredentials([string(credentialsId: 'caasp-proxy-host', variable: 'CAASP_PROXY')]) {
+                    sh(script: "./download_image.py --proxy ${CAASP_PROXY} --type openstack channel://${params.CHANNEL}")
+                }
             }
         }
 
