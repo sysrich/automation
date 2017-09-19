@@ -23,9 +23,17 @@ You can add this repo and install these packages with just
     $ sudo zypper ar obs://Virtualization:containers/openSUSE_Leap_42.2 Virtualization:containers
     $ sudo zypper in terraform terraform-provider-libvirt jq
 
+Clone these repositories:
+
+    $ git clone git@github.com:kubic-project/salt.git
+    $ git clone git@github.com:kubic-project/velum.git
+    $ git clone git@github.com:kubic-project/caasp-container-manifests.git
+    $ git clone git@github.com:kubic-project/automation.git
+
 ## CLI Syntax
 
-    > ./caasp-kvm --help
+    $ cd automation/caasp-kvm
+    $ ./caasp-kvm --help
     Usage:
 
       * Building a cluster
