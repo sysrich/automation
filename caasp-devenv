@@ -141,7 +141,7 @@ setup() {
   fi
 
   # || : is necessary, as Zypper exits non-zero for "no changes".
-  sudo zypper in --no-confirm jq python-tox python-openstackclient python-novaclient python-heatclient terraform terraform-provider-libvirt || :
+  sudo zypper in --no-confirm jq python-tox python-devel libsodium-devel python-openstackclient python-novaclient python-heatclient terraform terraform-provider-libvirt || :
 
   pushd velum-bootstrap
   ./velum-interactions --setup
