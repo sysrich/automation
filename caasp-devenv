@@ -17,6 +17,7 @@ RUN_DESTROY=false
 
 MASTERS=1
 WORKERS=2
+IMAGE=channel://devel
 PROXY=${CAASP_HTTP_PROXY:-}
 PARALLELISM=1
 
@@ -41,6 +42,7 @@ Usage:
     -m|--masters <INT>       Number of masters to build
     -w|--workers <INT>       Number of workers to build
     -d|--destroy             Run the CaaSP KVM Destroy Step
+    -i|--image               Image to use
 
   * Bootstraping a cluster
 
@@ -100,6 +102,10 @@ while [[ $# > 0 ]] ; do
       RUN_DESTROY=true
       HAS_ACTION=true
       ;;
+    -i|--image)
+      IMAGE="$2"
+      shift
+      ;;
     -B|--bootstrap)
       RUN_BOOTSTRAP=true
       HAS_ACTION=true
@@ -145,7 +151,7 @@ setup() {
 build() {
   pushd caasp-kvm
   log "Starting CaaSP KVM Environment"
-  ./caasp-kvm --build -m $MASTERS -w $WORKERS --parallelism=$PARALLELISM --proxy "${PROXY}"
+  ./caasp-kvm --build -m $MASTERS -w $WORKERS --image=$IMAGE --parallelism=$PARALLELISM --proxy "${PROXY}"
   popd
 }
 
