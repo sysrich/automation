@@ -142,6 +142,9 @@ update_stack() {
     --parameter master_count=$MASTERS \
     --parameter worker_count=$WORKERS \
     --parameter image=$IMAGE
+
+  ./tools/generate-environment $NAME
+  ../misc-tools/generate-ssh-config environment.json
 }
 
 destroy_stack() {
