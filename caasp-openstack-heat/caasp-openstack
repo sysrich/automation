@@ -132,6 +132,9 @@ update_stack() {
   openstack stack update --wait -e $HEAT_ENVIRONMENT_FILE -t caasp-stack.yaml $stack_name \
     --parameter worker_count=$WORKERS \
     --parameter image=$IMAGE
+
+  ./tools/generate-environment $NAME
+  ../misc-tools/generate-ssh-config environment.json
 }
 
 destroy_stack() {
