@@ -151,7 +151,7 @@ setup() {
 build() {
   pushd caasp-kvm
   log "Starting CaaSP KVM Environment"
-  ./caasp-kvm --build -m $MASTERS -w $WORKERS --image=$IMAGE --parallelism=$PARALLELISM --proxy "${PROXY}"
+  ./caasp-kvm --build -m $MASTERS -w $WORKERS --image $IMAGE --parallelism $PARALLELISM --proxy "${PROXY}"
   popd
 }
 
