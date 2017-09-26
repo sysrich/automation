@@ -30,7 +30,7 @@ feature "Boostrap cluster" do
   scenario "User accepts all minions" do
     visit "/setup/discovery"
 
-    puts ">>> Wait until all minions are pending to be accepted"
+    puts ">>> Wait until all #{node_number} minions are pending to be accepted"
     with_screenshot(name: :pending_minions) do
       expect(page).to have_selector("a", text: "Accept Node", count: node_number, wait: 400)
     end
