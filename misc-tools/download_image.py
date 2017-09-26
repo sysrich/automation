@@ -14,7 +14,7 @@ URL_BASE = {
     'release': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20/',
     'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20:/Staging:/A/',
     'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20:/Staging:/B/',
-    'devel': 'http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/',
+    'devel': 'http://download.suse.de/ibs/Devel:/CASP:/2.0:/ControllerNode/',
 }
 
 QCOW_REGEX = '.*KVM.*x86_64-.*\.qcow2'
