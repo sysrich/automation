@@ -169,8 +169,14 @@ resource "libvirt_domain" "admin" {
   }
 
   filesystem {
-    source = "${path.module}/velum-resources"
-    target = "velum_resources"
+    source = "${path.module}/resources/scripts"
+    target = "devel-scripts"
+    readonly = true
+  }
+
+  filesystem {
+    source = "${path.module}/resources/docker-images"
+    target = "devel-docker-images"
     readonly = true
   }
 
@@ -183,7 +189,13 @@ resource "libvirt_domain" "admin" {
   provisioner "remote-exec" {
     inline = [
       "while [[ ! -f /var/run/docker.pid ]]; do echo waiting for docker to start; sleep 1; done",
-      "docker load -i /var/lib/misc/velum-resources/*.tar",
+      "docker load -i /var/lib/misc/devel-docker-images/*.tar",
+    ]
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "for i in `ls -1 /opt/bin/autorun*.sh /opt/bin/autorun*/*.sh` ; do sh $i ; done",
     ]
   }
 }
