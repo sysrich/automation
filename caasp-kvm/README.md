@@ -9,6 +9,35 @@ changes really will work in the final product.
 
 ## Requirements
 
+In order to run `caasp-kvm`, a system must have `kvm` installed, `libvirtd` and
+`docker` daemons running, and a few additional dependencies must be met. As
+root, run:
+
+    zypper in git python-requests qemu-kvm docker virsh libvirt-daemon-qemu
+    systemctl enable libvirtd
+    systemctl start libvirtd
+    systemctl enable docker
+    systemctl start docker
+
+Many of the required resources are hosted inside SUSE's private R&D network; in
+order to access and connect to these resouces, you may need a SUSE R&D openvpn
+connection; see the
+[Micro Focus internal wiki](https://wiki.microfocus.net/index.php?title=SUSE-Development/OPS/Services/OpenVPN)
+for details.
+
+You must also have SUSE's CA certificates installed, as documented on
+http://ca.suse.de . As root:
+
+    # (replace openSUSE_Leap_42.3 with your distro)
+    zypper ar --refresh http://download.suse.de/ibs/SUSE:/CA/openSUSE_Leap_42.3/SUSE:CA.repo
+    zypper in ca-certificates-suse p11-kit-nss-trust
+
+The user running `caasp-kvm` must be a member of a few additional groups:
+
+    # replace <username> with your username
+    usermod -aG docker,libvirtd <username>
+
+
 The [Terraform](https://github.com/hashicorp/terraform) and the
 [terraform-provider-libvirt](https://github.com/dmacvicar/terraform-provider-libvirt)
 providers must be installed.
