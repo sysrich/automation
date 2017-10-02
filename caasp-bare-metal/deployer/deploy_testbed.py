@@ -137,6 +137,8 @@ class APIError(Exception):
     pass
 
 class TestbedServiceClient():
+    """Handle interactions with the Bare Metal Manager (BMM)
+    """
 
     def __init__(self):
         self._api = conf["bmm_api_address"] if conf else "localhost:8880"
@@ -262,6 +264,11 @@ class TestbedServiceClient():
     def release_servers(self, testname):
         self._api_get('/hw/release/{}'.format(testname))
 
+    def manage_iso(self):
+        """Start ISO fetch if needed, return status"""
+        return self._api_get('/iso/manage_iso')
+
+
 
 class RemoteHWManager(TestbedServiceClient):
     def __init__(self, ipaddr, ipmi_user=None, ipmi_pass=None):
@@ -288,6 +295,12 @@ def parse_args():
             help='store metrics into Prometheus')
     ap.add_argument('--conffile', help='config filename')
     ap.add_argument('--wipe-admin', help='wipe admin host partition table', action='store_true')
+    ap.add_argument('--start-iso-fetching',
+            help='start downloading a new ISO if available',
+            action='store_true')
+    ap.add_argument('--wait-iso-fetching',
+            help='start downloading any new ISO and wait for the current ISO download to complete',
+            action='store_true')
     ap.add_argument('--admin', help='deploy admin host', action='store_true')
     ap.add_argument('--bogus-env-json', help='create temporary environment.json', action='store_true')
     ap.add_argument('--deploy-nodes', help='deploy nodes', action='store_true')
@@ -625,6 +638,30 @@ def main():
     if args.release:
         tsclient.release_servers(args.testname)
         return
+
+    if args.start_iso_fetching or args.wait_iso_fetching:
+        # The BMM will start fetching a new ISO, if available
+        log.info("Checking for new ISO")
+        status = tsclient.manage_iso()
+        if status["running"] is None:
+            log.info("No new ISO to download")
+        else:
+            log.info("ISO download started - URL: {}".format(
+                status["running"]))
+
+    if args.wait_iso_fetching:
+        while True:
+            status = tsclient.manage_iso()
+            if status["running"] is None:
+                break
+            log.info(
+                "Waiting for ISO to finish downloading. "
+                "Progress: {} URL: {}".format(
+                    status["progress"],
+                    status["running"]
+                )
+            )
+            sleep(20)
 
     if args.wipe_admin:
         wipe_admin_node(args)
