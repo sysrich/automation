@@ -1,26 +1,5 @@
 #!/bin/sh
-
-set -euo pipefail
-
-# This script should be as dumb as possible, it should
-# contain the most commonly used options for each of the
-# other tools, and no more. If you need to customize the
-# options for a tool, use that tool directly instead!
-
-# options
-HAS_ACTION=false
-RUN_SETUP=false
-RUN_BUILD=false
-RUN_BOOTSTRAP=false
-RUN_TESTINFRA=false
-RUN_DESTROY=false
-
-MASTERS=1
-WORKERS=2
-IMAGE=channel://devel
-PROXY=${CAASP_HTTP_PROXY:-}
-PARALLELISM=1
-
+#
 # READ THIS BEFORE ADDING ANYTHING HERE.
 #
 # This script should remain as simple as possible, with
@@ -28,6 +7,40 @@ PARALLELISM=1
 # tools it orchestrates. If it's not something most
 # developers would use at least once a week, then it doesn't
 # belong here.
+#
+# This script should be as dumb as possible, it should
+# contain the most commonly used options for each of the
+# other tools, and no more. If you need to customize the
+# options for a tool, use that tool directly instead!
+
+set -euo pipefail
+
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+# options
+RUN_SETUP=
+RUN_BUILD=
+RUN_BOOTSTRAP=
+RUN_TESTINFRA=
+RUN_DESTROY=
+
+MASTERS=${CAASP_NUM_MASTERS:-1}
+WORKERS=${CAASP_NUM_WORKERS:-2}
+IMAGE=${CAASP_IMAGE:-channel://devel}
+PROXY=${CAASP_HTTP_PROXY:-}
+PARALLELISM=${CAASP_PARALLELISM:-1}
+
+# base distribution used for setting up dependencies, and the packages to install
+DIST_BASE="opensuse.org/repositories/Virtualization:/containers"
+DIST_PACKAGES="jq \
+               python-tox \
+               python-devel \
+               libsodium-devel \
+               python-openstackclient \
+               python-novaclient \
+               python-heatclient \
+               terraform \
+               terraform-provider-libvirt"
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -39,10 +52,10 @@ Usage:
   * Building a cluster
 
     -b|--build               Run the CaaSP KVM Build Step
-    -m|--masters <INT>       Number of masters to build
-    -w|--workers <INT>       Number of workers to build
+    -m|--masters <INT>       Number of masters to build (Default: CAASP_NUM_MASTERS)
+    -w|--workers <INT>       Number of workers to build (Default: CAASP_NUM_WORKERS)
     -d|--destroy             Run the CaaSP KVM Destroy Step
-    -i|--image               Image to use
+    -i|--image               Image to use (Default: CAASP_IMAGE)
 
   * Bootstraping a cluster
 
@@ -57,7 +70,7 @@ Usage:
 
   * Common options
 
-    -p|--parallelism         Set terraform parallelism
+    -p|--parallelism         Set terraform parallelism (Default: CAASP_PARALLELISM)
     -P|--proxy               Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
 
   * Examples:
@@ -77,18 +90,19 @@ USAGE
 log()        { (>&2 echo ">>> [caasp-devenv] $@") ; }
 warn()       { log "WARNING: $@" ; }
 error()      { log "ERROR: $@" ; exit 1 ; }
-check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
+check_file() { [ -f "$1" ] || error "File $1 doesn't exist!" ; }
+usage()      { echo "$USAGE" ; exit 0 ; }
 
 # parse options
 while [[ $# > 0 ]] ; do
   case $1 in
     --setup)
-      RUN_SETUP=true
-      HAS_ACTION=true
+      ACTION=1
+      RUN_SETUP=1
       ;;
     -b|--build)
-      RUN_BUILD=true
-      HAS_ACTION=true
+      ACTION=1
+      RUN_BUILD=1
       ;;
     -m|--masters)
       MASTERS="$2"
@@ -99,20 +113,20 @@ while [[ $# > 0 ]] ; do
       shift
       ;;
     -d|--destroy)
-      RUN_DESTROY=true
-      HAS_ACTION=true
+      ACTION=1
+      RUN_DESTROY=1
       ;;
     -i|--image)
       IMAGE="$2"
       shift
       ;;
     -B|--bootstrap)
-      RUN_BOOTSTRAP=true
-      HAS_ACTION=true
+      ACTION=1
+      RUN_BOOTSTRAP=1
       ;;
     -T|--testinfra)
-      RUN_TESTINFRA=true
-      HAS_ACTION=true
+      ACTION=1
+      RUN_TESTINFRA=1
       ;;
     -p|--parallelism)
       PARALLELISM="$2"
@@ -123,88 +137,61 @@ while [[ $# > 0 ]] ; do
       shift
       ;;
     -h|--help)
-      echo "$USAGE"
-      exit 0
+      usage
       ;;
   esac
   shift
 done
+
+##############################################################
+
+CAASP_KVM_ARGS="-m $MASTERS -w $WORKERS --image $IMAGE"
+[ -n "$PARALLELISM" ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --parallelism=$PARALLELISM"
+[ -n "$PROXY"       ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --proxy $PROXY"
+
+export ENVIRONMENT="$DIR/caasp-kvm/environment.json"
 
 # Core methods
 setup() {
   log "Installing CaaSP Development Environment Requiemnts"
   local dist=$(lsb-release -sd | tr -d '"' | tr " " "_")
 
-  if ! zypper lr -dU | grep --quiet "opensuse.org/repositories/Virtualization:/containers"; then
+  if ! zypper lr -dU | grep --quiet "$DIST_BASE" ; then
     log "Adding Virtualization:containers Zypper repo"
-    sudo zypper ar --refresh http://download.opensuse.org/repositories/Virtualization:/containers/${dist}/Virtualization:containers.repo
+    sudo zypper ar --refresh "http://download.$DIST_BASE/${dist}/Virtualization:containers.repo"
   fi
 
   # || : is necessary, as Zypper exits non-zero for "no changes".
-  sudo zypper in --no-confirm jq python-tox python-devel libsodium-devel python-openstackclient python-novaclient python-heatclient terraform terraform-provider-libvirt || :
+  sudo zypper in --no-confirm $DIST_PACKAGES || :
 
-  pushd velum-bootstrap
-  ./velum-interactions --setup
-  popd
+  (cd "$DIR/velum-bootstrap" && ./velum-interactions --setup)
 }
 
 build() {
-  pushd caasp-kvm
   log "Starting CaaSP KVM Environment"
-  ./caasp-kvm --build -m $MASTERS -w $WORKERS --image $IMAGE --parallelism $PARALLELISM --proxy "${PROXY}"
-  popd
+  (cd "$DIR/caasp-kvm" && ./caasp-kvm --build $CAASP_KVM_ARGS )
 }
 
 bootstrap() {
   log "Bootstrap CaaSP Environment"
-
-  export ENVIRONMENT=$(realpath caasp-kvm/environment.json)
-  pushd velum-bootstrap
-  ./velum-interactions --configure --bootstrap
-  popd
+  [ -f "$ENVIRONMENT" ] || error "no environment file found at $ENVIRONMENT"
+  (cd "$DIR/velum-bootstrap" && ./velum-interactions --configure --bootstrap )
 }
 
 testinfra() {
   log "Testing CaaSP Environment using testinfra"
-
-  export ENVIRONMENT_JSON=$(realpath caasp-kvm/environment.json)
-  pushd testinfra
-  tox
-  popd
+  [ -f "$ENVIRONMENT" ] || error "no environment file found at $ENVIRONMENT"
+  (cd "$DIR/testinfra" && env ENVIRONMENT_JSON="$ENVIRONMENT" tox)
 }
 
 destroy() {
-  pushd caasp-kvm
-
   log "Destroy CaaSP KVM Environment"
-  ./caasp-kvm --destroy --parallelism=$PARALLELISM --proxy "${PROXY}"
-  popd
+  (cd "$DIR/caasp-kvm" && ./caasp-kvm --destroy $CAASP_KVM_ARGS)
 }
 
-# main
-if [ "$HAS_ACTION" != true ]; then
-  echo "$USAGE"
-  error "No action arguments were supplied"
-fi
-
-if [ "$RUN_SETUP" = true ]; then
-  setup
-fi
-
-if [ "$RUN_BUILD" = true ]; then
-  build
-fi
-
-if [ "$RUN_BOOTSTRAP" = true ] ; then
-  bootstrap
-fi
-
-if [ "$RUN_TESTINFRA" = true ] ; then
-  testinfra
-fi
-
-if [ "$RUN_DESTROY" = true ] ; then
-  destroy
-fi
-
-log "Done"
+[ -n "$ACTION"        ] || usage
+[ -n "$RUN_SETUP"     ] && setup
+[ -n "$RUN_BUILD"     ] && build
+[ -n "$RUN_BOOTSTRAP" ] && bootstrap
+[ -n "$RUN_TESTINFRA" ] && testinfra
+[ -n "$RUN_DESTROY"   ] && destroy

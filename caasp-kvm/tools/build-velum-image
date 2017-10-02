@@ -1,27 +1,52 @@
 #!/bin/bash
 set -euo pipefail
 
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+VELUM_DIR="$1"
+PROXY=${2:-}
+
+# the script used for downloading images
+DOWNLOADER="$DIR/../../misc-tools/download-image"
+
+# the output image
+VELUM_DEVEL_IMAGE="$DIR/../resources/docker-images/velum-development.tar"
+
+##################################################################
+
+# Utility methods
+log()        { (>&2 echo ">>> [build-velum-image] $@") ; }
+warn()       { log "WARNING: $@" ; }
+error()      { log "ERROR: $@" ; exit 1 ; }
+
+do_commit() {
+  docker logs -f "$1"
+  docker commit "$1" sles12/velum:development_wip
+  docker rm "$1"
+}
+
 # Downloads the sles12-velum-development image built on IBS
-# Args: full path of build-velum-image.sh - Used to compute the path to the download script
 # Returns the absolute path to the tarball
 # FIXME: this always downloads the image from HEAD. That's because we are
 # not building this image on the other branches.
-function download_velum_development_image() {
+download_velum_development_image() {
   #TODO: ensure the name of the image downloaded is returned. The wrong image name
   # might be returned if multiple tarballs are into the directory
-  echo $($1/download_image.py  --proxy "${2:-}" --type docker --image-name sles12-velum-development channel://devel | grep "File on Disk" | cut -d ":" -f2)
+  echo $($DOWNLOADER --proxy "$PROXY" --type docker \
+         --image-name sles12-velum-development \
+         channel://devel | grep "File on Disk" | cut -d ":" -f2)
 }
 
 # docker load of the velum-development image tarball
 # Args: full path to the tarball
-function load_velum_development_image() {
+load_velum_development_image() {
   docker rmi sles12/velum-development:0.0 || : 2> /dev/null
   docker rmi sles12/velum:development || : 2> /dev/null
-  docker load -i $1
+  docker load -i "$1"
 }
 
-function build_fresh_image() {
-  echo "Building velum image with all the required gems"
+build_fresh_image() {
+  log "Building velum image with all the required gems"
   # Reuse the gems already vendored into the devel image if possible.
   # This will pull only the development gems and the ones changed on master.
   # This greatly reduces the creation time of the image
@@ -38,12 +63,10 @@ function build_fresh_image() {
                       tar -xjf /opt/phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /opt && \
                       mv /opt/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin && \
                       rm -rf /opt/phantomjs-2.1.1-linux-x86_64"`
-  docker logs -f $CONTAINER_BUILD
-  docker commit $CONTAINER_BUILD sles12/velum:development_wip
-  docker rm $CONTAINER_BUILD
+  do_commit "$CONTAINER_BUILD"
 }
 
-function patch_schema() {
+patch_schema() {
   # The only reason for the existence of this patch is a very nasty hack that needs to be removed
   # as soon as possible.
   #
@@ -92,18 +115,16 @@ function patch_schema() {
   #
   # Commit the sles12/velum:development image again, as if nothing ever happened.
 
-  echo "Patching schema of velum image"
+  log "Patching schema of velum image"
   local CONTAINER_BUILD=`docker run -d sles12/velum:development_wip cp /srv/velum/db/schema.rb /var/lib/velum`
-  docker logs -f $CONTAINER_BUILD
-  docker commit $CONTAINER_BUILD sles12/velum:development_wip
-  docker rm $CONTAINER_BUILD
+  do_commit "$CONTAINER_BUILD"
 }
 
 # Set special environment variables needed to find the gems we vendored
 # into a different location
 # Creates also the sles/velum:latest image
-function set_env_variables() {
-  echo "Adding special env variables into the final image"
+set_env_variables() {
+  log "Adding special env variables into the final image"
 
   local TMP_DIR=`mktemp -d`
   cat << EOF > $TMP_DIR/Dockerfile
@@ -112,57 +133,47 @@ ENV BUNDLE_FROZEN 1
 ENV BUNDLE_PATH /var/lib/velum
 ENV BUNDLE_DISABLE_SHARED_GEMS 1
 EOF
-  docker build -t sles12/velum:development $TMP_DIR
+  docker build -t sles12/velum:development "$TMP_DIR"
 
   # this image is now useless - it can be untagged
   docker rmi sles12/velum:development_wip
 
-  rm -rf $TMP_DIR
+  rm -rf "$TMP_DIR"
 }
 
-function save_image() {
-  rm -f velum-resources/velum-development.tar
-  docker save sles12/velum:development -o velum-resources/velum-development.tar
-  chmod 644 velum-resources/velum-development.tar
-  echo "Velum image saved to velum-resources/velum-development.tar"
+save_image() {
+  rm -f "$VELUM_DEVEL_IMAGE"
+  docker save sles12/velum:development -o "$VELUM_DEVEL_IMAGE"
+  chmod 644 "$VELUM_DEVEL_IMAGE"
+  log "Velum image saved to $VELUM_DEVEL_IMAGE"
 }
-
 
 # Parse args
-USE_CACHE=0
-
+USE_CACHE=
 while getopts ":c" opt; do
   case $opt in
     c)
       USE_CACHE=1
       ;;
     \?)
-      echo "Invalid option: -$OPTARG" >&2
+      log "Invalid option: -$OPTARG" >&2
       ;;
   esac
 done
 shift $(expr $OPTIND - 1 )
 
-VELUM_DIR=$1
-if [ ! -d "$VELUM_DIR" ]; then
-  echo "Velum directory $VELUM_DIR does not exist"
-  exit 1
-fi
-
-if [[ $USE_CACHE -eq 1 && -f $(dirname $0)/../velum-resources/velum-development.tar ]]; then
-  echo "Using prebuilt image"
+[ -d "$VELUM_DIR" ] || error "Velum directory $VELUM_DIR does not exist"
+[ -n "$USE_CACHE" ] && [ -f "$VELUM_DEVEL_IMAGE" ] && {
+  log "Using prebuilt image"
   exit 0
-fi
+}
 
-echo "Downloading latest build of the velum development image"
-TARBALL=$(download_velum_development_image $(dirname $0)/../../misc-tools "${2:-}")
-load_velum_development_image $TARBALL
+log "Downloading latest build of the velum development image"
+load_velum_development_image "$(download_velum_development_image)"
 
 build_fresh_image
 
 # FIXME: remove this once we upgrade to Rails 5
 patch_schema
-
 set_env_variables
-
 save_image
