@@ -142,7 +142,6 @@ fi
 
 if [ -n "$CAASP_MANIFESTS_DIR" ] ; then
   CAASP_MANIFESTS_DIR="$(realpath $CAASP_MANIFESTS_DIR)"
-  TF_ARGS="$TF_ARGS -var kubic_caasp_container_manifests_dir=$CAASP_MANIFESTS_DIR"
   log "Using Manifests dir: $CAASP_MANIFESTS_DIR"
 fi
 
