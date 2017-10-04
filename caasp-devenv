@@ -24,6 +24,10 @@ RUN_BOOTSTRAP=
 RUN_TESTINFRA=
 RUN_DESTROY=
 
+# the default caasp provider
+CAASP_PROVIDER="${CAASP_PROVIDER:-kvm}"
+CAASP_PROVIDER_ARGS=
+
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
 IMAGE=${CAASP_IMAGE:-channel://devel}
@@ -96,6 +100,10 @@ usage()      { echo "$USAGE" ; exit 0 ; }
 # parse options
 while [[ $# > 0 ]] ; do
   case $1 in
+    --provider)
+      CAASP_PROVIDER="$2"
+      shift
+      ;;
     --setup)
       ACTION=1
       RUN_SETUP=1
@@ -145,15 +153,16 @@ done
 
 ##############################################################
 
-CAASP_KVM_ARGS="-m $MASTERS -w $WORKERS --image $IMAGE"
-[ -n "$PARALLELISM" ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --parallelism=$PARALLELISM"
-[ -n "$PROXY"       ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --proxy $PROXY"
+CAASP_PROVIDER_ARGS="-m $MASTERS -w $WORKERS --image $IMAGE"
+[ -n "$PARALLELISM" ] && CAASP_PROVIDER_ARGS="$CAASP_PROVIDER_ARGS --parallelism=$PARALLELISM"
+[ -n "$PROXY"       ] && CAASP_PROVIDER_ARGS="$CAASP_PROVIDER_ARGS --proxy $PROXY"
 
-export ENVIRONMENT="$DIR/caasp-kvm/environment.json"
+export ENVIRONMENT="$DIR/environment.json"
+export ENVIRONMENT_JSON="$ENVIRONMENT"
 
 # Core methods
 setup() {
-  log "Installing CaaSP Development Environment Requiemnts"
+  log "Installing CaaSP Development Environment Requirements"
   local dist=$(lsb-release -sd | tr -d '"' | tr " " "_")
 
   if ! zypper lr -dU | grep --quiet "$DIST_BASE" ; then
@@ -168,25 +177,27 @@ setup() {
 }
 
 build() {
-  log "Starting CaaSP KVM Environment"
-  (cd "$DIR/caasp-kvm" && ./caasp-kvm --build $CAASP_KVM_ARGS )
+  log "Starting CaaSP $CAASP_PROVIDER Environment"
+  (cd "$DIR/providers/$CAASP_PROVIDER" && ./caasp-up.sh $CAASP_PROVIDER_ARGS)
 }
 
 bootstrap() {
   log "Bootstrap CaaSP Environment"
   [ -f "$ENVIRONMENT" ] || error "no environment file found at $ENVIRONMENT"
-  (cd "$DIR/velum-bootstrap" && ./velum-interactions --configure --bootstrap )
+  [ -x "$DIR/providers/$CAASP_PROVIDER/caasp-bootstrap.sh" ] && \
+    (cd "$DIR/providers/$CAASP_PROVIDER" && caasp-bootstrap.sh)
+  (cd "$DIR/velum-bootstrap" && ./velum-interactions --configure --bootstrap)
 }
 
 testinfra() {
   log "Testing CaaSP Environment using testinfra"
-  [ -f "$ENVIRONMENT" ] || error "no environment file found at $ENVIRONMENT"
-  (cd "$DIR/testinfra" && env ENVIRONMENT_JSON="$ENVIRONMENT" tox)
+  [ -f "$ENVIRONMENT_JSON" ] || error "no environment file found at $ENVIRONMENT_JSON"
+  (cd "$DIR/testinfra" && tox)
 }
 
 destroy() {
-  log "Destroy CaaSP KVM Environment"
-  (cd "$DIR/caasp-kvm" && ./caasp-kvm --destroy $CAASP_KVM_ARGS)
+  log "Destroy CaaSP $CAASP_PROVIDER Environment"
+  (cd "$DIR/providers/$CAASP_PROVIDER" && ./caasp-down.sh $CAASP_PROVIDER_ARGS)
 }
 
 [ -n "$ACTION"        ] || usage

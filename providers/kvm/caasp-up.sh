@@ -4,10 +4,9 @@ set -euo pipefail
 
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 
-# options
-ACTION=
-RUN_BUILD=
-RUN_DESTROY=
+source  "$DIR/../../misc-tools/functions"
+
+################################################################
 
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
@@ -20,21 +19,16 @@ CAASP_MANIFESTS_DIR=${CAASP_MANIFESTS_DIR:-$DIR/../../caasp-container-manifests}
 CAASP_VELUM_DIR=${CAASP_VELUM_DIR:-$DIR/../../velum}
 
 # the environment file
-ENVIRONMENT=$DIR/environment.json
+ENVIRONMENT=${ENVIRONMENT:-$DIR/../environment.json}
 
 USAGE=$(cat <<USAGE
 Usage:
 
   * Building a cluster
 
-    -b|--build             Run the CaaSP KVM Build Step
     -m|--masters <INT>     Number of masters to build (Default: CAASP_NUM_MASTERS=$MASTERS)
     -w|--workers <INT>     Number of workers to build (Default: CAASP_NUM_WORKERS=$WORKERS)
     -i|--image <STR>       Image to use (Default: CAASP_IMAGE=$IMAGE)
-
-  * Destroying a cluster
-
-    -d|--destroy           Run the CaaSP KVM Destroy Step
 
   * Common options
 
@@ -51,11 +45,11 @@ Usage:
 
   Build a 1 master, 2 worker cluster
 
-  $0 --build -m 1 -w 2
+  $0 -m 1 -w 2
 
   Build a 1 master, 2 worker cluster using the latest staging A image
 
-  $0 --build -m 1 -w 2 --image channel://staging_a
+  $0 -m 1 -w 2 --image channel://staging_a
 
   Destroy a cluster
 
@@ -64,20 +58,9 @@ Usage:
 USAGE
 )
 
-# Utility methods
-log()        { (>&2 echo ">>> [caasp-kvm] $@") ; }
-warn()       { log "WARNING: $@" ; }
-error()      { log "ERROR: $@" ; exit 1 ; }
-check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
-usage()      { echo "$USAGE" ; exit 0 ; }
-
 # parse options
 while [[ $# > 0 ]] ; do
   case $1 in
-    -b|--build)
-      ACTION=1
-      RUN_BUILD=1
-      ;;
     -m|--masters)
       MASTERS="$2"
       shift
@@ -98,10 +81,6 @@ while [[ $# > 0 ]] ; do
       PROXY="$2"
       shift
       ;;
-    -d|--destroy)
-      ACTION=1
-      RUN_DESTROY=1
-      ;;
     --salt-dir)
       CAASP_SALT_DIR="$2"
       shift
@@ -115,13 +94,16 @@ while [[ $# > 0 ]] ; do
       shift
       ;;
     -h|--help)
-      usage
+      echo "$USAGE"
+      exit 0
       ;;
   esac
   shift
 done
 
 ################################################################
+
+export CAASP_PROVIDER="kvm"
 
 TF_ARGS="-parallelism=$PARALLELISM \
          -var caasp_img_source_url=$IMAGE \
@@ -147,51 +129,37 @@ if [ -n "$CAASP_MANIFESTS_DIR" ] ; then
 fi
 
 # Core methods
-build() {
-  log "CaaS Platform Building"
+log "CaaS Platform Building"
 
-  log "Downloading CaaSP KVM Image"
-  $DIR/../misc-tools/download-image --proxy "${PROXY}" --type kvm $IMAGE
+log "Downloading CaaSP KVM Image"
+$DIR/../misc-tools/download-image --proxy "${PROXY}" --type kvm $IMAGE
 
-  if [ -n "$CAASP_VELUM_DIR" ] ; then
-    log "Building Velum Development Image"
-    $DIR/tools/build-velum-image "$CAASP_VELUM_DIR" "${PROXY}"
+if [ -n "$CAASP_VELUM_DIR" ] ; then
+  log "Building Velum Development Image"
+  $DIR/tools/build-velum-image "$CAASP_VELUM_DIR" "${PROXY}"
 
-    log "Creating Velum Directories"
-    mkdir -p "$CAASP_VELUM_DIR/tmp" "$CAASP_VELUM_DIR/log" "$CAASP_VELUM_DIR/vendor/bundle"
+  log "Creating Velum Directories"
+  mkdir -p "$CAASP_VELUM_DIR/tmp" "$CAASP_VELUM_DIR/log" "$CAASP_VELUM_DIR/vendor/bundle"
 
-    log "Copying CaaSP Container Manifests"
-    local injected="$(realpath injected-caasp-container-manifests)"
-    rm -rf $injected/*
-    cp -r $CAASP_MANIFESTS_DIR/* "$injected/"
+  log "Copying CaaSP Container Manifests"
+  injected="$(realpath injected-caasp-container-manifests)"
+  rm -rf $injected/*
+  cp -r $CAASP_MANIFESTS_DIR/* "$injected/"
 
-    log "Patching Container Manifests"
-    $DIR/tools/fix-kubelet-manifest -o $injected/public.yaml $injected/public.yaml
-  else
-    log "Skipping Velum environment"
-  fi
+  log "Patching Container Manifests"
+  $DIR/tools/fix-kubelet-manifest -o $injected/public.yaml $injected/public.yaml
+else
+  log "Skipping Velum environment"
+fi
 
-  log "Applying terraform configuration"
-  terraform apply $TF_ARGS
+log "Applying terraform configuration"
+terraform apply $TF_ARGS
 
-  $DIR/tools/generate-environment
-  $DIR/../misc-tools/generate-ssh-config $ENVIRONMENT
+$DIR/tools/generate-environment
+gen_ssh_config
+wait_for_velum
 
-  log "Waiting for Velum to start - this may take a while"
-  PYTHONUNBUFFERED=1 "$DIR/../misc-tools/wait-for-velum" https://$(jq -r '.dashboardHost' "$ENVIRONMENT")
-
-  log "CaaS Platform Ready for bootstrap"
-}
-
-destroy() {
-  log "Destroying terraform configuration"
-  terraform destroy -force $TF_ARGS && \
-    rm -f "$ENVIRONMENT"
-}
-
-[ -n "$ACTION"      ] || usage
-[ -n "$RUN_BUILD"   ] && build
-[ -n "$RUN_DESTROY" ] && destroy
+log "CaaS Platform Ready for bootstrap"
 
 exit 0
 

@@ -1,0 +1,18 @@
+# utility functions
+
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+# Utility methods
+log()        { (>&2 echo ">>> [caasp] $@") ; }
+warn()       { log "WARNING: $@" ; }
+error()      { log "ERROR: $@" ; exit 1 ; }
+check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
+
+gen_ssh_config() {
+  $DIR/generate-ssh-config "$ENVIRONMENT"
+}
+
+wait_for_velum() {
+  log "Waiting for Velum to start - this may take a while..."
+  PYTHONUNBUFFERED=1 "$DIR/wait-for-velum" https://$(jq -r '.minions[] | select(.role == "admin") | .addresses.publicIpv4' environment.json)
+}

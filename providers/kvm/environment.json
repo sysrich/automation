@@ -1,0 +1,48 @@
+{
+  "minions": [
+    {
+      "fqdn": "caasp-admin.devenv.caasp.suse.net",
+      "addresses": {
+        "publicIpv4": "10.17.1.0",
+        "privateIpv4": "10.17.1.0"
+      },
+      "role": "admin",
+      "index": "0",
+      "minionID": "7bc2de6bb3524aa7b7ce9aef91df77a8"
+    },
+    {
+      "fqdn": "caasp-master-0.devenv.caasp.suse.net",
+      "addresses": {
+        "publicIpv4": "10.17.2.0",
+        "privateIpv4": "10.17.2.0"
+      },
+      "role": "master",
+      "index": "0",
+      "minionID": "d777161bf79040c6a245dd7a1aa12933"
+    },
+    {
+      "fqdn": "caasp-worker-0.devenv.caasp.suse.net",
+      "addresses": {
+        "publicIpv4": "10.17.3.0",
+        "privateIpv4": "10.17.3.0"
+      },
+      "role": "worker",
+      "index": "0",
+      "minionID": "b6ce4a9f13fe4904aa2372992034e035"
+    },
+    {
+      "fqdn": "caasp-worker-1.devenv.caasp.suse.net",
+      "addresses": {
+        "publicIpv4": "10.17.3.1",
+        "privateIpv4": "10.17.3.1"
+      },
+      "role": "worker",
+      "index": "1",
+      "minionID": "d1e4c21d10a549038cdf88ec70f28ea9"
+    }
+  ],
+  "dashboardHost": "10.17.1.0",
+  "kubernetesHost": "kube-api-x1.devenv.caasp.suse.net",
+  "sshKey": "/home/alvaro/Development/SUSE/automation/caasp-kvm/tools/../../misc-files/id_shared",
+  "sshUser": "root"
+}

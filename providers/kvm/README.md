@@ -61,39 +61,40 @@ Clone these repositories:
 
 ## CLI Syntax
 
-    $ cd automation/caasp-kvm
-    $ ./caasp-kvm --help
-    Usage:
+```
+Usage:
 
-      * Building a cluster
+  * Building a cluster
 
-        -b|--build                       Run the CaaSP KVM Build Step
-        -m|--masters             <INT>   Number of masters to build
-        -w|--workers             <INT>   Number of workers to build
-        -i|--image               <STR>   Image to use
+    -m|--masters <INT>     Number of masters to build (Default: CAASP_NUM_MASTERS=1)
+    -w|--workers <INT>     Number of workers to build (Default: CAASP_NUM_WORKERS=2)
+    -i|--image <STR>       Image to use (Default: CAASP_IMAGE=channel://devel)
 
-      * Destroying a cluster
+  * Common options
 
-        -d|--destroy                     Run the CaaSP KVM Destroy Step
+    -p|--parallelism       Set terraform parallelism (Default: CAASP_PARALLELISM)
+    -P|--proxy             Set HTTP proxy (Default: CAASP_HTTP_PROXY)
 
-      * Common options
+  * Local git checkouts
 
-        -p|--parallelism                 Set terraform parallelism
-        -P|--proxy                       Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
+     --salt-dir <DIR>      the Salt repo checkout (Default: CAASP_SALT_DIR)
+     --manifests-dir <DIR> the manifests repo checkout (Default: CAASP_MANIFESTS_DIR)
+     --velum-dir <DIR>     the Velum repo checkout (Default: CAASP_VELUM_DIR)
 
-      * Examples:
+  * Examples:
 
-      Build a 1 master, 2 worker cluster
+  Build a 1 master, 2 worker cluster
 
-      ./caasp-kvm --build -m 1 -w 2
+  ./caasp-up.sh -m 1 -w 2
 
-      Build a 1 master, 2 worker cluster using the latest staging A image
+  Build a 1 master, 2 worker cluster using the latest staging A image
 
-      ./caasp-kvm --build -m 1 -w 2 --image channel://staging_a
+  ./caasp-up.sh -m 1 -w 2 --image channel://staging_a
 
-      Destroy a cluster
+  Destroy a cluster
 
-      ./caasp-kvm --destroy
+  ./caasp-up.sh --destroy
+```
 
 ## Using a cluster
 
