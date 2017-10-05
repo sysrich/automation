@@ -106,10 +106,12 @@ build() {
   rm -rf $(realpath injected-caasp-container-manifests)/*
   cp -r $(realpath ../../caasp-container-manifests)/* $(realpath injected-caasp-container-manifests)/
 
+
   log "Patching Container Manifests"
   ./tools/kubelet_manifest_use_velum_devel.rb -o $(realpath injected-caasp-container-manifests)/public.yaml $(realpath injected-caasp-container-manifests)/public.yaml
 
-  terraform apply -parallelism=$PARALLELISM \
+  log "Applying terraform configuration"
+  terraform init && terraform apply -parallelism=$PARALLELISM \
     -var "caasp_img_source_url=${IMAGE}" \
     -var "caasp_master_count=${MASTERS}" \
     -var "caasp_worker_count=${WORKERS}" \
