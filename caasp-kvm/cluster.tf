@@ -77,11 +77,6 @@ variable "kubic_salt_dir" {
   description = "Path to the directory where https://github.com/kubic-project/salt/ has been cloned into"
 }
 
-variable "kubic_caasp_container_manifests_dir" {
-  type = "string"
-  description = "Path to the directory where https://github.com/kubic-project/caasp-container-manifests has been cloned into"
-}
-
 variable "kubic_velum_dir" {
   type = "string"
   description = "Path to the directory where https://github.com/kubic-project/velum has been cloned into"
