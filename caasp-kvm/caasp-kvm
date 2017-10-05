@@ -171,7 +171,7 @@ build() {
   fi
 
   log "Applying terraform configuration"
-  terraform apply $TF_ARGS
+  terraform init && terraform apply $TF_ARGS
 
   $DIR/tools/generate-environment
   $DIR/../misc-tools/generate-ssh-config $ENVIRONMENT
