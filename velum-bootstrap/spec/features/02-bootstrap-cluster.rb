@@ -131,19 +131,17 @@ feature "Boostrap cluster" do
       end
     end
     puts "<<< Orchestration completed"
+  end
 
-    puts ">>> Download kubeconfig"
-    with_screenshot(name: :download_kubeconfig) do
-      data = page.evaluate_script("\
-        function() {
-          var url = window.location.protocol + '//' + window.location.host + '/kubectl-config';\
-          var xhr = new XMLHttpRequest();\
-          xhr.open('GET', url, false);\
-          xhr.send(null);\
-          return xhr.responseText;\
-        }()
-      ")
-      File.write("kubeconfig", data)
+  scenario "User downloads the kubeconfig file" do
+    click_on "kubectl config"
+    expect(page).to have_current_path("/auth/ldap", only_path: true)
+    with_screenshot(name: :oidc_login) do
+      fill_in "login", with: "test@test.com"
+      fill_in "password", with: "password"
+      click_button "Login"
     end
+    expect(page.body).to have_text("apiVersion")
+    File.write("kubeconfig", Nokogiri::HTML(page.body).xpath("//pre").text)
   end
 end
