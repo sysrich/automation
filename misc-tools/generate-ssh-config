@@ -13,13 +13,16 @@ touch $OUTPUT
 SSH_USER=$(cat $ENVIRONMENT | jq -r '.sshUser')
 SSH_KEY=$(cat $ENVIRONMENT | jq -r '.sshKey')
 
-cat $ENVIRONMENT | jq -c '.minions[]' | while read minion_json; do
+cat $ENVIRONMENT | jq -c '.minions[]' | \
+while read minion_json; do
     FQDN=$(echo -n "$minion_json" | jq -r '.fqdn')
     IPV4=$(echo -n "$minion_json" | jq -r 'if (.addresses.publicIpv4 == null) then .addresses.privateIpv4 else .addresses.publicIpv4 end')
     PROXY_COMMAND=$(echo -n "$minion_json" | jq -r 'if (.proxyCommand == null) then "" else .proxyCommand end')
+    ROLE=$(echo -n "$minion_json" | jq -r '.role')
+    INDEX=$(echo -n "$minion_json" | jq -r '.index')
 
     cat << EOF >> $OUTPUT
-Host $FQDN
+Host $FQDN $ROLE-$INDEX $ROLE$INDEX
   User $SSH_USER
   Hostname $IPV4
   IdentityFile $SSH_KEY

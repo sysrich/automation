@@ -2,35 +2,51 @@
 
 set -euo pipefail
 
-# options
-HAS_ACTION=false
-RUN_BUILD=false
-RUN_DESTROY=false
+DIR="$( cd "$( dirname "$0" )" && pwd )"
 
-MASTERS=1
-WORKERS=2
-IMAGE=channel://devel
+# options
+ACTION=
+RUN_BUILD=
+RUN_DESTROY=
+
+MASTERS=${CAASP_NUM_MASTERS:-1}
+WORKERS=${CAASP_NUM_WORKERS:-2}
+IMAGE=${CAASP_IMAGE:-channel://devel}
 PROXY=${CAASP_HTTP_PROXY:-}
-PARALLELISM=1
+PARALLELISM=${CAASP_PARALLELISM:-1}
+
+CAASP_SALT_DIR=${CAASP_SALT_DIR:-$DIR/../../salt}
+CAASP_MANIFESTS_DIR=${CAASP_MANIFESTS_DIR:-$DIR/../../caasp-container-manifests}
+CAASP_VELUM_DIR=${CAASP_VELUM_DIR:-$DIR/../../velum}
+
+# the environment file
+ENVIRONMENT=$DIR/environment.json
 
 USAGE=$(cat <<USAGE
 Usage:
 
   * Building a cluster
 
-    -b|--build                       Run the CaaSP KVM Build Step
-    -m|--masters             <INT>   Number of masters to build
-    -w|--workers             <INT>   Number of workers to build
-    -i|--image               <STR>   Image to use
+    -b|--build             Run the CaaSP KVM Build Step
+    -m|--masters <INT>     Number of masters to build (Default: CAASP_NUM_MASTERS=$MASTERS)
+    -w|--workers <INT>     Number of workers to build (Default: CAASP_NUM_WORKERS=$WORKERS)
+    -i|--image <STR>       Image to use (Default: CAASP_IMAGE=$IMAGE)
 
   * Destroying a cluster
 
-    -d|--destroy                     Run the CaaSP KVM Destroy Step
+    -d|--destroy           Run the CaaSP KVM Destroy Step
 
   * Common options
 
-    -p|--parallelism                 Set terraform parallelism
-    -P|--proxy                       Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
+    -p|--parallelism       Set terraform parallelism (Default: CAASP_PARALLELISM)
+    -P|--proxy             Set HTTP proxy (Default: CAASP_HTTP_PROXY)
+
+  * Local git checkouts
+
+     --salt-dir <DIR>      the Salt repo checkout (Default: CAASP_SALT_DIR)
+     --manifests-dir <DIR> the manifests repo checkout (Default: CAASP_MANIFESTS_DIR)
+     --velum-dir <DIR>     the Velum repo checkout (Default: CAASP_VELUM_DIR)
+
   * Examples:
 
   Build a 1 master, 2 worker cluster
@@ -53,13 +69,14 @@ log()        { (>&2 echo ">>> [caasp-kvm] $@") ; }
 warn()       { log "WARNING: $@" ; }
 error()      { log "ERROR: $@" ; exit 1 ; }
 check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
+usage()      { echo "$USAGE" ; exit 0 ; }
 
 # parse options
 while [[ $# > 0 ]] ; do
   case $1 in
     -b|--build)
-      RUN_BUILD=true
-      HAS_ACTION=true
+      ACTION=1
+      RUN_BUILD=1
       ;;
     -m|--masters)
       MASTERS="$2"
@@ -82,75 +99,98 @@ while [[ $# > 0 ]] ; do
       shift
       ;;
     -d|--destroy)
-      RUN_DESTROY=true
-      HAS_ACTION=true
+      ACTION=1
+      RUN_DESTROY=1
+      ;;
+    --salt-dir)
+      CAASP_SALT_DIR="$2"
+      shift
+      ;;
+    --manifests-dir)
+      CAASP_MANIFESTS_DIR="$2"
+      shift
+      ;;
+    --velum-dir)
+      CAASP_VELUM_DIR="$2"
+      shift
       ;;
     -h|--help)
-      echo "$USAGE"
-      exit 0
+      usage
       ;;
   esac
   shift
 done
+
+################################################################
+
+TF_ARGS="-parallelism=$PARALLELISM \
+         -var caasp_img_source_url=$IMAGE \
+         -var caasp_master_count=$MASTERS \
+         -var caasp_worker_count=$WORKERS"
+
+if [ -n "$CAASP_SALT_DIR" ] ; then
+  CAASP_SALT_DIR="$(realpath $CAASP_SALT_DIR)"
+  TF_ARGS="$TF_ARGS -var kubic_salt_dir=$CAASP_SALT_DIR"
+  log "Using Salt dir: $CAASP_SALT_DIR"
+fi
+
+if [ -n "$CAASP_VELUM_DIR" ] ; then
+  CAASP_VELUM_DIR="$(realpath $CAASP_VELUM_DIR)"
+  TF_ARGS="$TF_ARGS -var kubic_velum_dir=$CAASP_VELUM_DIR"
+  log "Using Velum dir: $CAASP_VELUM_DIR"
+fi
+
+if [ -n "$CAASP_MANIFESTS_DIR" ] ; then
+  CAASP_MANIFESTS_DIR="$(realpath $CAASP_MANIFESTS_DIR)"
+  log "Using Manifests dir: $CAASP_MANIFESTS_DIR"
+fi
 
 # Core methods
 build() {
   log "CaaS Platform Building"
 
   log "Downloading CaaSP KVM Image"
-  ../misc-tools/download_image.py --proxy "${PROXY}" --type kvm $IMAGE
+  $DIR/../misc-tools/download-image --proxy "${PROXY}" --type kvm $IMAGE
 
-  log "Building Velum Development Image"
-  local velum=$(realpath ../../velum)
-  ./tools/build-velum-image.sh $velum "${PROXY}"
+  if [ -n "$CAASP_VELUM_DIR" ] ; then
+    log "Building Velum Development Image"
+    $DIR/tools/build-velum-image "$CAASP_VELUM_DIR" "${PROXY}"
 
-  log "Creating Velum Directories"
-  mkdir -p $velum/tmp $velum/log $velum/vendor/bundle
+    log "Creating Velum Directories"
+    mkdir -p "$CAASP_VELUM_DIR/tmp" "$CAASP_VELUM_DIR/log" "$CAASP_VELUM_DIR/vendor/bundle"
 
-  log "Copying CaaSP Container Manifests"
-  rm -rf $(realpath injected-caasp-container-manifests)/*
-  cp -r $(realpath ../../caasp-container-manifests)/* $(realpath injected-caasp-container-manifests)/
+    log "Copying CaaSP Container Manifests"
+    local injected="$(realpath injected-caasp-container-manifests)"
+    rm -rf $injected/*
+    cp -r $CAASP_MANIFESTS_DIR/* "$injected/"
 
-  log "Patching Container Manifests"
-  ./tools/kubelet_manifest_use_velum_devel.rb -o $(realpath injected-caasp-container-manifests)/public.yaml $(realpath injected-caasp-container-manifests)/public.yaml
+    log "Patching Container Manifests"
+    $DIR/tools/fix-kubelet-manifest -o $injected/public.yaml $injected/public.yaml
+  else
+    log "Skipping Velum environment"
+  fi
 
-  terraform apply -parallelism=$PARALLELISM \
-    -var "caasp_img_source_url=${IMAGE}" \
-    -var "caasp_master_count=${MASTERS}" \
-    -var "caasp_worker_count=${WORKERS}" \
-    -var "kubic_salt_dir=$(realpath ../../salt)" \
-    -var "kubic_velum_dir=$(realpath ../../velum)" \
-    -var "kubic_caasp_container_manifests_dir=$(realpath ../../caasp-container-manifests)"
+  log "Applying terraform configuration"
+  terraform init && terraform apply $TF_ARGS
 
-  ./tools/generate_environment.sh
-  ../misc-tools/generate-ssh-config environment.json
-  
+  $DIR/tools/generate-environment
+  $DIR/../misc-tools/generate-ssh-config $ENVIRONMENT
+
   log "Waiting for Velum to start - this may take a while"
-  PYTHONUNBUFFERED=1 ../misc-tools/wait_for_velum.py https://$(jq -r '.dashboardHost' environment.json)
+  PYTHONUNBUFFERED=1 "$DIR/../misc-tools/wait-for-velum" https://$(jq -r '.dashboardHost' "$ENVIRONMENT")
 
   log "CaaS Platform Ready for bootstrap"
 }
 
 destroy() {
-  log "CaaS Platform Destroying"
-  terraform destroy -force -parallelism=$PARALLELISM \
-    -var "kubic_salt_dir=$(realpath ../../salt)" \
-    -var "kubic_velum_dir=$(realpath ../../velum)" \
-    -var "kubic_caasp_container_manifests_dir=$(realpath ../../caasp-container-manifests)"
+  log "Destroying terraform configuration"
+  terraform destroy -force $TF_ARGS && \
+    rm -f "$ENVIRONMENT"
 }
 
-# main
-if [ "$HAS_ACTION" != true ]; then
-  echo "$USAGE"
-  error "No action arguments were supplied"
-fi
+[ -n "$ACTION"      ] || usage
+[ -n "$RUN_BUILD"   ] && build
+[ -n "$RUN_DESTROY" ] && destroy
 
-if [ "$RUN_BUILD" = true ]; then
-  build
-fi
+exit 0
 
-if [ "$RUN_DESTROY" = true ] ; then
-  destroy
-fi
-
-log "Done"

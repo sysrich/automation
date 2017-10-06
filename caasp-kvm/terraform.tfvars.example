@@ -38,6 +38,5 @@
 # DevEnv variables #
 ####################
 #kubic_salt_dir                      = "/home/user/caasp/salt/"
-#kubic_caasp_container_manifests_dir = "/home/user/caasp/caasp-container-manifests/"
 #kubic_velum_dir                     = "/home/user/caasp/velum"
 #kubic_force_rebuild_velum_image     = false
