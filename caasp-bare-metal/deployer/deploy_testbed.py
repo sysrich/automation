@@ -681,9 +681,9 @@ def main():
         servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr = admin_node
         power_up_time = datetime.now() - timedelta(hours=4)
         admin_host_ipaddr = parse_dhcp_logs(power_up_time, eth0_macaddr)
-        assert admin_host_ipaddr
 
     if args.deploy_nodes:
+        assert admin_host_ipaddr
         fetch_and_mangle_worker_autoyast(admin_host_ipaddr)
         power_off_nodes(args)
         available_hosts = deploy_nodes(args, admin_host_ipaddr, max_failing_nodes=0)
