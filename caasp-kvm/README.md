@@ -38,19 +38,34 @@ Clone these repositories:
 
       * Building a cluster
 
-        -b|--build                       Run the CaaSP KVM Build Step
-        -m|--masters             <INT>   Number of masters to build
-        -w|--workers             <INT>   Number of workers to build
-        -i|--image               <STR>   Image to use
+        -b|--build             Run the CaaSP KVM Build Step
+        -m|--masters <INT>     Number of masters to build (Default: CAASP_NUM_MASTERS=1)
+        -w|--workers <INT>     Number of workers to build (Default: CAASP_NUM_WORKERS=2)
+        -i|--image <STR>       Image to use (Default: CAASP_IMAGE=channel://devel)
 
       * Destroying a cluster
 
-        -d|--destroy                     Run the CaaSP KVM Destroy Step
+        -d|--destroy           Run the CaaSP KVM Destroy Step
 
       * Common options
 
-        -p|--parallelism                 Set terraform parallelism
-        -P|--proxy                       Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
+        -p|--parallelism       Set terraform parallelism (Default: CAASP_PARALLELISM)
+        -P|--proxy             Set HTTP proxy (Default: CAASP_HTTP_PROXY)
+
+      * Local git checkouts
+
+         --salt-dir <DIR>      the Salt repo checkout (Default: CAASP_SALT_DIR)
+         --manifests-dir <DIR> the manifests repo checkout (Default: CAASP_MANIFESTS_DIR)
+         --velum-dir <DIR>     the Velum repo checkout (Default: CAASP_VELUM_DIR)
+
+      * Advanced Options
+
+        --admin-ram <INT>      RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=2048)
+        --admin-cpu <INT>      CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=2)
+        --master-ram <INT>     RAM to allocate to master node(s) (Default: CAASP_MASTER_RAM=2048)
+        --worker-ram <INT>     CPUs to allocate to master node(s) (Default: CAASP_MASTER_CPU=2)
+        --master-cpu <INT>     RAM to allocate to worker node(s) (Default: CAASP_WORKER_RAM=2048)
+        --worker-cpu <INT>     CPUs to allocate to worker node(s) (Default: CAASP_WORKER_CPU=2)
 
       * Examples:
 
