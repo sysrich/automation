@@ -131,27 +131,27 @@ while [[ $# > 0 ]] ; do
       shift
       ;;
     --admin-ram)
-      CAASP_ADMIN_RAM="$2"
+      ADMIN_RAM="$2"
       shift
       ;;
     --admin-cpu)
-      CAASP_ADMIN_CPU="$2"
+      ADMIN_CPU="$2"
       shift
       ;;
     --master-ram)
-      CAASP_MASTER_RAM="$2"
+      MASTER_RAM="$2"
       shift
       ;;
     --master-cpu)
-      CAASP_MASTER_CPU="$2"
+      MASTER_CPU="$2"
       shift
       ;;
     --worker-ram)
-      CAASP_WORKER_RAM="$2"
+      WORKER_RAM="$2"
       shift
       ;;
     --worker-cpu)
-      CAASP_WORKER_CPU="$2"
+      WORKER_CPU="$2"
       shift
       ;;
     -h|--help)
