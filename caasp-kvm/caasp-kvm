@@ -19,6 +19,13 @@ CAASP_SALT_DIR=${CAASP_SALT_DIR:-$DIR/../../salt}
 CAASP_MANIFESTS_DIR=${CAASP_MANIFESTS_DIR:-$DIR/../../caasp-container-manifests}
 CAASP_VELUM_DIR=${CAASP_VELUM_DIR:-$DIR/../../velum}
 
+ADMIN_RAM=${CAASP_ADMIN_RAM:-4096}
+ADMIN_CPU=${CAASP_ADMIN_CPU:-4}
+MASTER_RAM=${CAASP_MASTER_RAM:-2048}
+MASTER_CPU=${CAASP_MASTER_CPU:-2}
+WORKER_RAM=${CAASP_WORKER_RAM:-2048}
+WORKER_CPU=${CAASP_WORKER_CPU:-2}
+
 # the environment file
 ENVIRONMENT=$DIR/environment.json
 
@@ -46,6 +53,15 @@ Usage:
      --salt-dir <DIR>      the Salt repo checkout (Default: CAASP_SALT_DIR)
      --manifests-dir <DIR> the manifests repo checkout (Default: CAASP_MANIFESTS_DIR)
      --velum-dir <DIR>     the Velum repo checkout (Default: CAASP_VELUM_DIR)
+
+  * Advanced Options
+
+    --admin-ram <INT>      RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=$ADMIN_RAM)
+    --admin-cpu <INT>      CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=$ADMIN_CPU)
+    --master-ram <INT>     RAM to allocate to master node(s) (Default: CAASP_MASTER_RAM=$MASTER_RAM)
+    --worker-ram <INT>     CPUs to allocate to master node(s) (Default: CAASP_MASTER_CPU=$MASTER_CPU)
+    --master-cpu <INT>     RAM to allocate to worker node(s) (Default: CAASP_WORKER_RAM=$WORKER_RAM)
+    --worker-cpu <INT>     CPUs to allocate to worker node(s) (Default: CAASP_WORKER_CPU=$WORKER_CPU)
 
   * Examples:
 
@@ -114,6 +130,30 @@ while [[ $# > 0 ]] ; do
       CAASP_VELUM_DIR="$2"
       shift
       ;;
+    --admin-ram)
+      CAASP_ADMIN_RAM="$2"
+      shift
+      ;;
+    --admin-cpu)
+      CAASP_ADMIN_CPU="$2"
+      shift
+      ;;
+    --master-ram)
+      CAASP_MASTER_RAM="$2"
+      shift
+      ;;
+    --master-cpu)
+      CAASP_MASTER_CPU="$2"
+      shift
+      ;;
+    --worker-ram)
+      CAASP_WORKER_RAM="$2"
+      shift
+      ;;
+    --worker-cpu)
+      CAASP_WORKER_CPU="$2"
+      shift
+      ;;
     -h|--help)
       usage
       ;;
@@ -126,7 +166,13 @@ done
 TF_ARGS="-parallelism=$PARALLELISM \
          -var caasp_img_source_url=$IMAGE \
          -var caasp_master_count=$MASTERS \
-         -var caasp_worker_count=$WORKERS"
+         -var caasp_worker_count=$WORKERS \
+         -var caasp_admin_memory=$ADMIN_RAM \
+         -var caasp_admin_vcpu=$ADMIN_CPU \
+         -var caasp_master_memory=$MASTER_RAM \
+         -var caasp_master_vcpu=$MASTER_CPU \
+         -var caasp_worker_memory=$WORKER_RAM \
+         -var caasp_worker_vcpu=$WORKER_CPU"
 
 if [ -n "$CAASP_SALT_DIR" ] ; then
   CAASP_SALT_DIR="$(realpath $CAASP_SALT_DIR)"
