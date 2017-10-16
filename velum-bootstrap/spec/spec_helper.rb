@@ -51,7 +51,7 @@ Capybara.configure do |config|
   config.default_selector = :css
 
   if admin_minion
-    config.app_host = "https://#{admin_minion['addresses']['publicIpv4']}"
+    config.app_host = "https://#{admin_minion['fqdn']}"
   else
     config.app_host = "https://localhost"
   end
