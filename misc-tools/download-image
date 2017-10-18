@@ -5,17 +5,11 @@ except ImportError:
     print(" >> Please install python-requests")
     raise SystemExit(1)
 import argparse
-import urlparse
+import json
 import os
 import re
+import urlparse
 from HTMLParser import HTMLParser
-
-URL_BASE = {
-    'release': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20/',
-    'staging_a': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20:/Staging:/A/',
-    'staging_b': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20:/Staging:/B/',
-    'devel': 'http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/',
-}
 
 QCOW_REGEX = '.*KVM.*x86_64-.*\.qcow2'
 DOCKER_REGEX = '%(docker_image)s.*x86_64-.*\.tar\.xz'
@@ -174,10 +168,28 @@ def get_channel_url(args):
 
     parser = ImageFinder(args)
 
-    if not URL_BASE.get(channel, False):
+    if args.download_urls_fname is None:
+        # generate location relative to this script (not `cwd`)
+        mypath = os.path.realpath(__file__)
+        relpath = '../../misc-files/download-urls.json'
+        download_urls_fname = os.path.join(mypath, relpath)
+    else:
+        download_urls_fname = args.download_urls_fname
+
+    download_urls_fname = os.path.abspath(download_urls_fname)
+
+    print("Extracting URLs from {}".format(download_urls_fname))
+    try:
+        with open(download_urls_fname) as f:
+            j = json.load(f)
+        base = j["baseurl"]
+    except Exception as e:
+        raise Exception("Unable to extract baseurl: {}".format(e))
+
+    if not base.get(channel, False):
         raise Exception("Unknown channel: %s" % channel)
 
-    base_url = URL_BASE[channel]
+    base_url = base[channel]
     if args.type == "docker":
         base_url += 'images_container_base'
     elif args.type in ["kvm", "openstack"]:
@@ -210,6 +222,9 @@ if __name__ == "__main__":
     parser.add_argument('--path', help="Where should the image be downloaded and linked (default: '../downloads')", default='../downloads')
     parser.add_argument('--image-name', help='Name of the Docker derived image to download (eg: "sles12-velum-devel").')
     parser.add_argument('--proxy', help="Proxy server to use", default='')
+    parser.add_argument('--download-urls-fname',
+            help="Path of the download URLs JSON file (default: <script_location>/../misc-files/download-urls.json)",
+            default=None)
     parser.add_argument('url', metavar='url', help='URL of image to download')
     args = parser.parse_args()
 
