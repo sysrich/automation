@@ -34,6 +34,10 @@
 #caasp_worker_memory = 2048
 #caasp_worker_vcpu   = 2
 
+# A range that doesn't conflict with the SUSE network
+# and allows a similar naming.
+#caasp_net_network = "172.17.0.0/22"
+
 ####################
 # DevEnv variables #
 ####################
