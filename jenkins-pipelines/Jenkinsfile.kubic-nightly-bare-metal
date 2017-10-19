@@ -13,6 +13,8 @@ properties([
 ])
 
 coreKubicProjectPeriodic(
+    // Prefer m1.large workers, fallback to any leap42.3 worker.
+    nodeLabel: 'leap42.3&&m1.large||leap42.3',
     environmentType: 'bare-metal',
     environmentDestroy: env.ENVIRONMENT_DESTROY,
     masterCount: env.MASTER_COUNT.toInteger(),
