@@ -585,7 +585,7 @@ def generate_environment_json(admin_host_ipaddr, available_hosts,
 
     available_hosts2 = []
     machine_id = tsclient.fetch_machine_id(admin_host_ipaddr, admin_host_ipaddr)
-    available_hosts2.append(("admin", "bogus_serial",
+    available_hosts2.append(("admin", admin_host_ipaddr,
         "bogus_mac", admin_host_ipaddr, machine_id))
 
     log.info("Fetching machine IDs")
