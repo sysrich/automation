@@ -137,10 +137,26 @@ class APIError(Exception):
     pass
 
 class TestbedServiceClient():
+    """Handle interactions with the Bare Metal Manager (BMM)
+    """
 
     def __init__(self):
         self._api = conf["bmm_api_address"] if conf else "localhost:8880"
         self._api_token = conf["bmm_token"]
+
+    def _parse(self, response):
+        """Parse JSON response
+        """
+        try:
+            return json.loads(response)
+        except Exception as e:
+            if 'Internal Server Error' in response:
+                for line in response.splitlines():
+                    log.error(line)
+                raise Exception("Server error")
+            else:
+                log.error("Unable to parse %r" % response)
+                raise
 
     def _api_get(self, path):
         ctx = http.client.ssl._create_stdlib_context()
@@ -155,11 +171,7 @@ class TestbedServiceClient():
         except socket.timeout:
             log.info("socket timeout")
             raise APIError('testbed daemon socket timeout')
-        try:
-            j = json.loads(response)
-        except Exception as e:
-            log.info("Unable to parse %r" % response)
-            raise
+        j = self._parse(response)
         if j["status"] != "ok":
             raise APIError(response)
         return j
@@ -172,11 +184,7 @@ class TestbedServiceClient():
         conn.request('POST', tpath, params)
         log.info("calling {}{}".format(self._api, path))
         response = conn.getresponse().read().decode('utf-8')
-        try:
-            j = json.loads(response)
-        except Exception as e:
-            log.info("Unable to parse %r" % response)
-            raise
+        j = self._parse(response)
         if j["status"] != "ok":
             raise APIError(response)
         return j
@@ -219,8 +227,8 @@ class TestbedServiceClient():
         resp = self._api_get('/dhcp/all/{}'.format(tstamp))
         return resp["entries"]
 
-    def pick_tftp_dir(self):
-        resp = self._api_get('/iso/pick_tftp_dir')
+    def pick_tftp_dir(self, iso_list_url):
+        resp = self._api_post('/iso/pick_tftp_dir', dict(iso_list_url=iso_list_url))
         return resp["tftpdir"]
 
     def probe_ssh_port(self, ipaddr):
@@ -262,6 +270,18 @@ class TestbedServiceClient():
     def release_servers(self, testname):
         self._api_get('/hw/release/{}'.format(testname))
 
+    def manage_iso(self):
+        """Return ISO status"""
+        return self._api_get('/iso/manage_iso')
+
+    def update_iso(self, iso_list_url, iso_pattern):
+        """Start ISO fetch if needed, return status"""
+        return self._api_post('/iso/update_iso', dict(
+                iso_list_url=iso_list_url,
+                iso_pattern=iso_pattern
+            ))
+
+
 
 class RemoteHWManager(TestbedServiceClient):
     def __init__(self, ipaddr, ipmi_user=None, ipmi_pass=None):
@@ -288,6 +308,17 @@ def parse_args():
             help='store metrics into Prometheus')
     ap.add_argument('--conffile', help='config filename')
     ap.add_argument('--wipe-admin', help='wipe admin host partition table', action='store_true')
+    ap.add_argument('--start-iso-fetching',
+            help='start downloading a new ISO if available',
+            action='store_true')
+    ap.add_argument('--download-urls-fname',
+            help='path of download-urls.json',
+            default='../../misc-files/download-urls.json')
+    ap.add_argument('--channel', help='ISO channel (default: devel)',
+            default='devel')
+    ap.add_argument('--wait-iso-fetching',
+            help='start downloading any new ISO and wait for the current ISO download to complete',
+            action='store_true')
     ap.add_argument('--admin', help='deploy admin host', action='store_true')
     ap.add_argument('--bogus-env-json', help='create temporary environment.json', action='store_true')
     ap.add_argument('--deploy-nodes', help='deploy nodes', action='store_true')
@@ -601,6 +632,50 @@ def run_velum_client(script_name):
         shell=True
     )
 
+def handle_iso(args):
+    """handle fetching a new ISO if needed
+    :return: tftpdir
+    """
+    duf = args.download_urls_fname
+    log.debug("Reading %s", duf)
+    with open(duf) as f:
+        j = json.load(f)
+        baseurl = j["baseurl"][args.channel]
+    iso_list_url = os.path.join(baseurl, 'images/iso')
+
+    # regexp - general enough for all Build<NNN> Media1 ISOs
+    iso_pattern = 'SUSE\\-CaaS\\-Platform\\-\\d+.\\d+\\-DVD\\-x86_64\\-Build(\\d+)\\-Media1\\.iso$'
+
+    if args.start_iso_fetching or args.wait_iso_fetching:
+        # The BMM will start fetching a new ISO, if available
+        log.info("Checking for new ISO")
+        status = tsclient.update_iso(iso_list_url, iso_pattern)
+        if status["running"] is None:
+            log.info("No new ISO to download")
+        else:
+            log.info("ISO download started - URL: {}".format(
+                status["running"]))
+
+    if args.wait_iso_fetching:
+        while True:
+            status = tsclient.manage_iso()
+            # TODO: ignore running download for a different iso_list_url
+            # TODO: handle parallel downloads
+            if status["running"] is None:
+                break
+            log.info(
+                "Waiting for ISO to finish downloading. "
+                "Progress: {} URL: {} ETA: {}".format(
+                    status["progress"],
+                    status["running"],
+                    status.get("eta", "unknown")
+                )
+            )
+            sleep(20)
+
+    return tsclient.pick_tftp_dir(iso_list_url)
+
+
 def main():
     global HWManager, conf, tsclient
     args = parse_args()
@@ -619,12 +694,12 @@ def main():
     HWManager = RemoteHWManager
     tsclient = TestbedServiceClient()
 
-    args.tftpdir = tsclient.pick_tftp_dir()
-    log.info("TFTP dir: %r" % args.tftpdir)
-
     if args.release:
         tsclient.release_servers(args.testname)
         return
+
+    args.tftpdir = handle_iso(args)
+    log.info("TFTP dir: %r" % args.tftpdir)
 
     if args.wipe_admin:
         wipe_admin_node(args)
@@ -644,9 +719,9 @@ def main():
         servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr = admin_node
         power_up_time = datetime.now() - timedelta(hours=4)
         admin_host_ipaddr = parse_dhcp_logs(power_up_time, eth0_macaddr)
-        assert admin_host_ipaddr
 
     if args.deploy_nodes:
+        assert admin_host_ipaddr
         fetch_and_mangle_worker_autoyast(admin_host_ipaddr)
         power_off_nodes(args)
         available_hosts = deploy_nodes(args, admin_host_ipaddr, max_failing_nodes=0)
