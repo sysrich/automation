@@ -1,5 +1,6 @@
 *.qcow2
 *.tfstate*
 *.tar.xz
+.terraform
 terraform.tfvars
 crash.log
