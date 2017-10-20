@@ -1,0 +1,70 @@
+def kubicLib = library("kubic-jenkins-library@${env.BRANCH_NAME}").com.suse.kubic
+
+// TODO: Don't hardcode the previous branch + repo.
+String fromBranch = 'release-2.0'
+String toBranch = env.BRANCH_NAME
+String updateRepo = 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP20/images/repo/SUSE-CAASP-2.0-POOL-x86_64-Media1/'
+
+// Configure the build properties
+properties([
+    buildDiscarder(logRotator(numToKeepStr: '31')),
+    disableConcurrentBuilds(),
+    pipelineTriggers([cron('@daily')]),
+    parameters([
+        string(name: 'MASTER_COUNT', defaultValue: '1', description: 'Number of Master Nodes'),
+        string(name: 'WORKER_COUNT', defaultValue: '5', description: 'Number of Worker Nodes'),
+        string(name: 'ADMIN_FLAVOR', defaultValue: 'm1.xxlarge', description: 'Flavor for Admin Node'),
+        string(name: 'MASTER_FLAVOR', defaultValue: 'm1.xxlarge', description: 'Flavor for Master Nodes'),
+        string(name: 'WORKER_FLAVOR', defaultValue: 'm1.large', description: 'Flavor for Worker Nodes'),
+        booleanParam(name: 'ENVIRONMENT_DESTROY', defaultValue: true, description: 'Destroy env once done?')
+    ])
+])
+
+def openstackTypeOptions = kubicLib.OpenstackTypeOptions.new();
+openstackTypeOptions.adminFlavor = env.ADMIN_FLAVOR
+openstackTypeOptions.masterFlavor = env.MASTER_FLAVOR
+openstackTypeOptions.workerFlavor = env.WORKER_FLAVOR
+
+// Deploy using the "old" branch
+// TODO: This is using the "new" jenkins-lib code, which may no longer
+// be compatible with the "old" deployment...
+coreKubicProjectPeriodic(
+    // Prefer m1.large workers, fallback to any leap42.3 worker.
+    nodeLabel: 'leap42.3&&m1.large||leap42.3',
+    environmentType: 'openstack',
+    environmentTypeOptions: openstackTypeOptions,
+    environmentDestroy: env.ENVIRONMENT_DESTROY,
+    gitBranch: fromBranch,
+    gitIgnorePullRequest: true,
+    masterCount: env.MASTER_COUNT.toInteger(),
+    workerCount: env.WORKER_COUNT.toInteger()
+) {
+    stage('Install Upgrade Repo') {
+        echo "TODO"
+    }
+
+    // Upgrade the admin node before siwtching branches, as we
+    // need to use the "old" velum-bootstrap for this step, we're
+    // using the "old" velum still.
+    stage('Upgrade Admin Node') {
+        echo "TODO"
+    }
+
+    stage('Switch to new branch') {
+        // Move git checkouts to the "new" branches
+        cloneAllKubicRepos(
+            gitBase: 'https://github.com/kubic-project',
+            branch: toBranch,
+            credentialsId: 'github-token'
+        )
+    }
+
+    stage('Upgrade Minions') {
+        echo "TODO"
+    }
+
+    stage('Run Post-Upgrade Tests') {
+        // TODO: Add some cluster tests, e.g. booting pods, checking they work, etc
+        runTestInfra(environment: environment)
+    }
+}
