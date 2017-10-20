@@ -1,5 +1,8 @@
 def kubicLib = library("kubic-jenkins-library@${env.BRANCH_NAME}").com.suse.kubic
 
+// TODO: There is *way* too much in here, most of this needs to be moved to methods
+// in jenkins-library.
+
 // TODO: Don't hardcode the previous branch + repo.
 String fromBranch = 'release-2.0'
 String toBranch = env.BRANCH_NAME
@@ -40,14 +43,71 @@ coreKubicProjectPeriodic(
     workerCount: env.WORKER_COUNT.toInteger()
 ) {
     stage('Install Upgrade Repo') {
-        echo "TODO"
+        def parallelSteps = [:]
+
+        environment.minions.each { minion ->
+            def installUpgradeRepo = {
+                echo "TODO .. Install Update Repo, Trigger TX update"
+                shOnMinion(minion: minion, script: 'echo "[main]" > /etc/zypp/vendors.d/vendors.conf')
+                shOnMinion(minion: minion, script: 'echo "vendors = suse,opensuse,obs://build.suse.de,obs://build.opensuse.org" >> /etc/zypp/vendors.d/vendors.conf')
+                shOnMinion(minion: minion, script: "zypper ar --refresh --no-gpgcheck $updateRepo")
+                shOnMinion(minion: minion, script: 'systemctl disable --now transactional-update.timer')
+                shOnMinion(minion: minion, script: '/usr/sbin/transactional-update cleanup dup salt')
+            }
+
+            parallelSteps.put("${minion.role}-${minion.index}", installUpgradeRepo)
+        }
+
+        timeout(120) {
+            parallel(parallelSteps)
+        }
     }
+
 
     // Upgrade the admin node before siwtching branches, as we
     // need to use the "old" velum-bootstrap for this step, we're
     // using the "old" velum still.
     stage('Upgrade Admin Node') {
-        echo "TODO"
+        // Find the admin node
+        def adminNode
+        environment.minions.each { minion ->
+            if (minion.role == 'admin') {
+                adminNode = minion
+                break
+            }
+        }
+
+        // Refresh Salt Grains
+        shOnMinion(minion: adminNode, script: "docker exec -i $(docker ps | grep salt-master | awk '{print $1}') salt --batch 20 '*' saltutil.refresh_grains")
+
+        // Upgrade the admin node
+        timeout(10) {
+            dir('automation/velum-bootstrap') {
+                sh(script: './velum-interactions --setup')
+            }
+        }
+
+        timeout(60) {
+            try {
+                dir('automation/velum-bootstrap') {
+                    withEnv([
+                        "ENVIRONMENT=${WORKSPACE}/environment.json",
+                    ]) {
+                        sh(script: "./velum-interactions --update-admin")
+                    }
+                }
+            } finally {
+                dir('automation/velum-bootstrap') {
+                    junit "velum-bootstrap.xml"
+                    try {
+                        archiveArtifacts(artifacts: "screenshots/**")
+                        archiveArtifacts(artifacts: "kubeconfig")
+                    } catch (Exception exc) {
+                        echo "Failed to Archive Artifacts"
+                    }
+                }
+            }
+        }
     }
 
     stage('Switch to new branch') {
@@ -60,7 +120,34 @@ coreKubicProjectPeriodic(
     }
 
     stage('Upgrade Minions') {
-        echo "TODO"
+        // Upgrade the minions
+        timeout(10) {
+            dir('automation/velum-bootstrap') {
+                sh(script: './velum-interactions --setup')
+            }
+        }
+
+        timeout(120) {
+            try {
+                dir('automation/velum-bootstrap') {
+                    withEnv([
+                        "ENVIRONMENT=${WORKSPACE}/environment.json",
+                    ]) {
+                        sh(script: "./velum-interactions --update-minions")
+                    }
+                }
+            } finally {
+                dir('automation/velum-bootstrap') {
+                    junit "velum-bootstrap.xml"
+                    try {
+                        archiveArtifacts(artifacts: "screenshots/**")
+                        archiveArtifacts(artifacts: "kubeconfig")
+                    } catch (Exception exc) {
+                        echo "Failed to Archive Artifacts"
+                    }
+                }
+            }
+        }
     }
 
     stage('Run Post-Upgrade Tests') {
