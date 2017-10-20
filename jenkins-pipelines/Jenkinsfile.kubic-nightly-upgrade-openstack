@@ -47,11 +47,10 @@ coreKubicProjectPeriodic(
 
         environment.minions.each { minion ->
             def installUpgradeRepo = {
-                echo "TODO .. Install Update Repo, Trigger TX update"
                 shOnMinion(minion: minion, script: 'echo "[main]" > /etc/zypp/vendors.d/vendors.conf')
                 shOnMinion(minion: minion, script: 'echo "vendors = suse,opensuse,obs://build.suse.de,obs://build.opensuse.org" >> /etc/zypp/vendors.d/vendors.conf')
-                shOnMinion(minion: minion, script: "zypper ar --refresh --no-gpgcheck $updateRepo")
                 shOnMinion(minion: minion, script: 'systemctl disable --now transactional-update.timer')
+                shOnMinion(minion: minion, script: "zypper ar --refresh --no-gpgcheck ${updateRepo}")
                 shOnMinion(minion: minion, script: '/usr/sbin/transactional-update cleanup dup salt')
             }
 
@@ -62,7 +61,6 @@ coreKubicProjectPeriodic(
             parallel(parallelSteps)
         }
     }
-
 
     // Upgrade the admin node before siwtching branches, as we
     // need to use the "old" velum-bootstrap for this step, we're
