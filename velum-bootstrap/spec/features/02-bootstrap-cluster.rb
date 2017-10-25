@@ -112,7 +112,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Configuring last settings"
     with_screenshot(name: :bootstrap_cluster_settings) do
-      fill_in "settings_apiserver", with: environment["kubernetesHost"]
+      fill_in "settings_apiserver", with: environment["kubernetesExternalHost"]
       fill_in "settings_dashboard_external_fqdn", with: environment["dashboardExternalHost"]
     end
     puts "<<< Last settings configured"
