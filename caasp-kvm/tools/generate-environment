@@ -38,6 +38,6 @@ done
 
 masters=$(echo "$out" | jq -r '[.minions[] | select(.role=="master")] | length')
 
-out=$(echo "$out" | jq " . + {dashboardHost: .minions[] | select(.role==\"admin\") | .addresses.publicIpv4, kubernetesHost: \"kube-api-x${masters}.devenv.caasp.suse.net\"}")
+out=$(echo "$out" | jq " . + {dashboardHost: .minions[] | select(.role==\"admin\") | .addresses.publicIpv4, dashboardExternalHost: \"caasp-admin.devenv.caasp.suse.net\", kubernetesHost: \"kube-api-x${masters}.devenv.caasp.suse.net\"}")
 out=$(echo "$out" | jq " . + {sshKey: \"$SSH_KEY\", sshUser: \"root\"}")
 echo "$out" | tee "$ENVIRONMENT"

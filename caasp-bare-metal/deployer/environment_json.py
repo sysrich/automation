@@ -21,6 +21,7 @@ def create_environment_json(admin_host_ipaddr, available_hosts):
 
     d = {
         "dashboardHost": admin_host_ipaddr,
+        "dashboardExternalHost": admin_host_ipaddr,
         "sshUser" : "root",
         "sshKey" : ssh_key_path,
         "minions": []
