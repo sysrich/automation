@@ -137,6 +137,8 @@ update_stack() {
   [ -z $IMAGE ] && error "Option --image is required"
 
   local stack_name=$(cat .stack_name)
+  [ -n $NAME ] && stack_name=$NAME
+
   log "Updating Stack with ID $stack_name"
 
   source $OPENRC_FILE
@@ -151,11 +153,13 @@ update_stack() {
 
 destroy_stack() {
   local stack_name=$(cat .stack_name)
+  [ -n $NAME ] && stack_name=$NAME
+
   log "Deleting Stack with name $stack_name"
 
   source $OPENRC_FILE
   openstack stack delete --yes --wait $stack_name
-  rm .stack_name
+  rm -f .stack_name
 }
 
 # main
