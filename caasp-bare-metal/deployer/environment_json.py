@@ -43,7 +43,10 @@ def create_environment_json(admin_host_ipaddr, available_hosts):
             d["minions"][-1]["role"] = "admin"
         elif idx == 1:
             d["minions"][-1]["role"] = "master"
-            d["kubernetesHost"] = ipaddr
+            # TODO: This will fail for multi-master, this needs to be a round robin DNS record, or
+            # a load balancer address - or at the least - a DNS name aimed at one of the masters and
+            # registered in /etc/hosts on any machine who needs to reach the cluster.
+            d["kubernetesExternalHost"] = ipaddr
         else:
             d["minions"][-1]["role"] = "worker"
             # unneded
