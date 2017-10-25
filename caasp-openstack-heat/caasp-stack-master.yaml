@@ -94,3 +94,9 @@ resources:
     properties:
       floatingip_id: { get_resource: master_floating_ip }
       port_id: { get_resource: master_port }
+
+outputs:
+  internal_ip:
+    value: { get_attr: [master, first_address] }
+  external_ip:
+    value: { get_attr: [master_floating_ip, floating_ip_address] }

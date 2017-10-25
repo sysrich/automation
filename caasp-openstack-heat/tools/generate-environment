@@ -10,6 +10,15 @@ INDEX=0
 
 STACK_RESOURCES=$(openstack stack resource list -f json -n 10 $STACK_NAME)
 
+echo "Building DNS Details"
+DOMAIN_ID=$(set -o pipefail; echo "$STACK_RESOURCES" | jq -r '.[] | select(.resource_name=="domain") | .physical_resource_id')
+DOMAIN_RECORDSETS=$(set -o pipefail; openstack recordset list -f json $DOMAIN_ID)
+
+ADMIN_RECORD_NAME=$(set -o pipefail; echo "$DOMAIN_RECORDSETS" | jq -r '.[] | select(.name | contains("admin.")) | .name')
+ADMIN_INT_RECORD_NAME=$(set -o pipefail; echo "$DOMAIN_RECORDSETS" | jq -r '.[] | select(.name | contains("admin-internal.")) | .name')
+MASTERS_RECORD_NAME=$(set -o pipefail; echo "$DOMAIN_RECORDSETS" | jq -r '.[] | select(.name | contains("masters.")) | .name')
+MASTERS_INT_RECORD_NAME=$(set -o pipefail; echo "$DOMAIN_RECORDSETS" | jq -r '.[] | select(.name | contains("masters-internal.")) | .name')
+
 # Get Admin Node
 echo "Building Admin Details"
 ADMIN_ID=$(set -o pipefail; echo "$STACK_RESOURCES" | jq -r '.[] | select(.resource_name=="admin") | .physical_resource_id')
@@ -17,9 +26,12 @@ ADMIN_NOVA_JSON=$(set -o pipefail; openstack server show -f json $ADMIN_ID)
 ADMIN_MINION_JSON=$(set -o pipefail; echo "$ADMIN_NOVA_JSON" | jq -c "{role: \"admin\", fqdn: .name, addresses: {publicIpv4: .addresses | split(\"=\") | .[1] | split(\",\") | .[1] | gsub(\" \"; \"\"), privateIpv4: .addresses | split(\"=\") | .[1] | split(\",\") | .[0]}, index: \"$INDEX\", minionId: (.id | gsub(\"-\"; \"\"))}")
 ADMIN_PRIVATE_IPV4=$(set -o pipefail; echo "$ADMIN_NOVA_JSON" | jq -r ".addresses | split(\"=\") | .[1] | split(\",\") | .[0]")
 ADMIN_PUBLIC_IPV4=$(set -o pipefail; echo "$ADMIN_NOVA_JSON" | jq -r ".addresses | split(\"=\") | .[1] | split(\",\") | .[1] | gsub(\" \"; \"\")")
+
 ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".minions |= . + [$ADMIN_MINION_JSON]")
-ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".dashboardHost |= \"$ADMIN_PRIVATE_IPV4\"")
-ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".dashboardExternalHost |= \"$ADMIN_PUBLIC_IPV4\"")
+ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".dashboardHost |= \"${ADMIN_INT_RECORD_NAME::-1}\"")
+ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".dashboardExternalHost |= \"${ADMIN_RECORD_NAME::-1}\"")
+ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".kubernetesHost |= \"${MASTERS_INT_RECORD_NAME::-1}\"")
+ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".kubernetesExternalHost |= \"${MASTERS_RECORD_NAME::-1}\"")
 
 INDEX=$((INDEX + 1))
 

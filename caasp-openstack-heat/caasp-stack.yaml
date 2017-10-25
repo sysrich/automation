@@ -1,4 +1,4 @@
-heat_template_version: 2015-04-30
+heat_template_version: 2016-04-08
 
 description: Template to create a CaaSP cluster for Dev/Test purposes
 
@@ -24,6 +24,11 @@ parameter_groups:
       - external_net
       - internal_net_cidr
       - dns_nameserver
+
+  - label: dns
+    description: DNS Parameters
+    parameters:
+      - dns_domain_suffix
 
 parameters:
   image:
@@ -74,6 +79,10 @@ parameters:
     type: string
     description: Root Password for the VMs
     default: linux
+  dns_domain_suffix:
+    type: string
+    description: DNS Domain Suffix
+    default: cloud.caasp.suse.net.
 
 resources:
   keypair:
@@ -85,6 +94,13 @@ resources:
           params:
             ".": "-"
       public_key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC2G7k0zGAjd+0LzhbPcGLkdJrJ/LbLrFxtXe+LPAkrphizfRxdZpSC7Dvr5Vewrkd/kfYObiDc6v23DHxzcilVC2HGLQUNeUer/YE1mL4lnXC1M3cb4eU+vJ/Gyr9XVOOReDRDBCwouaL7IzgYNCsm0O5v2z/w9ugnRLryUY180/oIGeE/aOI1HRh6YOsIn7R3Rv55y8CYSqsbmlHWiDC6iZICZtvYLYmUmCgPX2Fg2eT+aRbAStUcUERm8h246fs1KxywdHHI/6o3E1NNIPIQ0LdzIn5aWvTCd6D511L4rf/k5zbdw/Gql0AygHBR/wnngB5gSDERLKfigzeIlCKf insecure-key
+
+  domain:
+    type: OS::Designate::Domain
+    properties:
+      name: {list_join: ['.', [{get_param: 'OS::stack_id'}, {get_param: 'dns_domain_suffix'}]]}
+      email: caasp@example.com
+      ttl: 10
 
   internal_network:
     type: OS::Neutron::Net
@@ -249,6 +265,24 @@ resources:
       floatingip_id: { get_resource: admin_floating_ip }
       port_id: { get_resource: admin_port }
 
+  admin_record:
+    type: OS::Designate::Record
+    properties:
+      name: {list_join: ['.', ['admin', {get_param: 'OS::stack_id'}, {get_param: 'dns_domain_suffix'}]]}
+      domain: {get_resource: domain}
+      type: A
+      ttl: 10
+      data: {get_attr: [admin_floating_ip, floating_ip_address]}
+
+  admin_internal_record:
+    type: OS::Designate::Record
+    properties:
+      name: {list_join: ['.', ['admin-internal', {get_param: 'OS::stack_id'}, {get_param: 'dns_domain_suffix'}]]}
+      domain: {get_resource: domain}
+      type: A
+      ttl: 10
+      data: {get_attr: [admin, first_address]}
+
   masters:
     type: OS::Heat::AutoScalingGroup
     depends_on:
@@ -270,6 +304,24 @@ resources:
           root_password: { get_param: root_password }
           admin_node_ip: { get_attr: [admin, first_address] }
 
+  masters_record:
+    type: OS::Designate::Record
+    properties:
+      name: {list_join: ['.', ['masters', {get_param: 'OS::stack_id'}, {get_param: 'dns_domain_suffix'}]]}
+      domain: {get_resource: domain}
+      type: A
+      ttl: 10
+      data: {list_join: [',', {get_attr: [masters, outputs_list, external_ip]}]}
+
+  masters_internal_record:
+    type: OS::Designate::Record
+    properties:
+      name: {list_join: ['.', ['masters-internal', {get_param: 'OS::stack_id'}, {get_param: 'dns_domain_suffix'}]]}
+      domain: {get_resource: domain}
+      type: A
+      ttl: 10
+      data: {list_join: [',', {get_attr: [masters, outputs_list, internal_ip]}]}
+
   workers:
     type: OS::Heat::AutoScalingGroup
     depends_on:
@@ -289,3 +341,13 @@ resources:
           keypair: { get_resource: keypair }
           root_password: { get_param: root_password }
           admin_node_ip: { get_attr: [admin, first_address] }
+
+outputs:
+  dashboard_fqdn:
+    value: {list_join: ['.', ['admin-internal', {get_param: 'OS::stack_id'}, {get_param: 'dns_domain_suffix'}]]}
+  dashboard_external_fqdn:
+    value: {list_join: ['.', ['admin', {get_param: 'OS::stack_id'}, {get_param: 'dns_domain_suffix'}]]}
+  kubernetes_fqdn:
+    value: {list_join: ['.', ['masters-internal', {get_param: 'OS::stack_id'}, {get_param: 'dns_domain_suffix'}]]}
+  kubernetes_external_fqdn:
+    value: {list_join: ['.', ['masters', {get_param: 'OS::stack_id'}, {get_param: 'dns_domain_suffix'}]]}
