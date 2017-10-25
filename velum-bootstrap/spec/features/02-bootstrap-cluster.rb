@@ -113,12 +113,7 @@ feature "Boostrap cluster" do
     puts ">>> Configuring last settings"
     with_screenshot(name: :bootstrap_cluster_settings) do
       fill_in "settings_apiserver", with: environment["kubernetesHost"]
-      # TODO: Add a top level environment.json field with this value
-      environment["minions"].each do |minion|
-        if minion["role"] == "admin"
-          fill_in "settings_dashboard_external_fqdn", with: minion["fqdn"]
-        end
-      end
+      fill_in "settings_dashboard_external_fqdn", with: environment["dashboardExternalHost"]
     end
     puts "<<< Last settings configured"
 
