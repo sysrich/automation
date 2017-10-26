@@ -1,8 +1,10 @@
 {
    "dashboardHost" : "172.24.0.5",
+   "dashboardExternalHost" : "10.84.72.172",
+   "kubernetesHost" : "172.24.0.6",
+   "kubernetesExternalHost" : "10.84.72.173",
    "sshUser" : "root",
    "sshKey" : "/home/user/SUSE/caasp/automation/misc-files/id_shared",
-   "kubernetesHost" : "10.84.72.173",
    "minions" : [
       {
          "index" : "0",

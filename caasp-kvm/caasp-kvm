@@ -223,7 +223,7 @@ build() {
   $DIR/../misc-tools/generate-ssh-config $ENVIRONMENT
 
   log "Waiting for Velum to start - this may take a while"
-  PYTHONUNBUFFERED=1 "$DIR/../misc-tools/wait-for-velum" https://$(jq -r '.dashboardHost' "$ENVIRONMENT")
+  PYTHONUNBUFFERED=1 "$DIR/../misc-tools/wait-for-velum" https://$(jq -r '.dashboardExternalHost' "$ENVIRONMENT")
 
   log "CaaS Platform Ready for bootstrap"
 }
