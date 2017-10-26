@@ -19,6 +19,7 @@ ADMIN_PRIVATE_IPV4=$(set -o pipefail; echo "$ADMIN_NOVA_JSON" | jq -r ".addresse
 ADMIN_PUBLIC_IPV4=$(set -o pipefail; echo "$ADMIN_NOVA_JSON" | jq -r ".addresses | split(\"=\") | .[1] | split(\",\") | .[1] | gsub(\" \"; \"\")")
 ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".minions |= . + [$ADMIN_MINION_JSON]")
 ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".dashboardHost |= \"$ADMIN_PRIVATE_IPV4\"")
+ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".dashboardExternalHost |= \"$ADMIN_PUBLIC_IPV4\"")
 
 INDEX=$((INDEX + 1))
 
