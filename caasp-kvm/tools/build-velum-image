@@ -50,16 +50,11 @@ build_fresh_image() {
   # Reuse the gems already vendored into the devel image if possible.
   # This will pull only the development gems and the ones changed on master.
   # This greatly reduces the creation time of the image
-  local CONTAINER_BUILD=`docker run -d sles12/velum-development:0.0 \
+  local CONTAINER_BUILD=`docker run -v $VELUM_DIR:/srv/velum-latest -d sles12/velum-development:0.0 \
                     bash -c "
+                      cd /srv/velum-latest && \
                       mkdir -p /var/lib/velum && \
-                      cp -r /srv/velum/vendor/bundle/ruby /var/lib/velum/"`
-  do_commit "$CONTAINER_BUILD"
-
-
-  local CONTAINER_BUILD=`docker run -v $VELUM_DIR:/srv/velum -d sles12/velum:development_wip \
-                    bash -c "
-                      cd /srv/velum && \
+                      cp -r /srv/velum/vendor/bundle/ruby /var/lib/velum/ && \
                       bundle config --local frozen 0 && \
                       bundle config --local build.nokogiri --use-system-libraries && \
                       bundle install --binstubs=/usr/local/bin --deployment --path=/var/lib/velum && \
