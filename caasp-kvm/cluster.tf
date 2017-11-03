@@ -68,6 +68,12 @@ variable "caasp_domain_name" {
   description = "The amount of virtual CPUs for a worker"
 }
 
+variable "caasp_net_network" {
+  type        = "string"
+  default     = "10.17.0.0/22"
+  description = "Network used by the caasp cluster"
+}
+
 ####################
 # DevEnv variables #
 ####################
@@ -102,9 +108,9 @@ resource "libvirt_volume" "caasp_img" {
 ##############
 resource "libvirt_network" "network" {
     name      = "caasp-net"
-    mode      = "nat"
+    mode      = "route"
     domain    = "${var.caasp_domain_name}"
-    addresses = ["10.17.0.0/22"]
+    addresses = ["${var.caasp_net_network}"]
 }
 
 ##############
@@ -136,7 +142,7 @@ resource "libvirt_domain" "admin" {
   network_interface {
     network_id     = "${libvirt_network.network.id}"
     hostname       = "caasp-admin"
-    addresses      = ["10.17.1.0"]
+    addresses      = ["${cidrhost("${var.caasp_net_network}", 256)}"]
     wait_for_lease = 1
   }
 
@@ -246,7 +252,7 @@ resource "libvirt_domain" "master" {
   network_interface {
     network_id     = "${libvirt_network.network.id}"
     hostname       = "caasp-master-${count.index}"
-    addresses      = ["10.17.2.${count.index}"]
+    addresses      = ["${cidrhost("${var.caasp_net_network}", 512 + count.index)}"]
     wait_for_lease = 1
   }
 
@@ -320,7 +326,7 @@ resource "libvirt_domain" "worker" {
   network_interface {
     network_id     = "${libvirt_network.network.id}"
     hostname       = "caasp-worker-${count.index}"
-    addresses      = ["10.17.3.${count.index}"]
+    addresses      = ["${cidrhost("${var.caasp_net_network}", 768 + count.index)}"]
     wait_for_lease = 1
   }
 

@@ -110,7 +110,7 @@ Clone these repositories:
 
       ./caasp-kvm --destroy
 
-## Using a cluster
+## Using a cluster from the hypervisor node
 
 The nodes booted will be given fixed/deterministic IP addresses, it it recommended
 you create a ~/.ssh/config with the following content, adjusting the SSH key path
@@ -128,3 +128,88 @@ final octet incremented by 1:
 * Admin node will have 10.17.1.0
 * First master node will have 10.17.2.0
 * First worker node will have 10.17.3.0
+
+## Using a cluster from a non-hypervisor node
+
+It's possible to interact with the whole cluster even from machines that are
+**not** the hypervisor node running all the VMs.
+
+This can be useful when your development machine is not powerful enough to
+run an entire cluster. In this case we can have all the VMs running on a
+powerful workstation and access them from your laptop.
+
+First of all you have to pick a different subnet for the caasp network. This
+is done by creating a `terraform.tfvars` with the following line:
+
+```hcl
+caasp_net_network = "172.30.0.0/22"
+```
+
+You have to be really careful with the subnet you are going to use. The default
+one is conflicting with the SUSE R&D network. If your remote machine is
+connected to the corporate VPN all the requests made against your cluster will
+be swallowed by the VPN.
+At the same time you cannot pick networks like `172.16.0.0/13` or
+`172.17.0.0/24` because the first one is being used by flannel, while the second
+one is used by docker.
+A working subnet is `172.30.0.0/22`.
+
+Finally you have to add a route to the cluster on the development machine. The
+easiest way is to use the following command:
+
+```
+ip -4 route add 172.30.0.0/22 via 192.168.1.39
+```
+
+Where `192.168.1.39` is the IP address of the hypervisor node.
+
+You can achieve the same result by setting the rule on your router, pushing
+the rule through a local dnsmasq instance,...
+
+### Remote devenv setup
+
+This example shows how to have a remote devenv setup. The goals of this setup
+are:
+
+  * Run the cluster on an hypervisor nodes.
+  * Develop the code on a laptop.
+  * Access the cluster from any local computer.
+
+All the source code is checked out on the laptop inside of
+`~/code/kubic`. This is where all the changes are done.
+
+The whole `~/code/kubic` directory is automatically sent to the workstation
+(hostname `workstation`) and kept in sync using
+[lsyncd](https://github.com/axkibe/lsyncd) (which has official openSUSE
+packages BTW).
+
+The configuration file for `lsyncd` is saved inside of
+`~/code/kubic/lsyncd.conf`:
+
+```lua
+settings {
+  logfile    = "/tmp/lsyncd.log",
+  statusFile = "/tmp/lsyncd.status",
+  nodaemon   = true,
+}
+
+sync {
+  default.rsyncssh,
+  source    = "/home/developer/code/kubic",
+  host      = "developer@workstation",
+  targetdir = "/home/developer/code/kubic",
+  exclude   = {
+    "automation/downloads/**",
+    "*.tfstate",
+    "*.tfstate.backup",
+    "*.terraform" }
+}
+```
+
+Now it's just a matter of going to `~/code/kubic` and leave this command running:
+
+```
+lsyncd lsyncd.conf
+```
+
+Now you can go to the workstation and use caasp-kvm as usual.
