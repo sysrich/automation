@@ -214,3 +214,15 @@ lsyncd lsyncd.conf
 ```
 
 Now you can go to the workstation and use caasp-kvm as usual.
+
+## Running development tests against velum
+
+To run velum's rspec tests:
+
+* ssh into the admin node
+* execute: `docker exec $(docker ps | grep dashboard | awk {'print $1'}) entrypoint.sh bash -c "RAILS_ENV=test bundle exec rspec"`
+
+To run velum's rubocop:
+
+* ssh into the admin node
+* execute: `docker exec $(docker ps | grep dashboard | awk {'print $1'}) bundle exec rubocop`
