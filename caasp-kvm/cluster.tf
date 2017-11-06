@@ -68,6 +68,12 @@ variable "caasp_domain_name" {
   description = "The amount of virtual CPUs for a worker"
 }
 
+variable "caasp_net_mode" {
+  type        = "string"
+  default     = "nat"
+  description = "Network mode used by the caasp cluster"
+}
+
 variable "caasp_net_network" {
   type        = "string"
   default     = "10.17.0.0/22"
@@ -108,7 +114,7 @@ resource "libvirt_volume" "caasp_img" {
 ##############
 resource "libvirt_network" "network" {
     name      = "caasp-net"
-    mode      = "route"
+    mode      = "${var.caasp_net_mode}"
     domain    = "${var.caasp_domain_name}"
     addresses = ["${var.caasp_net_network}"]
 }
