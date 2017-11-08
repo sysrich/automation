@@ -176,6 +176,8 @@ bootstrap() {
   log "Bootstrap CaaSP Environment"
   [ -f "$ENVIRONMENT" ] || error "no environment file found at $ENVIRONMENT"
   (cd "$DIR/velum-bootstrap" && ./velum-interactions --configure --bootstrap )
+  sleep 30
+  (cd "$DIR/velum-bootstrap" && ./velum-interactions --fetch-kubeconfig )
 }
 
 testinfra() {
