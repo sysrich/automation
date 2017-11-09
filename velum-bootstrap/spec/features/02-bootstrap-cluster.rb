@@ -52,8 +52,8 @@ feature "Boostrap cluster" do
     sleep 30
     visit "/setup/discovery"
 
-    # Min of 120 seconds, Max of 600 seconds, ideal = nodes * 30
-    accept_timeout = [[120, node_number * 30].max, 600].min
+    # Min of 240 seconds, Max of 600 seconds, ideal = nodes * 30
+    accept_timeout = [[240, node_number * 30].max, 600].min
     puts ">>> Wait until Minion keys are accepted by salt (Timeout: #{accept_timeout})"
     with_screenshot(name: :accepted_keys) do
       expect(page).to have_css("input[name='roles[worker][]']", count: node_number, wait: accept_timeout)
