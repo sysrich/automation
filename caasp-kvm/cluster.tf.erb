@@ -1,3 +1,5 @@
+<%# This is the embedded ruby template for the cluster.tf target         -%>
+<%# generate the target by running "erb cluster.tf.erb > cluster.tf"     -%>
 #####################
 # libvirt variables #
 #####################
@@ -157,6 +159,7 @@ resource "libvirt_domain" "admin" {
     listen_type = "address"
   }
 
+<% if not ENV['QA'] == "true" -%>
   filesystem {
     source = "${var.kubic_salt_dir}"
     target = "salt"
@@ -186,6 +189,7 @@ resource "libvirt_domain" "admin" {
     target = "devel-docker-images"
     readonly = true
   }
+<% end -%>
 
   connection {
     type     = "ssh"
