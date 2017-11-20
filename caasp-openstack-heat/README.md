@@ -1,4 +1,4 @@
-# CaaSP KVM
+# CaaSP OpenStack Heat
 
 This directory contains the caasp-openstack-heat tool. This tool builds a CaaSP cluster
 on OpenStack with minimal effort. This tool is not suitable for development clusters, as
