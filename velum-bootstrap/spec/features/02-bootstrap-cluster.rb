@@ -77,7 +77,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Waiting for page to settle"
     with_screenshot(name: :wait_for_settle) do
-      expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 120)
+      expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 240)
     end
     puts "<<< Page has settled"
 
@@ -137,7 +137,7 @@ feature "Boostrap cluster" do
   scenario "User downloads the kubeconfig file" do
     visit "/"
 
-    expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 120)
+    expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 240)
 
     expect(page).to have_text("kubectl config")
     with_screenshot(name: :download_kubeconfig) do
