@@ -71,7 +71,7 @@ echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC2G7k0zGAjd+0LzhbPcGLkdJrJ/LbLrFxtXe
 caasp_node_pxecfg_tpl = """
 default menu.c32
 prompt 0
-timeout 300
+timeout 2
 ONTIMEOUT CaaSP-dev-AutoYAST
 
 MENU TITLE PXE Menu
@@ -87,7 +87,7 @@ MENU INCLUDE pxelinux.cfg/local-fragment
 caasp_admin_pxecfg_tpl = """
 default menu.c32
 prompt 0
-timeout 30
+timeout 2
 ONTIMEOUT CaaSP-dev-AutoYAST-Admin
 
 MENU TITLE PXE Menu
