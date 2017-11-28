@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -55,7 +55,7 @@ error()      { log "ERROR: $@" ; exit 1 ; }
 check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
 
 # parse options
-while [[ $# > 0 ]] ; do
+while [[ $# -gt 0 ]] ; do
   case $1 in
     -n|--name)
       NAME="$2"
@@ -63,13 +63,13 @@ while [[ $# > 0 ]] ; do
       ;;
     -o|--openrc)
       f="$(realpath $2)"
-      check_file $f
+      check_file "$f"
       OPENRC_FILE="$f"
       shift
       ;;
     -e|--heat-environment)
       f="$(realpath $2)"
-      check_file $f
+      check_file "$f"
       HEAT_ENVIRONMENT_FILE="$f"
       shift
       ;;
@@ -105,12 +105,12 @@ while [[ $# > 0 ]] ; do
   shift
 done
 
-[ -z $OPENRC_FILE ]  && error "Option --openrc is required"
+[ -z "$OPENRC_FILE" ]  && error "Option --openrc is required"
 
 # Core methods
 build_stack() {
-  [ -z $NAME ] && error "Option --name is required"
-  [ -z $IMAGE ] && error "Option --image is required"
+  [ -z "$NAME" ] && error "Option --name is required"
+  [ -z "$IMAGE" ] && error "Option --image is required"
 
   log "Creating Stack"
 
@@ -118,15 +118,15 @@ build_stack() {
   # later use in commands like delete.
   echo -n "$NAME" > .stack_name
 
-  source $OPENRC_FILE
-  openstack stack create --verbose --wait -e $HEAT_ENVIRONMENT_FILE -t caasp-stack.yaml $NAME \
+  source "$OPENRC_FILE"
+  openstack stack create --verbose --wait -e "$HEAT_ENVIRONMENT_FILE" -t caasp-stack.yaml "$NAME" \
     --parameter master_count=$MASTERS \
     --parameter worker_count=$WORKERS \
-    --parameter image=$IMAGE
+    --parameter image="$IMAGE"
 
   log "CaaSP Stack Created with name $NAME"
 
-  ./tools/generate-environment $NAME
+  ./tools/generate-environment "$NAME"
   ../misc-tools/generate-ssh-config environment.json
 
   log "Waiting for Velum to start - this may take a while"
@@ -134,31 +134,31 @@ build_stack() {
 }
 
 update_stack() {
-  [ -z $IMAGE ] && error "Option --image is required"
+  [ -z "$IMAGE" ] && error "Option --image is required"
 
   local stack_name=$(cat .stack_name)
-  [ -n $NAME ] && stack_name=$NAME
+  [ -n "$NAME" ] && stack_name="$NAME"
 
   log "Updating Stack with ID $stack_name"
 
-  source $OPENRC_FILE
-  openstack stack update --wait -e $HEAT_ENVIRONMENT_FILE -t caasp-stack.yaml $stack_name \
+  source "$OPENRC_FILE"
+  openstack stack update --wait -e "$HEAT_ENVIRONMENT_FILE" -t caasp-stack.yaml "$stack_name" \
     --parameter master_count=$MASTERS \
     --parameter worker_count=$WORKERS \
-    --parameter image=$IMAGE
+    --parameter image="$IMAGE"
 
-  ./tools/generate-environment $NAME
+  ./tools/generate-environment "$NAME"
   ../misc-tools/generate-ssh-config environment.json
 }
 
 destroy_stack() {
-  local stack_name=$(cat .stack_name)
-  [ -n $NAME ] && stack_name=$NAME
+  local stack_name="$(cat .stack_name)"
+  [ -n "$NAME" ] && stack_name="$NAME"
 
   log "Deleting Stack with name $stack_name"
 
-  source $OPENRC_FILE
-  openstack stack delete --yes --wait $stack_name
+  source "$OPENRC_FILE"
+  openstack stack delete --yes --wait "$stack_name"
   rm -f .stack_name
 }
 
