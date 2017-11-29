@@ -1,0 +1,191 @@
+#!/bin/sh
+
+set -euo pipefail
+
+# options
+ACTION=""
+WAIT=false
+KUBECONFIG_FN="./kubeconfig"
+
+USAGE=$(cat <<USAGE
+Usage:
+
+  * List pods
+
+    -l|--list                                       List running pods
+
+  * Creating a pod
+
+    -c|--create          <MANIFEST_FNAME>           Create a pod using a manifest file
+
+  * Deleting a pod
+
+    --delete             <MANIFEST_FNAME>           Delete a pod using a manifest file
+
+  * Scaling up a pod
+
+    -s|--scale           <NAME> <NUM>              Set the number of replicas
+    --slowscale          <NAME> <NUM> <TIME>       Scale up to a number of replicas over an amount of time
+                                                   <TIME> is the total time in seconds
+        [-w|--wait]                                Optional: wait for replicas to be available
+
+  * Options:
+
+    -k|--kubeconfig      <FNAME>                   'kubeconfig' file path (defaults to ./kubeconfig)
+
+  * Examples:
+
+  $0 -l
+  $0 --create default
+
+Requirements:
+ - 'kubeconfig' file
+ - 'kubectl' executable in path
+ 
+USAGE
+)
+
+# Utility methods
+log()        { (>&2 echo ">>> [caasp-stack] $@") ; }
+warn()       { log "WARNING: $@" ; }
+error()      { log "ERROR: $@" ; exit 1 ; }
+check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
+
+# parse options
+while [[ $# > 0 ]] ; do
+  case $1 in
+    -l|--list)
+      ACTION="list"
+      ;;
+    -c|--create)
+      ACTION="create"
+      MANIFEST_FNAME="$2"
+      shift
+      ;;
+    --delete)
+      ACTION="delete"
+      MANIFEST_FNAME="$2"
+      shift
+      ;;
+    -s|--scale)
+      ACTION="scale"
+      NAME="$2"
+      NUM_REPLICAS="$3"
+      shift
+      ;;
+    --slowscale)
+      ACTION="slowscale"
+      NAME="$2"
+      NUM_REPLICAS="$3"
+      INTERVAL="$4"
+      shift
+      ;;
+    -k|--kubeconfig)
+      KUBECONFIG_FN="$2"
+      shift
+      ;;
+    -w|--wait)
+      WAIT=true
+      ;;
+    -h|--help)
+      echo "$USAGE"
+      exit 0
+      ;;
+  esac
+  shift
+done
+
+# Core methods
+
+list_pods() {
+  kubectl get pods --kubeconfig="$KUBECONFIG_FN"
+}
+
+wait_until_available_num() {
+  # Requires $NAME
+  while :
+  do
+    current_available_num=$( get_deployments | awk '{print $5}' )
+    [[ $current_available_num -eq "$1" ]] && return
+    sleep 1
+  done
+}
+
+create_pod() {
+  kubectl apply -f $MANIFEST_FNAME --kubeconfig="$KUBECONFIG_FN"
+}
+
+delete_pod() {
+  kubectl delete -f $MANIFEST_FNAME --kubeconfig="$KUBECONFIG_FN"
+}
+
+scale_pod() {
+  kubectl scale --replicas=$NUM_REPLICAS --kubeconfig="$KUBECONFIG_FN" deployment/$NAME
+  [[ "$WAIT" = false ]] && return
+  wait_until_available_num $NUM_REPLICAS
+}
+
+get_rs() {
+  kubectl --kubeconfig="$KUBECONFIG_FN" get replicasets -owide --no-headers
+}
+
+get_deployments() {
+  kubectl --kubeconfig="$KUBECONFIG_FN" get deployments $NAME -owide --no-headers
+}
+
+show_pod() {
+  kubectl --kubeconfig="$KUBECONFIG_FN" get pod $NAME
+}
+
+scale_pod_in_steps() {
+  cycle_time=5
+  eta=$(( $(date +%s) + $INTERVAL ))
+  # start from the currently *available* number
+  current_num=$( get_deployments | awk '{print $5}' )
+  echo "Current desired value: $current_num"
+
+  while true; do
+    remaining_time=$(( $eta - $(date +%s) ))
+    if [ $remaining_time -gt $cycle_time ]; then
+      step=$(( ($NUM_REPLICAS - $current_num) * $cycle_time / $remaining_time ))
+    else
+      step=$(( $NUM_REPLICAS - $current_num ))
+    fi
+    current_num=$(( $current_num + $step ))
+    echo "Setting replicas to $current_num"
+    kubectl scale --replicas=$current_num --kubeconfig="$KUBECONFIG_FN" deployment/$NAME
+    [[ "$WAIT" = true ]] && wait_until_available_num $current_num && echo OK
+
+    [[ $current_num == $NUM_REPLICAS ]] && return
+    sleep $cycle_time
+
+  done
+
+}
+
+
+# main
+
+case "$ACTION" in
+  list)
+    list_pods
+    ;;
+  create)
+    create_pod
+    ;;
+  delete)
+    delete_pod
+    ;;
+  scale)
+    scale_pod
+    ;;
+  slowscale)
+    scale_pod_in_steps
+    ;;
+  *)
+    echo "$USAGE"
+    exit 1
+    ;;
+esac
+
+log "Done"
