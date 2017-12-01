@@ -7,8 +7,8 @@ properties([
     pipelineTriggers([cron('@daily')]),
     parameters([
         string(name: 'OPENSTACK_IMAGE', defaultValue: '', description: 'OpenStack Image To Use'),
-        string(name: 'MASTER_COUNT', defaultValue: '1', description: 'Number of Master Nodes'),
-        string(name: 'WORKER_COUNT', defaultValue: '25', description: 'Number of Worker Nodes'),
+        string(name: 'MASTER_COUNT', defaultValue: '3', description: 'Number of Master Nodes'),
+        string(name: 'WORKER_COUNT', defaultValue: '5', description: 'Number of Worker Nodes'),
         string(name: 'ADMIN_FLAVOR', defaultValue: 'm1.xxlarge', description: 'Flavor for Admin Node'),
         string(name: 'MASTER_FLAVOR', defaultValue: 'm1.xxlarge', description: 'Flavor for Master Nodes'),
         string(name: 'WORKER_FLAVOR', defaultValue: 'm1.large', description: 'Flavor for Worker Nodes'),
