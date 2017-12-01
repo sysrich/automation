@@ -22,7 +22,7 @@ Usage:
   * Building a cluster
 
     -c|--configure                   Configure Velum
-    -b|--bootstrap                   Bootstrap
+    -b|--bootstrap                   Bootstrap (implies Download Kubeconfig)
     -k|--download-kubeconfig         Download Kubeconfig
 
   * Updating a cluster
@@ -63,6 +63,7 @@ while [[ $# > 0 ]] ; do
       ;;
     -b|--bootstrap)
       RUN_BOOTSTRAP=true
+      RUN_DOWNLOAD_KUBECONFIG=true
       HAS_INTERACTION=true
       HAS_ACTION=true
       ;;
