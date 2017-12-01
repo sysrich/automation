@@ -17,6 +17,8 @@ parameter_groups:
       - master_count
       - worker_flavor
       - worker_count
+      - worker_num_volumes
+      - worker_volume_size
 
   - label: network
     description: Network Parameters
@@ -70,6 +72,14 @@ parameters:
     type: number
     description: Number of Worker nodes to boot
     default: 5
+  worker_num_volumes:
+    type: number
+    description: Number of volumes to create and attach to each worker
+    default: 0
+  worker_volume_size:
+    type: number
+    description: Size of each worker-attached volume in GB
+    default: 10
   root_password:
     type: string
     description: Root Password for the VMs
@@ -289,3 +299,5 @@ resources:
           keypair: { get_resource: keypair }
           root_password: { get_param: root_password }
           admin_node_ip: { get_attr: [admin, first_address] }
+          num_volumes: { get_param: worker_num_volumes }
+          volume_size: { get_param: worker_volume_size }

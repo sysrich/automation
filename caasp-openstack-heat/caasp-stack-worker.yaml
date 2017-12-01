@@ -39,6 +39,14 @@ parameters:
   admin_node_ip:
     type: string
     description: Admin Node IP
+  num_volumes:
+    type: number
+    description: Number of volumes to create and attach to the worker
+    default: 0
+  volume_size:
+    type: number
+    description: Size of each volume in GB.
+    default: 10
 
 resources:
   worker:
@@ -73,3 +81,13 @@ resources:
           params:
             $admin_node: { get_param: admin_node_ip }
             $root_password: { get_param: root_password }
+
+  worker_volumes:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: { get_param: num_volumes }
+      resource_def:
+        type: volume-with-attachment.yaml
+        properties:
+          instance_id: { get_resource: worker }
+          volume_size: { get_param: volume_size }
