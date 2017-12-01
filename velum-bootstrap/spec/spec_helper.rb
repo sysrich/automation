@@ -31,7 +31,7 @@ Capybara.register_driver :poltergeist do |app|
     js_errors:         false,
     phantomjs_options: [
       "--proxy-type=none",
-      "--load-images=no"
+      "--load-images=yes"
     ]
   }
   # NOTE: uncomment the line below to get more info on the current run.
