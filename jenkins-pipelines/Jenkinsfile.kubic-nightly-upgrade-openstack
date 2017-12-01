@@ -16,8 +16,8 @@ properties([
     parameters([
         string(name: 'MASTER_COUNT', defaultValue: '3', description: 'Number of Master Nodes'),
         string(name: 'WORKER_COUNT', defaultValue: '5', description: 'Number of Worker Nodes'),
-        string(name: 'ADMIN_FLAVOR', defaultValue: 'm1.xxlarge', description: 'Flavor for Admin Node'),
-        string(name: 'MASTER_FLAVOR', defaultValue: 'm1.xxlarge', description: 'Flavor for Master Nodes'),
+        string(name: 'ADMIN_FLAVOR', defaultValue: 'm1.xlarge', description: 'Flavor for Admin Node'),
+        string(name: 'MASTER_FLAVOR', defaultValue: 'm1.xlarge', description: 'Flavor for Master Nodes'),
         string(name: 'WORKER_FLAVOR', defaultValue: 'm1.large', description: 'Flavor for Worker Nodes'),
         booleanParam(name: 'ENVIRONMENT_DESTROY', defaultValue: true, description: 'Destroy env once done?')
     ])
