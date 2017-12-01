@@ -49,12 +49,7 @@ Capybara.configure do |config|
   config.ignore_hidden_elements = true
   config.visible_text_only = true
   config.default_selector = :css
-
-  if admin_minion
-    config.app_host = "https://#{admin_minion['fqdn']}"
-  else
-    config.app_host = "https://localhost"
-  end
+  config.app_host = "https://#{environment["dashboardExternalHost"]}"
 end
 
 RSpec.configure do |config|
