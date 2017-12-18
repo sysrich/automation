@@ -95,18 +95,18 @@ sudo virsh pool-start default
 
       * Destroying a cluster
 
-        -d|--destroy           Run the CaaSP KVM Destroy Step
+        -d|--destroy                Run the CaaSP KVM Destroy Step
 
       * Common options
 
-        -p|--parallelism       Set terraform parallelism (Default: CAASP_PARALLELISM)
-        -P|--proxy             Set HTTP proxy (Default: CAASP_HTTP_PROXY)
+        -p|--parallelism            Set terraform parallelism (Default: CAASP_PARALLELISM)
+        -P|--proxy                  Set HTTP proxy (Default: CAASP_HTTP_PROXY)
 
       * Local git checkouts
 
-         --salt-dir <DIR>      the Salt repo checkout (Default: CAASP_SALT_DIR)
-         --manifests-dir <DIR> the manifests repo checkout (Default: CAASP_MANIFESTS_DIR)
-         --velum-dir <DIR>     the Velum repo checkout (Default: CAASP_VELUM_DIR)
+         --salt-dir <DIR>           the Salt repo checkout (Default: CAASP_SALT_DIR)
+         --manifests-dir <DIR>      the manifests repo checkout (Default: CAASP_MANIFESTS_DIR)
+         --velum-dir <DIR>          the Velum repo checkout (Default: CAASP_VELUM_DIR)
 
       * Advanced Options
 
@@ -116,6 +116,7 @@ sudo virsh pool-start default
         --worker-ram <INT>     CPUs to allocate to master node(s) (Default: CAASP_MASTER_CPU=2)
         --master-cpu <INT>     RAM to allocate to worker node(s) (Default: CAASP_WORKER_RAM=2048)
         --worker-cpu <INT>     CPUs to allocate to worker node(s) (Default: CAASP_WORKER_CPU=2)
+        --extra-repo <STR>     URL of a custom repository on the master(s)/worker(s) (Default: CAASP_EXTRA_REPO)
 
       * Examples:
 
@@ -126,6 +127,10 @@ sudo virsh pool-start default
       Build a 1 master, 2 worker cluster using the latest staging A image
 
       ./caasp-kvm --build -m 1 -w 2 --image channel://staging_a
+
+      Build a 1 master, 2 worker cluster and add a custom repository on the master(s)/worker(s)
+
+      ./caasp-kvm --build -m 1 -w 2 --extra-repo https://download.opensuse.org/repositories/devel:/CaaSP:/Head:/ControllerNode:/TestUpdates
 
       Destroy a cluster
 
@@ -141,6 +146,26 @@ We maintain packages for both of them inside of the
 [Virtualization:containers](https://build.opensuse.org/project/show/Virtualization:containers)
 project on OBS.
 
+## Using a cluster with custom rpm packages from a repository
+
+In the devenv we can already inject code from a few components (e.g. velum, salt, manifests)
+
+But to test e.g. a different docker image, or another version of kubernetes you can add a custom repository url to the commandline and this repo will then be added to either the master(s), the worker(s) or both:
+
+    ./caasp-kvm --build -m 1 -w 2 --extra-repo https://download.opensuse.org/repositories/devel:/CaaSP:/Head:/ControllerNode:/TestUpdates
+
+After the cluster is up and running, you can either head over to the velum user interface and trigger the update (after transactional-update has run), or install the new packages on master/worker nodes via:
+
+    # on the host
+    RESOLV_CONF=$(< /etc/resolv.conf) transactional-update shell
+    # in the transactional-update shell
+    echo "$RESOLV_CONF" > /etc/resolv.conf
+    zypper -n dup --allow-vendor-change
+    exit
+    # on the host
+    reboot
+
+Writing again the resolv.conf is necessary as the there is no overlayfs in the chroot environment of the transactional-update shell
 
 ## Using a cluster from the hypervisor node
 
