@@ -9,60 +9,77 @@ changes really will work in the final product.
 
 ## Requirements
 
-In order to run `caasp-kvm`, a system must have `kvm` installed, `libvirtd` and
-`docker` daemons running, and a few additional dependencies must be met. As
-root, run:
+Follow this README in order from **Zypper setup** to **CLI syntax** to provision 
+a cluster starting from a fresh OS install. 
 
-    zypper in git python-requests qemu-kvm docker virsh libvirt-daemon-qemu
-    systemctl enable libvirtd
-    systemctl start libvirtd
-    systemctl enable docker
-    systemctl start docker
+# Zypper setup
 
+Add the containers repository for the correct version of Docker, among other things. 
+See Notes section.   
+```
+sudo zypper ar obs://Virtualization:containers/openSUSE_Leap_42.2 Virtualization:containers
+```
+You must also have SUSE's CA certificates installed, as documented on
+http://ca.suse.de . Replace distribution 42.2 with your version if different. 
+```
+zypper ar --refresh http://download.suse.de/ibs/SUSE:/CA/openSUSE_Leap_42.2/SUSE:CA.repo
+zypper in -y ca-certificates-suse p11-kit-nss-trust
+```
+The first time you install a package from a new repository zypper will ask you to accept or 
+reject the GPG key. Select 'a' for 'always'.
+
+
+# Packages and services
+Run the following as root or via sudo:   
+```
+zypper in -y git jq docker python-requests python-tox python-devel python-openstackclient python-novaclient python-heatclient qemu-kvm libvirt-daemon-qemu terraform terraform-provider-libvirt
+systemctl enable libvirtd
+systemctl start libvirtd
+systemctl enable docker
+systemctl start docker
+```
+
+# VPN access
 Many of the required resources are hosted inside SUSE's private R&D network; in
 order to access and connect to these resouces, you may need a SUSE R&D openvpn
 connection; see the
 [Micro Focus internal wiki](https://wiki.microfocus.net/index.php?title=SUSE-Development/OPS/Services/OpenVPN)
 for details.
 
-You must also have SUSE's CA certificates installed, as documented on
-http://ca.suse.de . As root:
 
-    # (replace openSUSE_Leap_42.3 with your distro)
-    zypper ar --refresh http://download.suse.de/ibs/SUSE:/CA/openSUSE_Leap_42.3/SUSE:CA.repo
-    zypper in ca-certificates-suse p11-kit-nss-trust
+# User settings
+The user running `caasp-kvm` must be a member of the dependent service groups. 
+Log out and back in for changes to take effect. 
 
-The user running `caasp-kvm` must be a member of a few additional groups:
 
-    # replace <username> with your username
-    usermod -aG docker,libvirtd <username>
-
-A libvirt storage pool must exist, for example:
-
-    sudo virsh pool-define-as default dir --target /var/lib/libvirt/images/
-    sudo virsh pool-autostart default
-    sudo virsh pool-start default
-
-The [Terraform](https://github.com/hashicorp/terraform) and the
-[terraform-provider-libvirt](https://github.com/dmacvicar/terraform-provider-libvirt)
-providers must be installed.
-
-We maintain packages for both of them inside of the
-[Virtualization:containers](https://build.opensuse.org/project/show/Virtualization:containers)
-project on OBS.
-
-You can add this repo and install these packages with just
-
-    $ # (replace openSUSE_Leap_42.2 with your distro)
-    $ sudo zypper ar obs://Virtualization:containers/openSUSE_Leap_42.2 Virtualization:containers
-    $ sudo zypper in terraform terraform-provider-libvirt jq
-
+# Project dependencies
 Clone these repositories:
+```
+git clone git@github.com:kubic-project/salt.git
+git clone git@github.com:kubic-project/velum.git
+git clone git@github.com:kubic-project/caasp-container-manifests.git
+git clone git@github.com:kubic-project/automation.git
+```
 
-    $ git clone git@github.com:kubic-project/salt.git
-    $ git clone git@github.com:kubic-project/velum.git
-    $ git clone git@github.com:kubic-project/caasp-container-manifests.git
-    $ git clone git@github.com:kubic-project/automation.git
+# VM and storage setup
+
+Initialize the default storage pool for your VMs. 
+
+default-pool.xml:
+```
+<pool type='dir'>
+  <name>default</name>
+  <target>
+    <path>/path/to/libvirt/images</path>
+  </target>
+</pool>
+```
+
+```
+sudo virsh pool-create default-pool.xml
+sudo virsh pool-autostart default
+sudo virsh pool-start default
+```
 
 ## CLI Syntax
 
@@ -114,6 +131,18 @@ Clone these repositories:
       Destroy a cluster
 
       ./caasp-kvm --destroy
+
+
+# Notes
+
+The [Terraform](https://github.com/hashicorp/terraform) and the
+[terraform-provider-libvirt](https://github.com/dmacvicar/terraform-provider-libvirt)
+providers must be installed.
+
+We maintain packages for both of them inside of the
+[Virtualization:containers](https://build.opensuse.org/project/show/Virtualization:containers)
+project on OBS.
+
 
 ## Using a cluster from the hypervisor node
 
