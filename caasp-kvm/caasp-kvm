@@ -235,7 +235,8 @@ build() {
 
 destroy() {
   log "Destroying terraform configuration"
-  terraform destroy -force $TF_ARGS && \
+  terraform init && \
+    terraform destroy -force $TF_ARGS && \
     rm -f "$ENVIRONMENT"
 }
 
