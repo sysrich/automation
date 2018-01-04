@@ -52,7 +52,9 @@ check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
 while [[ $# > 0 ]] ; do
   case $1 in
     -n|--name)
-      NAME="$2"
+      # Convert name to lower cases, as cloud-init will do with the machines
+      # hostname.
+      NAME="${2,,}"
       shift
       ;;
     -o|--openrc)
