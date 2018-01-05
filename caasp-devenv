@@ -158,7 +158,8 @@ setup() {
 
   if ! zypper lr -dU | grep --quiet "$DIST_BASE" ; then
     log "Adding Virtualization:containers Zypper repo"
-    sudo zypper ar --refresh "http://download.$DIST_BASE/${dist}/Virtualization:containers.repo"
+    sudo zypper ar "http://download.$DIST_BASE/${dist}/Virtualization:containers.repo"
+    sudo zypper --gpg-auto-import-keys ref Virtualization_containers
   fi
 
   # || : is necessary, as Zypper exits non-zero for "no changes".
