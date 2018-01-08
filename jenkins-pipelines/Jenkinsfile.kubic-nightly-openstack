@@ -22,12 +22,14 @@ openstackTypeOptions.adminFlavor = env.ADMIN_FLAVOR
 openstackTypeOptions.masterFlavor = env.MASTER_FLAVOR
 openstackTypeOptions.workerFlavor = env.WORKER_FLAVOR
 
-coreKubicProjectPeriodic(
-    // Prefer m1.large workers, fallback to any leap42.3 worker.
-    nodeLabel: 'leap42.3&&m1.large||leap42.3',
-    environmentType: 'openstack',
-    environmentTypeOptions: openstackTypeOptions,
-    environmentDestroy: env.ENVIRONMENT_DESTROY,
-    masterCount: env.MASTER_COUNT.toInteger(),
-    workerCount: env.WORKER_COUNT.toInteger()
-)
+lock('openstack-single-user') {
+    coreKubicProjectPeriodic(
+        // Prefer m1.large workers, fallback to any leap42.3 worker.
+        nodeLabel: 'leap42.3&&m1.large||leap42.3',
+        environmentType: 'openstack',
+        environmentTypeOptions: openstackTypeOptions,
+        environmentDestroy: env.ENVIRONMENT_DESTROY,
+        masterCount: env.MASTER_COUNT.toInteger(),
+        workerCount: env.WORKER_COUNT.toInteger()
+    )
+}
