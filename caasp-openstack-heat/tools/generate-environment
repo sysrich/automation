@@ -25,6 +25,9 @@ INDEX=$((INDEX + 1))
 
 # Iterate all the masters
 MASTER_IDS=$(set -o pipefail; echo "$STACK_RESOURCES" | jq -r '.[] | select(.stack_name | contains("-masters-")) | select(.resource_type == "OS::Nova::Server") | .physical_resource_id')
+K8S_MASTER_NOVA_JSON=$(set -o pipefail; openstack server show -f json ${MASTER_IDS%%$'\n'*}) # Pick the first master to be the K8S public endpoint
+K8S_MASTER_PUBLIC_IPV4=$(set -o pipefail; echo "$K8S_MASTER_NOVA_JSON" | jq -r ".addresses | split (\"=\") | .[1] | split(\",\") | .[1] | gsub(\" \"; \"\")")
+ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".kubernetesExternalHost |= \"$K8S_MASTER_PUBLIC_IPV4\"")
 for master_id in $MASTER_IDS; do
   echo "Building Master Details: $master_id"
   master_nova_json=$(set -o pipefail; openstack server show -f json $master_id)

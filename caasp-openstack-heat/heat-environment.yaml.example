@@ -7,3 +7,5 @@ parameters:
   external_net: ext-net
   internal_net_cidr: 172.24.0.0/24
   dns_nameserver: 172.24.0.2
+  worker_num_volumes: 0
+  worker_volume_size: 10

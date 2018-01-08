@@ -35,12 +35,17 @@ DIST_BASE="opensuse.org/repositories/Virtualization:/containers"
 DIST_PACKAGES="jq \
                python-tox \
                python-devel \
+               python-requests \
                libsodium-devel \
                python-openstackclient \
                python-novaclient \
                python-heatclient \
                terraform \
-               terraform-provider-libvirt"
+               terraform-provider-libvirt \
+               qemu-kvm \
+               docker \
+               libvirt-daemon-qemu \
+               ca-certificates-suse"
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -156,15 +161,31 @@ setup() {
   log "Installing CaaSP Development Environment Requiemnts"
   local dist=$(lsb-release -sd | tr -d '"' | tr " " "_")
 
+  if ! zypper lr -dU | grep --quiet "suse.de/ibs/SUSE:/CA" ; then
+    log "Adding SUSE:CA Zypper repo"
+    sudo zypper ar "http://download.suse.de/ibs/SUSE:/CA/${dist}/SUSE:CA.repo"
+    sudo zypper --gpg-auto-import-keys ref SUSE_CA
+  fi
+
   if ! zypper lr -dU | grep --quiet "$DIST_BASE" ; then
     log "Adding Virtualization:containers Zypper repo"
-    sudo zypper ar --refresh "http://download.$DIST_BASE/${dist}/Virtualization:containers.repo"
+    sudo zypper ar "http://download.$DIST_BASE/${dist}/Virtualization:containers.repo"
+    sudo zypper --gpg-auto-import-keys ref Virtualization_containers
   fi
 
   # || : is necessary, as Zypper exits non-zero for "no changes".
   sudo zypper in --no-confirm $DIST_PACKAGES || :
 
+  # Enable and start services, if disabled
+  sudo systemctl enable --now docker
+  sudo systemctl enable --now libvirtd
+
+  # Ensure the current user has access to docker and libvirt
+  sudo usermod -aG docker,libvirt $USER
+
   (cd "$DIR/velum-bootstrap" && ./velum-interactions --setup)
+
+  warn "You should now logout and back in again, in order for group membership changes to be reflected"
 }
 
 build() {

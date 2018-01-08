@@ -37,6 +37,11 @@ The user running `caasp-kvm` must be a member of a few additional groups:
     # replace <username> with your username
     usermod -aG docker,libvirtd <username>
 
+A libvirt storage pool must exist, for example:
+
+    sudo virsh pool-define-as default dir --target /var/lib/libvirt/images/
+    sudo virsh pool-autostart default
+    sudo virsh pool-start default
 
 The [Terraform](https://github.com/hashicorp/terraform) and the
 [terraform-provider-libvirt](https://github.com/dmacvicar/terraform-provider-libvirt)

@@ -218,7 +218,12 @@ build() {
     cp -r $CAASP_MANIFESTS_DIR/* "$injected/"
 
     log "Patching Container Manifests"
-    $DIR/tools/fix-kubelet-manifest -o $injected/public.yaml $injected/public.yaml
+    # TODO: Remove the if/else once https://github.com/kubic-project/caasp-container-manifests/pull/135 is merged
+    if [ -f "$injected/manifests/public.yaml" ]; then
+      $DIR/tools/fix-kubelet-manifest -o $injected/manifests/public.yaml $injected/manifests/public.yaml
+    else
+      $DIR/tools/fix-kubelet-manifest -o $injected/public.yaml $injected/public.yaml
+    fi
   else
     log "Skipping Velum environment"
   fi
@@ -240,7 +245,8 @@ build() {
 
 destroy() {
   log "Destroying terraform configuration"
-  terraform destroy -force $TF_ARGS && \
+  terraform init && \
+    terraform destroy -force $TF_ARGS && \
     rm -f "$ENVIRONMENT"
 }
 

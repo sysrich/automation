@@ -8,6 +8,7 @@ HAS_INTERACTION=false
 RUN_SETUP=false
 RUN_CONFIGURE=false
 RUN_BOOTSTRAP=false
+RUN_DOWNLOAD_KUBECONFIG=false
 RUN_UPDATE_ADMIN=false
 RUN_UPDATE_MINIONS=false
 
@@ -21,7 +22,8 @@ Usage:
   * Building a cluster
 
     -c|--configure                   Configure Velum
-    -b|--bootstrap                   Bootstrap
+    -b|--bootstrap                   Bootstrap (implies Download Kubeconfig)
+    -k|--download-kubeconfig         Download Kubeconfig
 
   * Updating a cluster
 
@@ -61,6 +63,12 @@ while [[ $# > 0 ]] ; do
       ;;
     -b|--bootstrap)
       RUN_BOOTSTRAP=true
+      RUN_DOWNLOAD_KUBECONFIG=true
+      HAS_INTERACTION=true
+      HAS_ACTION=true
+      ;;
+    -k|--download-kubeconfig)
+      RUN_DOWNLOAD_KUBECONFIG=true
       HAS_INTERACTION=true
       HAS_ACTION=true
       ;;
@@ -107,12 +115,16 @@ interact() {
     args="$args spec/**/02-*"
   fi
 
-  if [ "$RUN_UPDATE_ADMIN" = true ]; then
+  if [ "$RUN_DOWNLOAD_KUBECONFIG" = true ]; then
     args="$args spec/**/03-*"
   fi
 
-  if [ "$RUN_UPDATE_MINIONS" = true ]; then
+  if [ "$RUN_UPDATE_ADMIN" = true ]; then
     args="$args spec/**/04-*"
+  fi
+
+  if [ "$RUN_UPDATE_MINIONS" = true ]; then
+    args="$args spec/**/05-*"
   fi
 
   VERBOSE=true bundle exec rspec $args

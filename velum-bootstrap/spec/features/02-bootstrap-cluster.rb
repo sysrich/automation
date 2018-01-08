@@ -77,7 +77,7 @@ feature "Boostrap cluster" do
 
     puts ">>> Waiting for page to settle"
     with_screenshot(name: :wait_for_settle) do
-      expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 120)
+      expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 240)
     end
     puts "<<< Page has settled"
 
@@ -132,24 +132,5 @@ feature "Boostrap cluster" do
       end
     end
     puts "<<< Orchestration completed"
-  end
-
-  scenario "User downloads the kubeconfig file" do
-    visit "/"
-
-    expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 120)
-
-    expect(page).to have_text("kubectl config")
-    with_screenshot(name: :download_kubeconfig) do
-      click_on "kubectl config"
-    end
-    expect(page).to have_text("Log in to Your Account")
-    with_screenshot(name: :oidc_login) do
-      fill_in "login", with: "test@test.com"
-      fill_in "password", with: "password"
-      click_button "Login"
-    end
-    expect(page).to have_text("apiVersion")
-    File.write("kubeconfig", Nokogiri::HTML(page.body).xpath("//pre").text)
   end
 end
