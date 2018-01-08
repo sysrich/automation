@@ -45,7 +45,9 @@ DIST_PACKAGES="jq \
                qemu-kvm \
                docker \
                libvirt-daemon-qemu \
-               ca-certificates-suse"
+               ca-certificates-suse \
+               libffi-devel-gcc5 \
+               libopenssl-devel"
 
 USAGE=$(cat <<USAGE
 Usage:
