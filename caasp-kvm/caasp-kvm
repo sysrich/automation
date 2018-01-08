@@ -8,7 +8,7 @@ DIR="$( cd "$( dirname "$0" )" && pwd )"
 ACTION=
 RUN_BUILD=
 RUN_DESTROY=
-QA=${QA:-}
+VANILLA=${VANILLA:-}
 
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
@@ -39,6 +39,7 @@ Usage:
     -m|--masters <INT>     Number of masters to build (Default: CAASP_NUM_MASTERS=$MASTERS)
     -w|--workers <INT>     Number of workers to build (Default: CAASP_NUM_WORKERS=$WORKERS)
     -i|--image <STR>       Image to use (Default: CAASP_IMAGE=$IMAGE)
+    --vanilla              Do not inject devenv code, use vanilla caasp (Default: false)
 
   * Destroying a cluster
 
@@ -63,9 +64,6 @@ Usage:
     --worker-ram <INT>     CPUs to allocate to master node(s) (Default: CAASP_MASTER_CPU=$MASTER_CPU)
     --master-cpu <INT>     RAM to allocate to worker node(s) (Default: CAASP_WORKER_RAM=$WORKER_RAM)
     --worker-cpu <INT>     CPUs to allocate to worker node(s) (Default: CAASP_WORKER_CPU=$WORKER_CPU)
-
-  * Even more advanced options
-    --qa                   ignore local git checkouts and use the image as it is for QA
 
   * Examples:
 
@@ -158,8 +156,8 @@ while [[ $# > 0 ]] ; do
       WORKER_CPU="$2"
       shift
       ;;
-    --qa)
-      QA="true"
+    --vanilla)
+      VANILLA="true"
       ;;
     -h|--help)
       usage
@@ -205,7 +203,7 @@ build() {
   log "Downloading CaaSP KVM Image"
   $DIR/../misc-tools/download-image --proxy "${PROXY}" --type kvm $IMAGE
 
-  if [ -n "$CAASP_VELUM_DIR" -a "$QA" != "true" ] ; then
+  if [ -n "$CAASP_VELUM_DIR" -a "$VANILLA" != "true" ] ; then
     log "Building Velum Development Image"
     $DIR/tools/build-velum-image "$CAASP_VELUM_DIR" "${PROXY}"
 
@@ -229,7 +227,7 @@ build() {
   fi
 
   log "Generating terraform manifest from erb template"
-  erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb is installed correctly"
+  erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
 
   log "Applying terraform configuration"
   terraform init && terraform apply $TF_ARGS

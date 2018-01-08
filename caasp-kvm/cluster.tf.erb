@@ -159,7 +159,7 @@ resource "libvirt_domain" "admin" {
     listen_type = "address"
   }
 
-<% if not ENV['QA'] == "true" -%>
+<% if not ENV['VANILLA'] == "true" -%>
   filesystem {
     source = "${var.kubic_salt_dir}"
     target = "salt"
