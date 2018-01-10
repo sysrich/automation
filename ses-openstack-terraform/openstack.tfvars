@@ -1,0 +1,12 @@
+image_name = "SLES12-SP3-JeOS-for-OpenStack-Cloud.x86_64-1.3.0-Build12.101"
+internal_net = "caasp-net"
+external_net = "ext-net"
+admin_size = "m1.medium"
+master_size = "m1.medium"
+mons = 3
+worker_size = "m1.medium"
+osds = 2
+sles_base = "http://sles.base"
+sles_update = "http:/sles.update"
+ses_base = "http://ses.base"
+ses_update = "http://ses.update"
