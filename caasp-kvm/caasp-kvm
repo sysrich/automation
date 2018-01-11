@@ -8,7 +8,7 @@ DIR="$( cd "$( dirname "$0" )" && pwd )"
 ACTION=
 RUN_BUILD=
 RUN_DESTROY=
-export VANILLA=${VANILLA:-}
+VANILLA=${VANILLA:-}
 
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
@@ -227,7 +227,7 @@ build() {
   fi
 
   log "Generating terraform manifest from erb template"
-  erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
+  VANILLA=${VANILLA} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
 
   log "Applying terraform configuration"
   terraform init && terraform apply $TF_ARGS
