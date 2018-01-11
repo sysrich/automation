@@ -46,12 +46,31 @@ class TestKubernetesWorker(object):
         machine_id = host.file('/etc/machine-id').content_string.rstrip()
         assert machine_id in host.salt("grains.get", "id")
 
-    def test_etcd_aliveness(self, host):
+    def _test_etcd_aliveness(self, host, hostname):
         machine_id = host.file('/etc/machine-id').content_string.rstrip()
         cmd = "etcdctl --ca-file /etc/pki/trust/anchors/SUSE_CaaSP_CA.crt "\
               "--key-file /etc/pki/minion.key "\
               "--cert-file /etc/pki/minion.crt "\
-              "--endpoints='https://%s.infra.caasp.local:2379' "\
-              "cluster-health" % machine_id
-        health = host.run_expect([0], cmd)
-        assert "cluster is healthy" in health.stdout
+              "--endpoints='https://%s:2379' "\
+              "cluster-health" % hostname
+
+        # TODO: Switch back to run_expect once we remove compatibility for
+        #       our generated hostnames.
+        health = host.run(cmd)
+
+        return "cluster is healthy" in health.stdout
+
+    def test_etcd_aliveness(self, host):
+        # TODO: Remove the machine_id compatibility once we remove our
+        #       generated hostnames.
+        machine_id = host.file('/etc/machine-id').content_string.rstrip()
+        hostname = host.file('/etc/hostname').content_string.rstrip()
+
+        result = False
+        if self._test_etcd_aliveness(host, "%s.infra.caasp.local" % machine_id):
+            result = True
+
+        if self._test_etcd_aliveness(host, hostname):
+            result = True
+
+        assert result is True
