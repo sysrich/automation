@@ -29,28 +29,27 @@ def create_environment_json(admin_host_ipaddr, available_hosts):
     # FIXME: this is picking a macaddr    master_ipaddr = available_hosts[1][2]
     for idx, minion in enumerate(available_hosts):
         name, hw_serial, macaddr, ipaddr, machine_id = minion
-        d["minions"].append({
-           "minionId" : machine_id,
-           "index" : idx,
-           "fqdn" : hw_serial,
-           "addresses" : {
-              "privateIpv4" : ipaddr,
-              "publicIpv4" : ipaddr,
-           }
-        })
-
         if idx == 0:
-            d["minions"][-1]["role"] = "admin"
+            role = "admin"
         elif idx == 1:
-            d["minions"][-1]["role"] = "master"
+            role = "master"
             # TODO: This will fail for multi-master, this needs to be a round robin DNS record, or
             # a load balancer address - or at the least - a DNS name aimed at one of the masters and
             # registered in /etc/hosts on any machine who needs to reach the cluster.
             d["kubernetesExternalHost"] = ipaddr
         else:
-            d["minions"][-1]["role"] = "worker"
-            # unneded
-            # d["minions"][-1]["proxyCommand"] = "ssh root@{} -W %h:%p".format(master_ipaddr)
+            role = "worker"
+
+        d["minions"].append({
+           "minionId": machine_id,
+           "index": idx,
+           "fqdn": "{}-{}".format(role, hw_serial),
+           "role": role,
+           "addresses": {
+              "privateIpv4" : ipaddr,
+              "publicIpv4" : ipaddr,
+           }
+        })
 
     fn = os.path.abspath('environment.json')
     with open(fn, 'w') as f:
