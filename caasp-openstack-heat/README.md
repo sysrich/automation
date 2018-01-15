@@ -21,7 +21,8 @@ You can install the necessary dependancy packages with:
       * Building a cluster
 
         -b|--build                       Run the Heat Stack Build Step
-        -w|--workers             <INT>   Number of workers to build
+        -m|--masters             <INT>   Number of masters to build (Default: 3)
+        -w|--workers             <INT>   Number of workers to build (Default: 2)
         -i|--image               <STR>   Image to use
 
       * Destroying a cluster
@@ -35,9 +36,13 @@ You can install the necessary dependancy packages with:
 
       * Examples:
 
-      Build a 2 worker cluster
+      Build a 1 master, 2 worker cluster
 
-      ./caasp-openstack --build -w 2 --openrc my-openrc --image CaaSP-1.0.0-GM --name test-stack
+      ./caasp-openstack --build -m 1 -w 2 --openrc my-openrc --image CaaSP-1.0.0-GM --name test-stack
+
+      Build a 3 master, 2 worker cluster
+
+      ./caasp-openstack --build -m 3 -w 2 --openrc my-openrc --image CaaSP-1.0.0-GM --name test-stack
 
 ## Using a cluster
 

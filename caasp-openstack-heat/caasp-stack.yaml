@@ -14,8 +14,11 @@ parameter_groups:
     parameters:
       - admin_flavor
       - master_flavor
+      - master_count
       - worker_flavor
       - worker_count
+      - worker_num_volumes
+      - worker_volume_size
 
   - label: network
     description: Network Parameters
@@ -55,6 +58,10 @@ parameters:
     default: m1.large
     constraints:
       - custom_constraint: nova.flavor
+  master_count:
+    type: number
+    description: Number of Master nodes to boot
+    default: 3
   worker_flavor:
     type: string
     description: Worker Flavor
@@ -65,6 +72,14 @@ parameters:
     type: number
     description: Number of Worker nodes to boot
     default: 5
+  worker_num_volumes:
+    type: number
+    description: Number of volumes to create and attach to each worker
+    default: 0
+  worker_volume_size:
+    type: number
+    description: Size of each worker-attached volume in GB
+    default: 10
   root_password:
     type: string
     description: Root Password for the VMs
@@ -244,97 +259,43 @@ resources:
       floatingip_id: { get_resource: admin_floating_ip }
       port_id: { get_resource: admin_port }
 
-  master:
-    type: OS::Nova::Server
+  masters:
+    type: OS::Heat::ResourceGroup
     depends_on:
       - external_router_int
     properties:
-      image: { get_param: image }
-      key_name: { get_resource: keypair }
-      flavor: { get_param: master_flavor }
-      networks:
-        - port: { get_resource: master_port }
-      user_data_format: RAW
-      user_data:
-        str_replace:
-          template: |
-            #cloud-config
-
-            disable_root: False
-            ssh_deletekeys: False
-            ssh_pwauth: True
-
-            chpasswd:
-              list: |
-                root:$root_password
-              expire: False
-
-            suse_caasp:
-              role: cluster
-              admin_node: $admin_node
-          params:
-            $admin_node: { get_attr: [admin, first_address] }
-            $root_password: { get_param: root_password }
-
-  master_port:
-    type: OS::Neutron::Port
-    depends_on:
-      - external_router_int
-    properties:
-      network: { get_resource: internal_network }
-      security_groups:
-        - { get_resource: secgroup_base }
-        - { get_resource: secgroup_master }
-
-  master_floating_ip:
-    type: OS::Neutron::FloatingIP
-    depends_on:
-      - external_router_int
-    properties:
-      floating_network: { get_param: external_net }
-
-  master_floating_ip_association:
-    type: OS::Neutron::FloatingIPAssociation
-    properties:
-      floatingip_id: { get_resource: master_floating_ip }
-      port_id: { get_resource: master_port }
-
-  worker:
-    type: OS::Heat::AutoScalingGroup
-    depends_on:
-      - external_router_int
-    properties:
-      min_size: { get_param: worker_count }
-      desired_capacity: { get_param: worker_count }
-      max_size: { get_param: worker_count }
-      resource:
-        type: OS::Nova::Server
+      count: { get_param: master_count }
+      resource_def:
+        type: caasp-stack-master.yaml
         properties:
+          name: {list_join: ['-', [{get_param: 'OS::stack_name'}, 'master', '%index%']]}
           image: { get_param: image }
-          key_name: { get_resource: keypair }
+          internal_net: { get_resource: internal_network }
+          external_net: { get_param: external_net }
+          secgroup_base: { get_resource: secgroup_base }
+          secgroup_master: { get_resource: secgroup_master }
+          flavor: { get_param: master_flavor }
+          keypair: { get_resource: keypair }
+          root_password: { get_param: root_password }
+          admin_node_ip: { get_attr: [admin, first_address] }
+
+  workers:
+    type: OS::Heat::ResourceGroup
+    depends_on:
+      - external_router_int
+    properties:
+      count: { get_param: worker_count }
+      resource_def:
+        type: caasp-stack-worker.yaml
+        properties:
+          name: {list_join: ['-', [{get_param: 'OS::stack_name'}, 'worker', '%index%']]}
+          image: { get_param: image }
+          internal_net: { get_resource: internal_network }
+          secgroup_base: { get_resource: secgroup_base }
+          secgroup_worker: { get_resource: secgroup_worker }
           flavor: { get_param: worker_flavor }
-          networks:
-            - network: { get_resource: internal_network }
-          security_groups:
-            - { get_resource: secgroup_base }
-            - { get_resource: secgroup_worker }
-          user_data_format: RAW
-          user_data:
-            str_replace:
-              template: |
-                #cloud-config
-
-                disable_root: False
-                ssh_deletekeys: False
-                ssh_pwauth: True
-
-                chpasswd:
-                  list: |
-                    root:linux
-                  expire: False
-
-                suse_caasp:
-                  role: cluster
-                  admin_node: $admin_node
-              params:
-                $admin_node: {get_attr: [admin, first_address]}
+          keypair: { get_resource: keypair }
+          root_password: { get_param: root_password }
+          admin_node_ip: { get_attr: [admin, first_address] }
+          num_volumes: { get_param: worker_num_volumes }
+          volume_size: { get_param: worker_volume_size }
