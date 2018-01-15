@@ -3,6 +3,9 @@ heat_template_version: 2015-04-30
 description: Template to create a CaaSP Worker
 
 parameters:
+  name:
+    type: string
+    description: Name of server
   image:
     type: string
     description: Name of image to use for the worker
@@ -52,6 +55,7 @@ resources:
   worker:
     type: OS::Nova::Server
     properties:
+      name: { get_param: name }
       image: { get_param: image }
       key_name: { get_param: keypair }
       flavor: { get_param: flavor }
