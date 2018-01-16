@@ -2,7 +2,7 @@ library "kubic-jenkins-library@${env.BRANCH_NAME}"
 
 // Configure the build properties
 properties([
-    buildDiscarder(logRotator(numToKeepStr: '31')),
+    buildDiscarder(logRotator(numToKeepStr: '31', daysToKeepStr: '31')),
     disableConcurrentBuilds(),
     pipelineTriggers([
         [$class: 'org.jenkinsci.plugins.parameterizedscheduler.ParameterizedTimerTrigger',
