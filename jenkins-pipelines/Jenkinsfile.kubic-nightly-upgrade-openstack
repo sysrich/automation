@@ -10,7 +10,7 @@ String updateRepo = 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Produ
 
 // Configure the build properties
 properties([
-    buildDiscarder(logRotator(numToKeepStr: '31')),
+    buildDiscarder(logRotator(numToKeepStr: '31', daysToKeepStr: '31')),
     disableConcurrentBuilds(),
     pipelineTriggers([cron('@daily')]),
     parameters([
