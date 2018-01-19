@@ -1,0 +1,58 @@
+library "kubic-jenkins-library@${env.BRANCH_NAME}"
+
+// Workers rotation
+
+import hudson.model.*
+
+// Configure the run properties
+
+properties([
+    buildDiscarder(logRotator(numToKeepStr: '31', daysToKeepStr: '31')),
+    disableConcurrentBuilds(),
+    pipelineTriggers([cron('00 */2 * * *')])
+])
+
+// configuration
+
+def onlineWorkersThreshold = 3
+def offlineReason = "Disabled by worker rotation script"
+
+stage('Run') {
+
+  // Delete offline nodes
+
+  for (aSlave in hudson.model.Hudson.instance.slaves) {
+    def c = aSlave.getComputer()
+    if (c.isOffline() == false) continue
+    if (c.getOfflineCauseReason() != offlineReason) continue
+    if (c.countBusy() == 0) {
+      println('Deleting: ' + aSlave.name);
+      // temporarily disabled   c.doDoDelete();
+    } else {
+      println('Not deleting: ' + aSlave.name + ' yet. countBusy: ' + c.countBusy());
+    }
+  }
+
+  // Pick the oldest node to be set offline.
+  // It will have time to drain and be deleted in one of the next runs.
+
+  def selected = null
+  def lowestConnectTime = 999999999999999
+  def onlineWorkersCount = 0
+  for (aSlave in hudson.model.Hudson.instance.slaves) {
+    onlineWorkersCount += 1
+    def c = aSlave.getComputer()
+    if (c.isOnline()) {
+      if (c.getConnectTime() < lowestConnectTime) {
+        selected = aSlave
+        lowestConnectTime = c.getConnectTime()
+      }
+    }
+  }
+  if (onlineWorkersCount > onlineWorkersThreshold) {
+    println('setting node offline: ' + selected.name)
+    selected.getComputer().setTemporarilyOffline(true, offlineReason)
+  } else {
+    println('not enough online workers: ' + onlineWorkersCount + '  threshold: ' + onlineWorkersThreshold)
+  }
+}
