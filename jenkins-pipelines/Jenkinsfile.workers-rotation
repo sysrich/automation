@@ -3,6 +3,8 @@ library "kubic-jenkins-library@${env.BRANCH_NAME}"
 // Workers rotation
 
 import hudson.model.*
+import hudson.slaves.OfflineCause
+import hudson.slaves.OfflineCause.ByCLI
 
 // Configure the run properties
 
@@ -15,7 +17,7 @@ properties([
 // configuration
 
 def onlineWorkersThreshold = 3
-def offlineReason = "Disabled by worker rotation script"
+hudson.slaves.OfflineCause.ByCLI offlineReason = new hudson.slaves.OfflineCause.ByCLI("Disabled by worker rotation script")
 
 stage('Run') {
 
@@ -27,7 +29,7 @@ stage('Run') {
     if (c.getOfflineCauseReason() != offlineReason) continue
     if (c.countBusy() == 0) {
       println('Deleting: ' + aSlave.name);
-      // temporarily disabled   c.doDoDelete();
+      // temporarily disabled   c.terminate();
     } else {
       println('Not deleting: ' + aSlave.name + ' yet. countBusy: ' + c.countBusy());
     }
