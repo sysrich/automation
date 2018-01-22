@@ -278,7 +278,28 @@ resource "openstack_compute_instance_v2" "admin" {
   ]
 
   user_data = "${data.template_file.admin.rendered}"
+}
 
+resource "null_resource" "deepsea" {
+
+  connection {
+    type = "ssh"
+    host = "${openstack_compute_floatingip_associate_v2.admin_ext_ip.floating_ip}"
+    private_key = "${file("ssh/id_caasp")}"
+  }
+
+  provisioner "file" {
+    source      = "deepsea.sh"
+    destination = "/tmp/deepsea.sh"
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /tmp/deepsea.sh",
+      "/tmp/deepsea.sh",
+    ]
+  }
+  depends_on = ["openstack_compute_instance_v2.admin", "openstack_compute_instance_v2.osd", 
+  "openstack_compute_instance_v2.mon", "openstack_compute_volume_attach_v2.salt-minion-attach"]
 }
 
 resource "openstack_networking_floatingip_v2" "admin_ext" {
@@ -317,7 +338,7 @@ resource "openstack_compute_instance_v2" "mon" {
 
 resource "openstack_blockstorage_volume_v2" "osd-blk" {
   count = "${var.osds}",
-  size = 3
+  size = 2
   name = "osd-blk${count.index}"
 }
 
