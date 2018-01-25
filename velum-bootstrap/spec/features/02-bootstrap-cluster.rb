@@ -128,9 +128,17 @@ feature "Boostrap cluster" do
     puts ">>> Wait until orchestration is complete (Timeout: #{orchestration_timeout})"
     with_screenshot(name: :orchestration_complete) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: orchestration_timeout)
+        expect(page).to have_css(".fa-check-circle-o, .fa-times-circle", count: node_number, wait: orchestration_timeout)
       end
     end
     puts "<<< Orchestration completed"
+
+    puts ">>> Orchestration succeeded"
+    with_screenshot(name: :orchestration_succeeded) do
+      within(".nodes-container") do
+        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 5)
+      end
+    end
+    puts "<<< Orchestration succeeded"
   end
 end
