@@ -25,7 +25,7 @@ yaml.add_representer(literal_comment, literal_comment_representer)
 def parse_args():
     ap = ArgumentParser(description='Extract errors from Salt events log')
     ap.add_argument('input_fname', help='supportutils tarball or yml file')
-    ap.add_argument('-w', action='store_true', help='write <input basename>.salt_failures')
+    ap.add_argument('-w', action='store_true', help='write <input basename>.salt_failures.txt')
     ap.add_argument('-i', action='store_true', help='ignore missing velum-salt-events.yml in tarball')
     return ap.parse_args()
 
@@ -127,7 +127,7 @@ def main():
 
     if args.w:
         if out:
-            out_fn = args.input_fname[:-4] + '.salt_failures'
+            out_fn = args.input_fname[:-4] + '.salt_failures.txt'
             print("Writing {}".format(out_fn))
             with open(out_fn, 'w') as f:
                 f.writelines(out)
