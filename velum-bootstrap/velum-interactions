@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+
 # options
 HAS_ACTION=false
 HAS_INTERACTION=false
@@ -11,6 +13,8 @@ RUN_BOOTSTRAP=false
 RUN_DOWNLOAD_KUBECONFIG=false
 RUN_UPDATE_ADMIN=false
 RUN_UPDATE_MINIONS=false
+
+ENVIRONMENT=${CAASP_ENVIRONMENT:-$DIR/../caasp-kvm/environment.json}
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -29,6 +33,10 @@ Usage:
 
     -a|--update-admin                Update admin node
     -m|--update-minions              Update masters and workers
+
+  * General Options
+
+    -e|--environment                 Set path to environment.json
 
   * Examples:
 
@@ -82,6 +90,10 @@ while [[ $# > 0 ]] ; do
       HAS_INTERACTION=true
       HAS_ACTION=true
       ;;
+    -e|--environment)
+      ENVIRONMENT="$2"
+      shift
+      ;;
     -h|--help)
       echo "$USAGE"
       exit 0
@@ -127,7 +139,7 @@ interact() {
     args="$args spec/**/05-*"
   fi
 
-  VERBOSE=true bundle exec rspec $args
+  VERBOSE=true ENVIRONMENT=$ENVIRONMENT bundle exec rspec $args
 }
 
 # main
