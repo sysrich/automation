@@ -18,7 +18,6 @@ from prometheus_client import CollectorRegistry, Summary, push_to_gateway
 from prometheus_client import Counter
 
 from environment_json import create_environment_json
-# import velum_client
 
 conf = None
 
@@ -42,74 +41,6 @@ log.addHandler(handler)
 # servers available.
 SERVERS_TIMEOUT = 7200
 
-AUTOYAST_URL_PATH = "/autoyast"
-AUTOYAST_SIG_CHUNK = """\
-    <signature-handling>
-      <accept_file_without_checksum config:type="boolean">true</accept_file_without_checksum>
-      <accept_non_trusted_gpg_key config:type="boolean">true</accept_non_trusted_gpg_key>
-      <accept_unknown_gpg_key config:type="boolean">true</accept_unknown_gpg_key>
-      <accept_unsigned_file config:type="boolean">true</accept_unsigned_file>
-      <accept_verification_failed config:type="boolean">false</accept_verification_failed>
-      <import_gpg_key config:type="boolean">true</import_gpg_key>
-    </signature-handling>
-"""
-AUTOYAST_AUTHORIZED_KEYS_CHUNK = """\
-      <script>
-        <chrooted config:type="boolean">true</chrooted>
-        <filename>inject_authorized_key.sh</filename>
-        <interpreter>shell</interpreter>
-        <source><![CDATA[
-#!/bin/sh
-mkdir -p /root/.ssh
-chmod 600 /root/.ssh
-echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC2G7k0zGAjd+0LzhbPcGLkdJrJ/LbLrFxtXe+LPAkrphizfRxdZpSC7Dvr5Vewrkd/kfYObiDc6v23DHxzcilVC2HGLQUNeUer/YE1mL4lnXC1M3cb4eU+vJ/Gyr9XVOOReDRDBCwouaL7IzgYNCsm0O5v2z/w9ugnRLryUY180/oIGeE/aOI1HRh6YOsIn7R3Rv55y8CYSqsbmlHWiDC6iZICZtvYLYmUmCgPX2Fg2eT+aRbAStUcUERm8h246fs1KxywdHHI/6o3E1NNIPIQ0LdzIn5aWvTCd6D511L4rf/k5zbdw/Gql0AygHBR/wnngB5gSDERLKfigzeIlCKf Unsafe Shared Key" >> /root/.ssh/authorized_keys
-          ]]>
-        </source>
-      </script>
-"""
-
-caasp_node_pxecfg_tpl = """
-default menu.c32
-prompt 0
-timeout 300
-ONTIMEOUT CaaSP-dev-AutoYAST
-
-MENU TITLE PXE Menu
-
-LABEL CaaSP-dev-AutoYAST
-  MENU LABEL Install CaaSP 1.0 Beta 3 (AutoYAST from {ipaddr})
-  KERNEL {tftpdir}/linux
-  APPEND initrd={tftpdir}/initrd ramdisk_size=65536 install=http://{tftp_ipaddr}/distros/{tftpdir}/DVD1/ language=en_US ifcfg=*=dhcp autoyast=http://{tftp_ipaddr}/autoyast/caasp/worker_mangled.xml insecure=1
-
-MENU INCLUDE pxelinux.cfg/local-fragment
-"""
-
-caasp_admin_pxecfg_tpl = """
-default menu.c32
-prompt 0
-timeout 30
-ONTIMEOUT CaaSP-dev-AutoYAST-Admin
-
-MENU TITLE PXE Menu
-
-LABEL CaaSP-dev-AutoYAST-Admin
-  MENU LABEL Install CaaSP 1.0 Beta 3 (AutoYAST - Admin Node)
-  KERNEL {tftpdir}/linux
-  APPEND initrd={tftpdir}/initrd ramdisk_size=65536 install=http://{tftp_ipaddr}/distros/{tftpdir}/DVD1/ language=en_US netsetup=dhcp netdevice=eth0 insecure=1 autoyast=http://{tftp_ipaddr}/autoyast/caasp/admin.xml
-
-MENU INCLUDE pxelinux.cfg/local-fragment
-"""
-
-wipe_partition_tables_pxecfg = """
-default menu.c32
-timeout 30
-ONTIMEOUT WipePartitionTables
-MENU TITLE PXE Menu
-LABEL WipePartitionTables
-  MENU LABEL Wipe Partition Tables
-  KERNEL hpscriptingtoolkit1040/vmlinuz
-  APPEND initrd=hpscriptingtoolkit1040/initrd.img root=/dev/ram0 rw ramdisk_size=740100 ide=nodma ide=noraid pnpbios=off network=1 sstk_mount={tftp_ipaddr}:/srv/distros/hpe-scripting-toolkit-linux-10.50-41 sstk_mount_type=nfs sstk_mount_options=ro,nolock numa=off sstk_conf=toolkit.conf sstk_script=/wipe_partitions.sh
-"""
 
 # Prometheus
 
@@ -210,17 +141,13 @@ class TestbedServiceClient():
                     filename}
         )
 
-    def upload_pxe_conf(self, macaddr, content):
-        log.info("Uploading PXE conf")
-        resp = self._api_post('/pxe/upload_pxe_conf/',
-                {"conf": content, "macaddr": macaddr}
-        )
+    def generate_admin_pxe_conf(self, **kw):
+        log.info("Generating admin PXE conf")
+        resp = self._api_post('/pxe/generate_admin_pxe_conf/', kw)
 
-    def upload_worker_mangled_xml(self, xml):
-        log.info("Uploading worker_mangled.xml")
-        resp = self._api_post('/autoyast/upload_worker_mangled_xml/',
-                {"xml": xml}
-        )
+    def generate_node_pxe_conf(self, **kw):
+        log.info("Generating node PXE conf")
+        resp = self._api_post('/pxe/generate_node_pxe_conf/', kw)
 
     def fetch_dhcp_logs(self, from_date):
         tstamp = from_date.strftime("%s")
@@ -235,6 +162,10 @@ class TestbedServiceClient():
         resp = self._api_get('/ssh/probe_ssh_port/{}'.format(ipaddr))
         return resp["v"]
 
+    def fetch_and_mangle_worker_autoyast(self, admin_host_ipaddr):
+        resp = self._api_post('/autoyast/fetch_and_mangle_worker_autoyast', dict(
+            admin_host_ipaddr=admin_host_ipaddr
+        ))
 
     def fetch_servers_list(self, testname, master_count, worker_count,
             want_admin=True, want_nodes=True):
@@ -371,15 +302,17 @@ def deploy_admin_node(args):
     admin_node = tsclient.fetch_servers_list(args.testname, args.master_count, args.worker_count, want_admin=True,
             want_nodes=False)[0]
     servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr = admin_node
-    log.info("---deploying admin node {} ---".format(servername))
-    caasp_admin_pxecfg = caasp_admin_pxecfg_tpl.format(tftpdir=args.tftpdir,
-            tftp_ipaddr=args.tftp_ipaddr)
-    write_pxe_file(args, eth0_macaddr, caasp_admin_pxecfg)
+    log.info("deploying admin node {}".format(servername))
+    tsclient.generate_admin_pxe_conf(
+        tftpdir=args.tftpdir,
+        tftp_ipaddr=args.tftp_ipaddr,
+        pxe_macaddr=eth0_macaddr
+    )
 
     i = HWManager(ilo_ipaddr)
     i.power_off()
     sleep(10)
-    log.info("Setting netboot {}".format(servername))
+    log.info("setting netboot {}".format(servername))
     i.set_one_time_network_boot()
     sleep(10)
     log.info("powering on {}".format(servername))
@@ -424,29 +357,6 @@ def power_off_nodes(args):
     log.info("Powering off completed")
 
 
-def fetch_and_mangle_worker_autoyast(admin_host_ipaddr):
-    """Fetch autoyast file and upload it to
-    /srv/www/htdocs/autoyast/caasp/worker_mangled.xml
-    """
-    assert admin_host_ipaddr
-    log.info("Fetching autoyast file from {}".format(admin_host_ipaddr))
-
-    ctx = http.client.ssl._create_stdlib_context()
-    conn = http.client.HTTPSConnection(admin_host_ipaddr, timeout=20, context=ctx)
-    conn.request('GET', AUTOYAST_URL_PATH)
-    ay = conn.getresponse().read().decode('utf-8')
-
-    assert '<pattern>SUSE-CaaSP-Stack</pattern>' in ay, ay
-    xml = ay.replace('</storage>\n', '</storage>\n' + AUTOYAST_SIG_CHUNK)
-
-    # Inject SSH key into authorized keys to allow SSHing to workers
-    xml = xml.replace(
-        '    </chroot-scripts>\n',
-        AUTOYAST_AUTHORIZED_KEYS_CHUNK + '    </chroot-scripts>\n'
-    )
-    tsclient.upload_worker_mangled_xml(xml)
-
-
 def parse_dhcp_logs(from_date, macaddr):
     """Parse dhcpd logs, extract last ipaddr from DHCPACK if found
     """
@@ -482,25 +392,18 @@ def wait_dhcp_acks(from_date, servers, max_failing_nodes):
 def deploy_nodes(args, admin_host_ipaddr, max_failing_nodes=0):
     servers = tsclient.fetch_servers_list(args.testname, args.master_count, args.worker_count, want_admin=False, want_nodes=True)
 
-    cnf = caasp_node_pxecfg_tpl.format(
-        ipaddr=admin_host_ipaddr,
-        tftpdir=args.tftpdir,
-        tftp_ipaddr=args.tftp_ipaddr,
-    )
-    for servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr in servers:
-        log.info("{} | {} | {}" .format(servername, ilo_ipaddr, desc))
-
     for servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr in servers:
         if 'Admin Node' in desc:
-            log.info("skipping admin")
             continue
 
-        pxe_macaddr = eth0_macaddr
-        write_pxe_file(args, pxe_macaddr, cnf)
+        tsclient.generate_node_pxe_conf(
+            admin_host_ipaddr=admin_host_ipaddr,
+            tftpdir=args.tftpdir,
+            tftp_ipaddr=args.tftp_ipaddr,
+            pxe_macaddr=eth0_macaddr
+        )
 
-    for servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr in servers:
         i = HWManager(ilo_ipaddr)
-        # if i.get_one_time_boot() != 'network':
         log.info("Setting netboot {}".format(servername))
         try:
             i.set_one_time_network_boot()
@@ -721,7 +624,7 @@ def main():
         admin_host_ipaddr = parse_dhcp_logs(power_up_time, eth0_macaddr)
 
         assert admin_host_ipaddr
-        fetch_and_mangle_worker_autoyast(admin_host_ipaddr)
+        tsclient.fetch_and_mangle_worker_autoyast(admin_host_ipaddr)
         power_off_nodes(args)
         available_hosts = deploy_nodes(args, admin_host_ipaddr, max_failing_nodes=0)
         generate_environment_json(admin_host_ipaddr, available_hosts)
