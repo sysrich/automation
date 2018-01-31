@@ -124,7 +124,7 @@ feature "Boostrap cluster" do
     end
 
     # Min of 1800 seconds, Max of 7200 seconds, ideal = nodes * 120 seconds
-    orchestration_timeout = [[1800, node_number * 120].max, 7200].min
+    orchestration_timeout = 7200 #[[1800, node_number * 120].max, 7200].min
     puts ">>> Wait until orchestration is complete (Timeout: #{orchestration_timeout})"
     with_screenshot(name: :orchestration_complete) do
       within(".nodes-container") do
