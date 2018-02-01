@@ -159,6 +159,12 @@ resource "libvirt_domain" "admin" {
     listen_type = "address"
   }
 
+  connection {
+    type     = "ssh"
+    user     = "root"
+    password = "linux"
+  }
+
 <% if not ENV['VANILLA'] == "true" -%>
   filesystem {
     source = "${var.kubic_salt_dir}"
@@ -189,13 +195,6 @@ resource "libvirt_domain" "admin" {
     target = "devel-docker-images"
     readonly = true
   }
-<% end -%>
-
-  connection {
-    type     = "ssh"
-    user     = "root"
-    password = "linux"
-  }
 
   provisioner "remote-exec" {
     inline = [
@@ -203,6 +202,7 @@ resource "libvirt_domain" "admin" {
       "docker load -i /var/lib/misc/devel-docker-images/*.tar",
     ]
   }
+<% end -%>
 
   provisioner "remote-exec" {
     inline = [
