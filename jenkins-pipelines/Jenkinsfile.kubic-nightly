@@ -7,7 +7,7 @@ properties([
     pipelineTriggers([cron('@daily')]),
 ])
 
-def kvmTypeOptions = kubicLib.KvmTypeOptions.new();
+def kvmTypeOptions = kubicLib.CaaspKvmTypeOptions.new();
 kvmTypeOptions.vanilla = true
 
 coreKubicProjectPeriodic(
