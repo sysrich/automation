@@ -1,4 +1,4 @@
-library "kubic-jenkins-library@${env.BRANCH_NAME}"
+def kubicLib = library("kubic-jenkins-library@${env.BRANCH_NAME}").com.suse.kubic
 
 // Configure the build properties
 properties([
@@ -7,4 +7,9 @@ properties([
     pipelineTriggers([cron('@daily')]),
 ])
 
-coreKubicProjectPeriodic()
+def kvmTypeOptions = kubicLib.KvmTypeOptions.new();
+kvmTypeOptions.vanilla = true
+
+coreKubicProjectPeriodic(
+    environmentTypeOptions: kvmTypeOptions
+)
