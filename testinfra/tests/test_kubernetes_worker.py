@@ -47,18 +47,21 @@ class TestKubernetesWorker(object):
         assert machine_id in host.salt("grains.get", "id")
 
     def _test_etcd_aliveness(self, host, hostname):
-        machine_id = host.file('/etc/machine-id').content_string.rstrip()
-        cmd = "etcdctl --ca-file /etc/pki/trust/anchors/SUSE_CaaSP_CA.crt "\
-              "--key-file /etc/pki/minion.key "\
-              "--cert-file /etc/pki/minion.crt "\
-              "--endpoints='https://%s:2379' "\
-              "cluster-health" % hostname
+        if 'etcd' in host.salt("grains.get", "roles"):
+            machine_id = host.file('/etc/machine-id').content_string.rstrip()
+            cmd = "etcdctl --ca-file /etc/pki/trust/anchors/SUSE_CaaSP_CA.crt "\
+                  "--key-file /etc/pki/minion.key "\
+                  "--cert-file /etc/pki/minion.crt "\
+                  "--endpoints='https://%s:2379' "\
+                  "cluster-health" % hostname
 
-        # TODO: Switch back to run_expect once we remove compatibility for
-        #       our generated hostnames.
-        health = host.run(cmd)
+            # TODO: Switch back to run_expect once we remove compatibility for
+            #       our generated hostnames.
+            health = host.run(cmd)
 
-        return "cluster is healthy" in health.stdout
+            return "cluster is healthy" in health.stdout
+        else:
+            return True
 
     def test_etcd_aliveness(self, host):
         # TODO: Remove the machine_id compatibility once we remove our
