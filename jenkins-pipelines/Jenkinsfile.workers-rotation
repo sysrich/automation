@@ -16,8 +16,8 @@ properties([
 ])
 
 // configuration
-
 def onlineWorkersThreshold = 3
+
 
 @NonCPS
 def deleteOfflineNodes() {
@@ -36,7 +36,7 @@ def deleteOfflineNodes() {
 }
 
 @NonCPS
-def putWorkerOffline() {
+def putWorkerOffline(int onlineWorkersThreshold) {
   // Pick the oldest node to be set offline.
   // It will have time to drain and be deleted in one of the next runs.
 
@@ -64,5 +64,5 @@ def putWorkerOffline() {
 
 stage('Run') {
   deleteOfflineNodes()
-  putWorkerOffline()
+  putWorkerOffline(onlineWorkersThreshold)
 }
