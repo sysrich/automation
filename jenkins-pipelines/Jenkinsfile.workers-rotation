@@ -2,6 +2,7 @@ library "kubic-jenkins-library@${env.BRANCH_NAME}"
 
 // Workers rotation
 
+import com.cloudbees.groovy.cps.NonCPS
 import hudson.model.*
 import hudson.slaves.OfflineCause
 import hudson.slaves.OfflineCause.ByCLI
@@ -17,12 +18,10 @@ properties([
 // configuration
 
 def onlineWorkersThreshold = 3
-hudson.slaves.OfflineCause.ByCLI offlineReason = new hudson.slaves.OfflineCause.ByCLI("Disabled by worker rotation script")
 
-stage('Run') {
-
-  // Delete offline nodes
-
+@NonCPS
+def deleteOfflineNodes() {
+  // Delete any node that was offlined by this script
   for (aSlave in hudson.model.Hudson.instance.slaves) {
     def c = aSlave.getComputer()
     if (c.isOffline() == false) continue
@@ -34,7 +33,10 @@ stage('Run') {
       println('Not deleting: ' + aSlave.name + ' yet. countBusy: ' + c.countBusy());
     }
   }
+}
 
+@NonCPS
+def putWorkerOffline() {
   // Pick the oldest node to be set offline.
   // It will have time to drain and be deleted in one of the next runs.
 
@@ -53,8 +55,14 @@ stage('Run') {
   }
   if (onlineWorkersCount > onlineWorkersThreshold) {
     println('setting node offline: ' + selected.name)
+    hudson.slaves.OfflineCause.ByCLI offlineReason = new hudson.slaves.OfflineCause.ByCLI("Disabled by worker rotation script")
     selected.getComputer().setTemporarilyOffline(true, offlineReason)
   } else {
     println('not enough online workers: ' + onlineWorkersCount + '  threshold: ' + onlineWorkersThreshold)
   }
+}
+
+stage('Run') {
+  deleteOfflineNodes()
+  putWorkerOffline()
 }
