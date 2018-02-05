@@ -16,19 +16,25 @@ properties([
 ])
 
 // configuration
-def onlineWorkersThreshold = 3
+class Config {
+    static Integer onlineWorkersThreshold = 3
+    static String offlineReasonStr = "Disabled by worker rotation script"
+}
+
 
 
 @NonCPS
 def deleteOfflineNodes() {
-  // Delete any node that was offlined by this script
+  // Delete any offline node that is not busy
   for (aSlave in hudson.model.Hudson.instance.slaves) {
     def c = aSlave.getComputer()
     if (c.isOffline() == false) continue
-    if (c.getOfflineCauseReason() != offlineReason) continue
+    if (c.getOfflineCauseReason() != Config.offlineReasonStr) {
+      println('Skipping worker not offlined by this script ' + aSlave.name);
+    }
     if (c.countBusy() == 0) {
       println('Deleting: ' + aSlave.name);
-      // temporarily disabled   c.terminate();
+      c.doDoDelete();
     } else {
       println('Not deleting: ' + aSlave.name + ' yet. countBusy: ' + c.countBusy());
     }
@@ -36,7 +42,7 @@ def deleteOfflineNodes() {
 }
 
 @NonCPS
-def putWorkerOffline(int onlineWorkersThreshold) {
+def putWorkerOffline() {
   // Pick the oldest node to be set offline.
   // It will have time to drain and be deleted in one of the next runs.
 
@@ -53,16 +59,19 @@ def putWorkerOffline(int onlineWorkersThreshold) {
       }
     }
   }
-  if (onlineWorkersCount > onlineWorkersThreshold) {
+  if (onlineWorkersCount > Config.onlineWorkersThreshold) {
     println('setting node offline: ' + selected.name)
-    hudson.slaves.OfflineCause.ByCLI offlineReason = new hudson.slaves.OfflineCause.ByCLI("Disabled by worker rotation script")
-    selected.getComputer().setTemporarilyOffline(true, offlineReason)
+    selected.getComputer().setTemporarilyOffline(
+        true,
+        new hudson.slaves.OfflineCause.ByCLI(Config.offlineReasonStr)
+    )
   } else {
-    println('not enough online workers: ' + onlineWorkersCount + '  threshold: ' + onlineWorkersThreshold)
+    println('not enough online workers: ' + onlineWorkersCount +
+    '  threshold: ' + Config.onlineWorkersThreshold)
   }
 }
 
 stage('Run') {
   deleteOfflineNodes()
-  putWorkerOffline(onlineWorkersThreshold)
+  putWorkerOffline()
 }
