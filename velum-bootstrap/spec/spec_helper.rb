@@ -11,7 +11,7 @@ Dir[File.join(File.dirname(File.dirname(__FILE__)), "spec", "support", "**", "*.
   each { |f| require f }
 
 def environment
-  env = JSON.parse(File.read(ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), '../../../')}terraform/environment.json")))
+  env = JSON.parse(File.read(ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), '../../')}caasp-kvm/environment.json")))
   abort("Please specify kubernetesExternalHost in environment.json") unless env["kubernetesExternalHost"]
   abort("Please specify at least 2 minions in environment.json") if env["minions"].count < 2
   return env
