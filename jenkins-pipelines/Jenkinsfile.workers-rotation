@@ -31,6 +31,7 @@ def deleteOfflineNodes() {
     if (c.isOffline() == false) continue
     if (c.getOfflineCauseReason() != Config.offlineReasonStr) {
       println('Skipping worker not offlined by this script ' + aSlave.name);
+      continue
     }
     if (c.countBusy() == 0) {
       println('Deleting: ' + aSlave.name);
