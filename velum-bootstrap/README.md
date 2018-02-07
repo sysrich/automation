@@ -18,6 +18,7 @@ This can be either a production environment installed from images, or a caasp-kv
         -c|--configure                   Configure Velum
         -b|--bootstrap                   Bootstrap (implies Download Kubeconfig)
         -k|--download-kubeconfig         Download Kubeconfig
+        --enable-tiller                  Enable Helm Tiller
 
       * Updating a cluster
 

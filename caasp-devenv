@@ -29,6 +29,7 @@ WORKERS=${CAASP_NUM_WORKERS:-2}
 IMAGE=${CAASP_IMAGE:-channel://devel}
 PROXY=${CAASP_HTTP_PROXY:-}
 PARALLELISM=${CAASP_PARALLELISM:-1}
+ENABLE_TILLER=${CAASP_ENABLE_TILLER:-false}
 
 # base distribution used for setting up dependencies, and the packages to install
 DIST_BASE="opensuse.org/repositories/Virtualization:/containers"
@@ -61,6 +62,7 @@ Usage:
     -w|--workers <INT>       Number of workers to build (Default: CAASP_NUM_WORKERS)
     -d|--destroy             Run the CaaSP KVM Destroy Step
     -i|--image               Image to use (Default: CAASP_IMAGE)
+    --enable-tiller          Enable Helm Tiller
 
   * Bootstraping a cluster
 
@@ -124,6 +126,9 @@ while [[ $# > 0 ]] ; do
     -i|--image)
       IMAGE="$2"
       shift
+      ;;
+    --enable-tiller)
+      ENABLE_TILLER=true
       ;;
     -B|--bootstrap)
       ACTION=1
@@ -195,8 +200,14 @@ build() {
 
 bootstrap() {
   log "Bootstrap CaaSP Environment"
+
+  local extra_flags=""
+  if [ "$ENABLE_TILLER" == "true" ]; then
+    extra_flags="$extra_flags --enable-tiller"
+  fi
+
   [ -f "$ENVIRONMENT" ] || error "no environment file found at $ENVIRONMENT"
-  (cd "$DIR/velum-bootstrap" && ./velum-interactions --configure --bootstrap )
+  (cd "$DIR/velum-bootstrap" && ./velum-interactions --configure --bootstrap $extra_flags)
 }
 
 testinfra() {
