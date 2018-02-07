@@ -4,10 +4,7 @@ set -euo pipefail
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 
 VELUM_DIR="$1"
-PROXY=${2:-}
-
-# the script used for downloading images
-DOWNLOADER="$DIR/../../misc-tools/download-image"
+IMAGE=${2:-}
 
 # the output image
 VELUM_DEVEL_IMAGE="$DIR/../resources/docker-images/velum-development.tar"
@@ -25,21 +22,10 @@ do_commit() {
   docker rm "$1"
 }
 
-# Downloads the sles12-velum-development image built on IBS
-# Returns the absolute path to the tarball
-# FIXME: this always downloads the image from HEAD. That's because we are
-# not building this image on the other branches.
-download_velum_development_image() {
-  #TODO: ensure the name of the image downloaded is returned. The wrong image name
-  # might be returned if multiple tarballs are into the directory
-  echo $($DOWNLOADER --proxy "$PROXY" --type docker \
-         --image-name sles12-velum-development \
-         channel://devel | grep "File on Disk" | cut -d ":" -f2)
-}
-
 # docker load of the velum-development image tarball
 # Args: full path to the tarball
 load_velum_development_image() {
+  log "Loading velum development image"
   docker rmi sles12/velum-development:0.0 || : 2> /dev/null
   docker rmi sles12/velum:development || : 2> /dev/null
   docker load -i "$1"
@@ -169,9 +155,7 @@ shift $(expr $OPTIND - 1 )
   exit 0
 }
 
-log "Downloading latest build of the velum development image"
-load_velum_development_image "$(download_velum_development_image)"
-
+load_velum_development_image "$IMAGE"
 build_fresh_image
 
 # FIXME: remove this once we upgrade to Rails 5

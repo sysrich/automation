@@ -5,3 +5,4 @@
 terraform.tfvars
 crash.log
 cluster.tf
+velum-download.log

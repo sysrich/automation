@@ -13,6 +13,7 @@ VANILLA=${VANILLA:-}
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
 IMAGE=${CAASP_IMAGE:-channel://devel}
+VELUM_IMAGE=${CAASP_VELUM_IMAGE:-channel://devel}
 PROXY=${CAASP_HTTP_PROXY:-}
 PARALLELISM=${CAASP_PARALLELISM:-1}
 
@@ -40,6 +41,7 @@ Usage:
     -m|--masters <INT>     Number of masters to build (Default: CAASP_NUM_MASTERS=$MASTERS)
     -w|--workers <INT>     Number of workers to build (Default: CAASP_NUM_WORKERS=$WORKERS)
     -i|--image <STR>       Image to use (Default: CAASP_IMAGE=$IMAGE)
+    --velum-image <STR>    Velum Image to use (Default: CAASP_VELUM_IMAGE=$VELUM_IMAGE)
     --vanilla              Do not inject devenv code, use vanilla caasp (Default: false)
 
   * Destroying a cluster
@@ -107,6 +109,10 @@ while [[ $# > 0 ]] ; do
       ;;
     -i|--image)
       IMAGE="$2"
+      shift
+      ;;
+    --velum-image)
+      VELUM_IMAGE="$2"
       shift
       ;;
     -p|--parallelism)
@@ -214,8 +220,11 @@ build() {
   $DIR/../misc-tools/download-image --proxy "${PROXY}" --type kvm $IMAGE
 
   if [ -n "$CAASP_VELUM_DIR" -a "$VANILLA" != "true" ] ; then
-    log "Building Velum Development Image"
-    $DIR/tools/build-velum-image "$CAASP_VELUM_DIR" "${PROXY}"
+    log "Downloading Velum Development Docker Image"
+    $DIR/../misc-tools/download-image --proxy "${PROXY}" --type docker --image-name sles12-velum-development $VELUM_IMAGE | tee velum-download.log
+
+    log "Rebuilding Velum Development Docker Image"
+    $DIR/tools/build-velum-image "$CAASP_VELUM_DIR" "$(cat velum-download.log | grep "File on Disk" | cut -d ":" -f2 | sed -e 's/^[[:space:]]*//')" "${PROXY}"
 
     log "Creating Velum Directories"
     mkdir -p "$CAASP_VELUM_DIR/tmp" "$CAASP_VELUM_DIR/log" "$CAASP_VELUM_DIR/vendor/bundle"
