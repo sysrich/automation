@@ -19,6 +19,7 @@ PARALLELISM=${CAASP_PARALLELISM:-1}
 CAASP_SALT_DIR=${CAASP_SALT_DIR:-$DIR/../../salt}
 CAASP_MANIFESTS_DIR=${CAASP_MANIFESTS_DIR:-$DIR/../../caasp-container-manifests}
 CAASP_VELUM_DIR=${CAASP_VELUM_DIR:-$DIR/../../velum}
+CAASP_NAME_PREFIX=${CAASP_NAME_PREFIX:-}
 
 ADMIN_RAM=${CAASP_ADMIN_RAM:-4096}
 ADMIN_CPU=${CAASP_ADMIN_CPU:-4}
@@ -128,6 +129,10 @@ while [[ $# > 0 ]] ; do
       CAASP_MANIFESTS_DIR="$2"
       shift
       ;;
+    --name-prefix)
+      CAASP_NAME_PREFIX="$2"
+      shift
+      ;;
     --velum-dir)
       CAASP_VELUM_DIR="$2"
       shift
@@ -194,6 +199,11 @@ fi
 if [ -n "$CAASP_MANIFESTS_DIR" ] ; then
   CAASP_MANIFESTS_DIR="$(realpath $CAASP_MANIFESTS_DIR)"
   log "Using Manifests dir: $CAASP_MANIFESTS_DIR"
+fi
+
+if [ -n "$CAASP_NAME_PREFIX" ] ; then
+  TF_ARGS="$TF_ARGS -var name_prefix=$CAASP_NAME_PREFIX"
+  log "Using name prefix for terraform: $CAASP_NAME_PREFIX"
 fi
 
 # Core methods

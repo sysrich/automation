@@ -64,6 +64,12 @@ variable "caasp_worker_vcpu" {
   description = "The amount of virtual CPUs for a worker"
 }
 
+variable "name_prefix" {
+  type        = "string"
+  default     = ""
+  description = "Optional prefix to be able to have multiple caasp clusters on one host"
+}
+
 variable "caasp_domain_name" {
   type        = "string"
   default     = "devenv.caasp.suse.net"
@@ -125,22 +131,22 @@ resource "libvirt_network" "network" {
 # Admin node #
 ##############
 resource "libvirt_volume" "admin" {
-  name           = "caasp_admin.qcow2"
+  name           = "${var.name_prefix}caasp_admin.qcow2"
   pool           = "${var.pool}"
   base_volume_id = "${libvirt_volume.caasp_img.id}"
 }
 
 resource "libvirt_cloudinit" "admin" {
-  name      = "caasp_admin_cloud_init.iso"
+  name      = "${var.name_prefix}caasp_admin_cloud_init.iso"
   pool      = "${var.pool}"
   user_data = "${file("cloud-init/admin.cfg")}"
 }
 
 resource "libvirt_domain" "admin" {
-  name      = "caasp_admin"
+  name      = "${var.name_prefix}caasp_admin"
   memory    = "${var.caasp_admin_memory}"
   vcpu      = "${var.caasp_admin_vcpu}"
-  metadata   = "caasp-admin.${var.caasp_domain_name},admin,${count.index}"
+  metadata   = "${var.name_prefix}caasp-admin.${var.caasp_domain_name},admin,${count.index}"
   cloudinit = "${libvirt_cloudinit.admin.id}"
 
   disk {
@@ -149,7 +155,7 @@ resource "libvirt_domain" "admin" {
 
   network_interface {
     network_id     = "${libvirt_network.network.id}"
-    hostname       = "caasp-admin"
+    hostname       = "${var.name_prefix}caasp-admin"
     addresses      = ["${cidrhost("${var.caasp_net_network}", 256)}"]
     wait_for_lease = 1
   }
@@ -220,7 +226,7 @@ output "ip_admin" {
 ###################
 
 resource "libvirt_volume" "master" {
-  name           = "caasp_master_${count.index}.qcow2"
+  name           = "${var.name_prefix}caasp_master_${count.index}.qcow2"
   pool           = "${var.pool}"
   base_volume_id = "${libvirt_volume.caasp_img.id}"
   count          = "${var.caasp_master_count}"
@@ -241,18 +247,18 @@ data "template_file" "master_cloud_init_user_data" {
 resource "libvirt_cloudinit" "master" {
   # needed when 0 master nodes are defined
   count     = "${var.caasp_master_count}"
-  name      = "caasp_master_cloud_init_${count.index}.iso"
+  name      = "${var.name_prefix}caasp_master_cloud_init_${count.index}.iso"
   pool      = "${var.pool}"
   user_data = "${element(data.template_file.master_cloud_init_user_data.*.rendered, count.index)}"
 }
 
 resource "libvirt_domain" "master" {
   count      = "${var.caasp_master_count}"
-  name       = "caasp_master_${count.index}"
+  name       = "${var.name_prefix}caasp_master_${count.index}"
   memory     = "${var.caasp_master_memory}"
   vcpu       = "${var.caasp_master_vcpu}"
   cloudinit  = "${element(libvirt_cloudinit.master.*.id, count.index)}"
-  metadata   = "caasp-master-${count.index}.${var.caasp_domain_name},master,${count.index}"
+  metadata   = "${var.name_prefix}caasp-master-${count.index}.${var.caasp_domain_name},master,${count.index},${var.name_prefix}"
   depends_on = ["libvirt_domain.admin"]
 
   disk {
@@ -261,7 +267,7 @@ resource "libvirt_domain" "master" {
 
   network_interface {
     network_id     = "${libvirt_network.network.id}"
-    hostname       = "caasp-master-${count.index}"
+    hostname       = "${var.name_prefix}caasp-master-${count.index}"
     addresses      = ["${cidrhost("${var.caasp_net_network}", 512 + count.index)}"]
     wait_for_lease = 1
   }
@@ -294,7 +300,7 @@ output "masters" {
 ###################
 
 resource "libvirt_volume" "worker" {
-  name           = "caasp_worker_${count.index}.qcow2"
+  name           = "${var.name_prefix}caasp_worker_${count.index}.qcow2"
   pool           = "${var.pool}"
   base_volume_id = "${libvirt_volume.caasp_img.id}"
   count          = "${var.caasp_worker_count}"
@@ -315,18 +321,18 @@ data "template_file" "worker_cloud_init_user_data" {
 resource "libvirt_cloudinit" "worker" {
   # needed when 0 worker nodes are defined
   count     = "${var.caasp_worker_count}"
-  name      = "caasp_worker_cloud_init_${count.index}.iso"
+  name      = "${var.name_prefix}caasp_worker_cloud_init_${count.index}.iso"
   pool      = "${var.pool}"
   user_data = "${element(data.template_file.worker_cloud_init_user_data.*.rendered, count.index)}"
 }
 
 resource "libvirt_domain" "worker" {
   count      = "${var.caasp_worker_count}"
-  name       = "caasp_worker_${count.index}"
+  name       = "${var.name_prefix}caasp_worker_${count.index}"
   memory     = "${var.caasp_worker_memory}"
   vcpu       = "${var.caasp_worker_vcpu}"
   cloudinit  = "${element(libvirt_cloudinit.worker.*.id, count.index)}"
-  metadata   = "caasp-worker-${count.index}.${var.caasp_domain_name},worker,${count.index}"
+  metadata   = "${var.name_prefix}caasp-worker-${count.index}.${var.caasp_domain_name},worker,${count.index},${var.name_prefix}"
   depends_on = ["libvirt_domain.admin"]
 
   disk {
@@ -335,7 +341,7 @@ resource "libvirt_domain" "worker" {
 
   network_interface {
     network_id     = "${libvirt_network.network.id}"
-    hostname       = "caasp-worker-${count.index}"
+    hostname       = "${var.name_prefix}caasp-worker-${count.index}"
     addresses      = ["${cidrhost("${var.caasp_net_network}", 768 + count.index)}"]
     wait_for_lease = 1
   }
