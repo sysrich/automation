@@ -13,6 +13,18 @@ systemctl stop SuSEfirewall2
 
 zypper in -l -y docker-distribution-registry
 
+if [ -f /root/https_enabled ]; then 
+
+cd /etc/registry; /root/gencert
+
+echo "  tls:
+    certificate: /etc/registry/domain.crt
+    key: /etc/registry/domain.key"  >> /etc/registry/config.yml
+
+cat /etc/registry/domain.crt
+
+fi
+
 echo "proxy:
   remoteurl: https://registry.suse.com"  >> /etc/registry/config.yml
 
