@@ -23,7 +23,7 @@ Usage:
 
   * Deleting a pod
 
-    --delete             <MANIFEST_FNAME>          Delete a pod using a manifest file
+    -d|--delete          <MANIFEST_FNAME>          Delete a pod using a manifest file
 
   * Scaling up a pod
 
@@ -66,7 +66,7 @@ while [[ $# > 0 ]] ; do
       MANIFEST_FNAME="$2"
       shift
       ;;
-    --delete)
+    -d|--delete)
       ACTION="delete"
       MANIFEST_FNAME="$2"
       shift

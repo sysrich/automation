@@ -23,7 +23,7 @@ See the jenkins-library repository for automated testing.
 
       * Deleting a pod
 
-        --delete             <MANIFEST_FNAME>          Delete a pod using a manifest file
+        -d|--delete          <MANIFEST_FNAME>          Delete a pod using a manifest file
 
       * Scaling up a pod
 
