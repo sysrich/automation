@@ -15,15 +15,15 @@ See the jenkins-library repository for automated testing.
 
       * List pods
 
-        -l|--list                                       List running pods
+        -l|--list                                      List running pods
 
       * Creating a pod
 
-        -c|--create          <MANIFEST_FNAME>           Create a pod using a manifest file
+        -c|--create          <MANIFEST_FNAME>          Create a pod using a manifest file
 
       * Deleting a pod
 
-        --delete             <MANIFEST_FNAME>           Delete a pod using a manifest file
+        --delete             <MANIFEST_FNAME>          Delete a pod using a manifest file
 
       * Scaling up a pod
 
