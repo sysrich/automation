@@ -83,8 +83,6 @@ sudo virsh pool-start default
 
 ## CLI Syntax
 
-    $ cd automation/caasp-kvm
-    $ ./caasp-kvm --help
     Usage:
 
       * Building a cluster
@@ -93,6 +91,7 @@ sudo virsh pool-start default
         -m|--masters <INT>     Number of masters to build (Default: CAASP_NUM_MASTERS=1)
         -w|--workers <INT>     Number of workers to build (Default: CAASP_NUM_WORKERS=2)
         -i|--image <STR>       Image to use (Default: CAASP_IMAGE=channel://devel)
+        --vanilla              Do not inject devenv code, use vanilla caasp (Default: false)
 
       * Destroying a cluster
 
@@ -111,8 +110,8 @@ sudo virsh pool-start default
 
       * Advanced Options
 
-        --admin-ram <INT>      RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=2048)
-        --admin-cpu <INT>      CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=2)
+        --admin-ram <INT>      RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=4096)
+        --admin-cpu <INT>      CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=4)
         --master-ram <INT>     RAM to allocate to master node(s) (Default: CAASP_MASTER_RAM=2048)
         --worker-ram <INT>     CPUs to allocate to master node(s) (Default: CAASP_MASTER_CPU=2)
         --master-cpu <INT>     RAM to allocate to worker node(s) (Default: CAASP_WORKER_RAM=2048)
@@ -131,7 +130,6 @@ sudo virsh pool-start default
       Destroy a cluster
 
       ./caasp-kvm --destroy
-
 
 # Notes
 
