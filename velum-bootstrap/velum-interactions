@@ -140,6 +140,12 @@ interact() {
   fi
 
   VERBOSE=true ENVIRONMENT=$ENVIRONMENT bundle exec rspec $args
+
+  if [ "$RUN_DOWNLOAD_KUBECONFIG" = true ]; then
+    local out=$(cat $ENVIRONMENT)
+    out=$(echo "$out" | jq " . + {kubeConfig: {admin: \"$DIR/kubeconfig\"}}")
+    echo "$out" > $ENVIRONMENT
+  fi
 }
 
 # main

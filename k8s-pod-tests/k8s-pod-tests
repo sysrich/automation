@@ -2,10 +2,13 @@
 
 set -euo pipefail
 
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+
 # options
 ACTION=""
 WAIT=false
-KUBECONFIG_FN="./kubeconfig"
+ENVIRONMENT=${CAASP_ENVIRONMENT:-$DIR/../caasp-kvm/environment.json}
+KUBECONFIG_FN=
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -29,9 +32,10 @@ Usage:
                                                    <TIME> is the total time in seconds
         [-w|--wait]                                Optional: wait for replicas to be available
 
-  * Options:
+* General Options
 
-    -k|--kubeconfig      <FNAME>                   'kubeconfig' file path (defaults to ./kubeconfig)
+    -e|--environment     <FNAME>                   Set path to environment.json
+    -k|--kubeconfig      <FNAME>                   'kubeconfig' file path (defaults to value from environment.json)
 
   * Examples:
 
@@ -80,6 +84,10 @@ while [[ $# > 0 ]] ; do
       INTERVAL="$4"
       shift
       ;;
+    -e|--environment)
+      ENVIRONMENT="$2"
+      shift
+      ;;
     -k|--kubeconfig)
       KUBECONFIG_FN="$2"
       shift
@@ -94,6 +102,9 @@ while [[ $# > 0 ]] ; do
   esac
   shift
 done
+
+# Determine Kubeconfig path
+KUBECONFIG_FN=${KUBECONFIG_FN:-$(cat $ENVIRONMENT | jq -r ".kubeConfig.admin")}
 
 # Core methods
 
