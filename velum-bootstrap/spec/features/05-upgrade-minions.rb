@@ -16,7 +16,7 @@ feature "update Admin Node" do
     Capybara.reset_sessions!
   end
 
-  scenario "User clicks update all nodes" do
+  scenario "User updates the cluster" do
     visit "/"
 
     puts ">>> Wait for update-all-nodes button to be enabled"
@@ -40,12 +40,22 @@ feature "update Admin Node" do
     # Allow 10 seconds for Velum to re-render nodes with spinners
     sleep 10
 
-    puts ">>> Wait until update is complete"
+    # Min of 1800 seconds, Max of 7200 seconds, ideal = nodes * 120 seconds
+    update_timeout = [[1800, node_number * 120].max, 7200].min
+    puts ">>> Wait until update is complete (Timeout: #{update_timeout})"
     with_screenshot(name: :update_complete) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 1800)
+        expect(page).to have_css(".fa-check-circle-o, .fa-times-circle", count: node_number, wait: update_timeout)
       end
     end
     puts "<<< Update completed"
+
+    puts ">>> Update succeeded"
+    with_screenshot(name: :update_succeeded) do
+      within(".nodes-container") do
+        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 5)
+      end
+    end
+    puts "<<< Update succeeded"
   end
 end
