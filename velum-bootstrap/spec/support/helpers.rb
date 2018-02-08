@@ -43,6 +43,11 @@ module Helpers
     puts ">>> Setting up velum"
     visit "/setup"
     fill_in "settings_dashboard", with: environment["dashboardHost"] || default_ip_address
+    if ENV.fetch("ENABLE_TILLER", false)
+      check "settings[tiller]"
+    else
+      uncheck "settings[tiller]"
+    end
     click_on "Next"
     puts "<<< Velum set up"
   end
