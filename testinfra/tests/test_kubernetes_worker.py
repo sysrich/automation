@@ -39,6 +39,24 @@ class TestKubernetesWorker(object):
         host_service = host.service(service)
         assert host_service.is_enabled
 
+    @pytest.mark.parametrize("service", [
+        "kube-apiserver",
+        "kube-controller-manager",
+        "kube-scheduler",
+    ])
+    def test_services_stopped(self, host, service):
+        host_service = host.service(service)
+        assert host_service.is_running == False
+
+    @pytest.mark.parametrize("service", [
+        "kube-apiserver",
+        "kube-controller-manager",
+        "kube-scheduler",
+    ])
+    def test_services_disabled(self, host, service):
+        host_service = host.service(service)
+        assert host_service.is_enabled == False
+
     def test_salt_role(self, host):
         assert 'kube-minion' in host.salt("grains.get", "roles")
 
