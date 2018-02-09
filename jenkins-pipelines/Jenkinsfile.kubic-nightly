@@ -4,7 +4,20 @@ def kubicLib = library("kubic-jenkins-library@${env.BRANCH_NAME}").com.suse.kubi
 properties([
     buildDiscarder(logRotator(numToKeepStr: '31', daysToKeepStr: '31')),
     disableConcurrentBuilds(),
-    pipelineTriggers([cron('@daily')]),
+    pipelineTriggers([
+        cron('@daily'),
+        [
+            $class: 'org.jenkinsci.plugins.urltrigger.URLTrigger',
+            cronTabSpec: '0 * * * 1-5',
+            entries: [
+               [
+                  $class: 'org.jenkinsci.plugins.urltrigger.URLTriggerEntry',
+                  url: 'http://dist.nue.suse.com/ibs/Devel:/CASP:/Head:/ControllerNode/images/',
+                  checkLastModificationDate: true
+               ]
+            ]
+        ]
+    ])
 ])
 
 def kvmTypeOptions = kubicLib.CaaspKvmTypeOptions.new();
