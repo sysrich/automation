@@ -18,7 +18,6 @@ from prometheus_client import CollectorRegistry, Summary, push_to_gateway
 from prometheus_client import Counter
 
 from environment_json import create_environment_json
-# import velum_client
 
 conf = None
 
@@ -77,9 +76,9 @@ ONTIMEOUT CaaSP-dev-AutoYAST
 MENU TITLE PXE Menu
 
 LABEL CaaSP-dev-AutoYAST
-  MENU LABEL Install CaaSP 1.0 Beta 3 (AutoYAST from {ipaddr})
+  MENU LABEL Install CaaSP 1.0 Beta 3 (AutoYAST from {admin_host_ipaddr})
   KERNEL {tftpdir}/linux
-  APPEND initrd={tftpdir}/initrd ramdisk_size=65536 install=http://{tftp_ipaddr}/distros/{tftpdir}/DVD1/ language=en_US ifcfg=*=dhcp autoyast=http://{tftp_ipaddr}/autoyast/caasp/worker_mangled.xml insecure=1
+  APPEND initrd={tftpdir}/initrd ramdisk_size=65536 install=http://{tftp_ipaddr}/distros/{tftpdir}/DVD1/ language=en_US ifcfg=*=dhcp autoyast=http://{tftp_ipaddr}/autoyast/caasp/{admin_host_ipaddr}/worker_mangled.xml insecure=1  loghost={loghost_ipaddr}
 
 MENU INCLUDE pxelinux.cfg/local-fragment
 """
@@ -95,7 +94,7 @@ MENU TITLE PXE Menu
 LABEL CaaSP-dev-AutoYAST-Admin
   MENU LABEL Install CaaSP 1.0 Beta 3 (AutoYAST - Admin Node)
   KERNEL {tftpdir}/linux
-  APPEND initrd={tftpdir}/initrd ramdisk_size=65536 install=http://{tftp_ipaddr}/distros/{tftpdir}/DVD1/ language=en_US netsetup=dhcp netdevice=eth0 insecure=1 autoyast=http://{tftp_ipaddr}/autoyast/caasp/admin.xml
+  APPEND initrd={tftpdir}/initrd ramdisk_size=65536 install=http://{tftp_ipaddr}/distros/{tftpdir}/DVD1/ language=en_US netsetup=dhcp netdevice=eth0 insecure=1 autoyast=http://{tftp_ipaddr}/autoyast/caasp/admin.xml  loghost={loghost_ipaddr}
 
 MENU INCLUDE pxelinux.cfg/local-fragment
 """
@@ -132,6 +131,9 @@ deploy_nodes_time = Summary(
 
 
 tsclient = None
+
+def make_parent_dirs(fn):
+    os.makedirs(os.path.dirname(fn), exist_ok=True)
 
 class APIError(Exception):
     pass
@@ -176,6 +178,18 @@ class TestbedServiceClient():
             raise APIError(response)
         return j
 
+    def _api_get_raw(self, path):
+        ctx = http.client.ssl._create_stdlib_context()
+        conn = http.client.HTTPSConnection(self._api, timeout=20, context=ctx)
+        log.info("calling {}/<**token**>{}".format(self._api, path))
+        tpath = '/' + self._api_token + path
+        try:
+            conn.request('GET', tpath)
+            return conn.getresponse().read()
+        except socket.timeout:
+            log.info("socket timeout")
+            raise APIError('testbed daemon socket timeout')
+
     def _api_post(self, path, params):
         ctx = http.client.ssl._create_stdlib_context()
         conn = http.client.HTTPSConnection(self._api, timeout=20, context=ctx)
@@ -216,10 +230,10 @@ class TestbedServiceClient():
                 {"conf": content, "macaddr": macaddr}
         )
 
-    def upload_worker_mangled_xml(self, xml):
-        log.info("Uploading worker_mangled.xml")
-        resp = self._api_post('/autoyast/upload_worker_mangled_xml/',
-                {"xml": xml}
+    def upload_worker_mangled_xml2(self, xml, urlpath):
+        log.info("Uploading worker_mangled.xml to {}".format(urlpath))
+        resp = self._api_post('/autoyast/upload_worker_mangled_xml2/',
+                {"xml": xml, "urlpath": urlpath}
         )
 
     def fetch_dhcp_logs(self, from_date):
@@ -281,6 +295,10 @@ class TestbedServiceClient():
                 iso_pattern=iso_pattern
             ))
 
+    def fetch_syslog_logs(self, ipaddr, from_timestamp):
+        """Fetch Syslog logs from the last boot, for a host, up to a given timestamp
+        """
+        return self._api_get_raw('/logs/get/{}/{}'.format(ipaddr, from_timestamp))
 
 
 class RemoteHWManager(TestbedServiceClient):
@@ -339,6 +357,7 @@ def parse_args():
             action='store_true')
     ap.add_argument('--poweroff', help='power off all nodes',
             action='store_true')
+    ap.add_argument('--logsdir', default=os.path.abspath("./logs"))
     args = ap.parse_args()
     args.testname = args.testname.replace('/', '-')  # TODO protect using URL encoding
     return args
@@ -366,20 +385,33 @@ def wipe_admin_node(args):
     i.power_on()
     sleep(60 * 6)  # TODO: write PXE conf for the next step before sleeping
 
+def fetch_and_write_syslog_logs(ipaddr, t0, fname):
+    fname = os.path.join(conf['logsdir'], fname)
+    log.debug("Writing {}".format(fname))
+    make_parent_dirs(fname)
+    syslog_logs = tsclient.fetch_syslog_logs(ipaddr, t0)
+    with open(fname, 'wb') as f:
+        f.write(syslog_logs)
+
 @deploy_admin_node_time.time()
 def deploy_admin_node(args):
+    t0 = int(time())
     admin_node = tsclient.fetch_servers_list(args.testname, args.master_count, args.worker_count, want_admin=True,
             want_nodes=False)[0]
     servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr = admin_node
-    log.info("---deploying admin node {} ---".format(servername))
-    caasp_admin_pxecfg = caasp_admin_pxecfg_tpl.format(tftpdir=args.tftpdir,
-            tftp_ipaddr=args.tftp_ipaddr)
+    log.info("deploying admin node {}".format(servername))
+    caasp_admin_pxecfg = caasp_admin_pxecfg_tpl.format(
+        tftpdir=args.tftpdir,
+        tftp_ipaddr=args.tftp_ipaddr,
+        loghost_ipaddr=args.tftp_ipaddr,
+        pxe_macaddr=eth0_macaddr
+    )
     write_pxe_file(args, eth0_macaddr, caasp_admin_pxecfg)
 
     i = HWManager(ilo_ipaddr)
     i.power_off()
     sleep(10)
-    log.info("Setting netboot {}".format(servername))
+    log.info("setting netboot {}".format(servername))
     i.set_one_time_network_boot()
     sleep(10)
     log.info("powering on {}".format(servername))
@@ -402,6 +434,9 @@ def deploy_admin_node(args):
 
     log.info("Sleeping 2 minutes to let the host finish booting")
     sleep(60 * 2)
+
+    fn = 'admin_syslog_{}.log'.format(ipaddr)
+    fetch_and_write_syslog_logs(ipaddr, t0, fn)
 
     return ipaddr
 
@@ -429,7 +464,8 @@ def fetch_and_mangle_worker_autoyast(admin_host_ipaddr):
     /srv/www/htdocs/autoyast/caasp/worker_mangled.xml
     """
     assert admin_host_ipaddr
-    log.info("Fetching autoyast file from {}".format(admin_host_ipaddr))
+    log.info("Fetching autoyast file from https://{}{}".format(admin_host_ipaddr,
+        AUTOYAST_URL_PATH))
 
     ctx = http.client.ssl._create_stdlib_context()
     conn = http.client.HTTPSConnection(admin_host_ipaddr, timeout=20, context=ctx)
@@ -444,7 +480,9 @@ def fetch_and_mangle_worker_autoyast(admin_host_ipaddr):
         '    </chroot-scripts>\n',
         AUTOYAST_AUTHORIZED_KEYS_CHUNK + '    </chroot-scripts>\n'
     )
-    tsclient.upload_worker_mangled_xml(xml)
+    # this must be matched in the worker PXE file
+    urlpath = "/autoyast/caasp/{}/worker_mangled.xml".format(admin_host_ipaddr)
+    tsclient.upload_worker_mangled_xml2(xml, urlpath)
 
 
 def parse_dhcp_logs(from_date, macaddr):
@@ -483,16 +521,14 @@ def deploy_nodes(args, admin_host_ipaddr, max_failing_nodes=0):
     servers = tsclient.fetch_servers_list(args.testname, args.master_count, args.worker_count, want_admin=False, want_nodes=True)
 
     cnf = caasp_node_pxecfg_tpl.format(
-        ipaddr=admin_host_ipaddr,
+        admin_host_ipaddr=admin_host_ipaddr,
         tftpdir=args.tftpdir,
         tftp_ipaddr=args.tftp_ipaddr,
+        loghost_ipaddr=args.tftp_ipaddr,
     )
-    for servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr in servers:
-        log.info("{} | {} | {}" .format(servername, ilo_ipaddr, desc))
 
     for servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr in servers:
         if 'Admin Node' in desc:
-            log.info("skipping admin")
             continue
 
         pxe_macaddr = eth0_macaddr
@@ -500,8 +536,7 @@ def deploy_nodes(args, admin_host_ipaddr, max_failing_nodes=0):
 
     for servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr in servers:
         i = HWManager(ilo_ipaddr)
-        # if i.get_one_time_boot() != 'network':
-        log.info("Setting netboot {}".format(servername))
+        log.info("setting netboot {}".format(servername))
         try:
             i.set_one_time_network_boot()
         except Exception as e:
@@ -547,6 +582,13 @@ def deploy_nodes(args, admin_host_ipaddr, max_failing_nodes=0):
 
     available_hosts = wait_dhcp_acks(power_up_time, servers, max_failing_nodes)
     return available_hosts
+
+def fetch_nodes_syslog_logs(t0, available_hosts):
+    """Fetch nodes syslog loggs and store it on disk"""
+    # available_hosts is a set of (servername, serial, eth0_macaddr, ipaddr), ...
+    for servername, serial, eth0_macaddr, ipaddr in available_hosts:
+        fn = 'worker_syslog_{}_{}_{}.log'.format(servername, serial, ipaddr)
+        fetch_and_write_syslog_logs(ipaddr, t0, fn)
 
 def install_prometheus_certs(kubeconfig):
     log.info("Fetching API client keys for Prometheus")
@@ -691,6 +733,7 @@ def main():
         log.info("BMM address: %r" % conf["bmm_api_address"])
 
     assert conf
+    conf["logsdir"] = args.logsdir
     HWManager = RemoteHWManager
     tsclient = TestbedServiceClient()
 
@@ -713,6 +756,7 @@ def main():
         generate_environment_json(admin_host_ipaddr, [], use_bogus_hosts=True)
 
     elif args.deploy_nodes:
+        t0 = int(time())
         # discover admin_host_ipaddr
         admin_node = tsclient.fetch_servers_list(args.testname, args.master_count, args.worker_count, want_admin=True,
             want_nodes=False)[0]
@@ -727,6 +771,7 @@ def main():
         generate_environment_json(admin_host_ipaddr, available_hosts)
         log.info("Waiting 30s")
         sleep(30)
+        fetch_nodes_syslog_logs(t0, available_hosts)
         log.info("Nodes deployment - done")
 
     elif args.prometheus:
