@@ -17,7 +17,7 @@ import pytest
 
 @pytest.mark.admin
 class TestKubicAdmin(object):
-    """docstring for TestBaseEnv"""
+    # Tests nodes which have the "admin" role
 
     @pytest.mark.parametrize("service", [
         "docker",

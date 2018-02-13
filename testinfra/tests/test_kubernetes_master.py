@@ -19,6 +19,7 @@ import json
 
 @pytest.mark.master
 class TestKubernetesMaster(object):
+    # Tests nodes which have the "kube-master" role
 
     @pytest.mark.parametrize("service", [
         "kube-apiserver",
