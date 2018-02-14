@@ -34,10 +34,21 @@ out=$(cat $TF_STATE | \
 for node in $(echo "$out" | jq -r '.minions[] | select(.["minion_id"]? == null) | [.addresses.publicIpv4] | join(" ")'); do
     machine_id=$(ssh root@$node $SSH_ARGS cat /etc/machine-id)
     out=$(echo "$out" | jq ".minions | map(if (.addresses.publicIpv4 == \"$node\") then . + {\"minionID\": \"$machine_id\"} else . end) | {minions: .}")
+    fqdn=$(echo $out | jq -r ".minions[] | select(.addresses.publicIpv4 == \"$node\") | .fqdn")
+    ip=$(dig +short $fqdn)
+    # only set the reverse DNS as fqdn if the old fqdn does not resolve to the node IP
+    if [ "$ip" != "$node" ]; then
+        machine_reverse_dns=$(dig +short -x $node)
+        if [ -n "$machine_reverse_dns" ]; then
+            out=$(echo "$out" | jq ".minions | map(if (.addresses.publicIpv4 == \"$node\") then . + {\"fqdn\": \"$machine_reverse_dns\"} else . end) | {minions: .}")
+        else
+            echo "WARNING: the fqdn for node $fqdn ($node) does not resolve."
+        fi
+    fi
 done
 
 masters=$(echo "$out" | jq -r '[.minions[] | select(.role=="master")] | length')
 
-out=$(echo "$out" | jq " . + {dashboardHost: .minions[] | select(.role==\"admin\") | .addresses.publicIpv4, dashboardExternalHost: \"caasp-admin.devenv.caasp.suse.net\", kubernetesExternalHost: \"kube-api-x${masters}.devenv.caasp.suse.net\"}")
+out=$(echo "$out" | jq " . + {dashboardHost: .minions[] | select(.role==\"admin\") | .addresses.publicIpv4, dashboardExternalHost: .minions[] | select(.role==\"admin\") | .fqdn, kubernetesExternalHost: \"kube-api-x${masters}.devenv.caasp.suse.net\"}")
 out=$(echo "$out" | jq " . + {sshKey: \"$SSH_KEY\", sshUser: \"root\"}")
 echo "$out" | tee "$ENVIRONMENT"
