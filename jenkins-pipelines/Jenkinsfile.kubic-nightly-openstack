@@ -31,5 +31,17 @@ lock('openstack-single-user') {
         environmentDestroy: env.ENVIRONMENT_DESTROY,
         masterCount: env.MASTER_COUNT.toInteger(),
         workerCount: env.WORKER_COUNT.toInteger()
-    )
+    ) {
+        // Run through the upgrade orchestration
+        upgradeEnvironment(
+            environment: environment,
+            fakeUpdatesAvailable: true
+        )
+
+        // Run the Core Project Tests again
+        coreKubicProjectTests(
+            environment: environment,
+            podName: 'default'
+        )
+    }
 }
