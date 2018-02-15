@@ -17,7 +17,9 @@ feature "update Admin Node" do
   end
 
   scenario "User updates the cluster" do
-    visit "/"
+    with_status_ok do
+      visit "/"
+    end
 
     puts ">>> Wait for update-all-nodes button to be enabled"
     with_screenshot(name: :update_all_nodes_button_enabled) do
