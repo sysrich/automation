@@ -28,6 +28,10 @@ feature "Boostrap cluster" do
   end
 
   scenario "User accepts all minions" do
+    puts ">>> Waiting 600 seconds as a workaround"
+    sleep 600
+    puts ">>> Waiting 600 seconds as a workaround"
+
     visit "/setup/discovery"
 
     puts ">>> Wait until all #{node_number} minions are pending to be accepted"
@@ -49,7 +53,7 @@ feature "Boostrap cluster" do
 
     # ugly workaround for https://bugzilla.suse.com/show_bug.cgi?id=1050450
     # FIXME: drop it when bug is fixed
-    sleep 30
+    sleep 120
     visit "/setup/discovery"
 
     # Min of 240 seconds, Max of 600 seconds, ideal = nodes * 30
