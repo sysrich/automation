@@ -17,7 +17,9 @@ feature "Upgrade Admin Node" do
   end
 
   scenario "User clicks update admin node" do
-    visit "/"
+    with_status_ok do
+      visit "/"
+    end
 
     puts ">>> Wait for update-admin-node button to be enabled"
     with_screenshot(name: :update_admin_node_button_enabled) do
@@ -49,8 +51,9 @@ feature "Upgrade Admin Node" do
     puts ">>> Wait for Velum to recover"
     1.upto(600) do |n|
       begin
-        visit "/"
-        expect(page.status_code).to be(200)
+        with_status_ok do
+          visit "/"
+        end
         break
       rescue Exception => e
         if n == 600

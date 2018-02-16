@@ -30,9 +30,11 @@ feature "Boostrap cluster" do
   scenario "User accepts all minions" do
     puts ">>> Waiting 600 seconds as a workaround"
     sleep 600
-    puts ">>> Waiting 600 seconds as a workaround"
+    puts "<<< Waiting 600 seconds as a workaround"
 
-    visit "/setup/discovery"
+    with_status_ok do
+      visit "/setup/discovery"
+    end
 
     puts ">>> Wait until all #{node_number} minions are pending to be accepted"
     with_screenshot(name: :pending_minions) do
@@ -51,10 +53,15 @@ feature "Boostrap cluster" do
       click_button("accept-all")
     end
 
+    puts ">>> Waiting 120 seconds as a workaround"
     # ugly workaround for https://bugzilla.suse.com/show_bug.cgi?id=1050450
     # FIXME: drop it when bug is fixed
     sleep 120
-    visit "/setup/discovery"
+    puts "<<< Waiting 120 seconds as a workaround"
+
+    with_status_ok do
+      visit "/setup/discovery"
+    end
 
     # Min of 240 seconds, Max of 600 seconds, ideal = nodes * 30
     accept_timeout = [[240, node_number * 30].max, 600].min
@@ -77,7 +84,9 @@ feature "Boostrap cluster" do
   end
 
   scenario "User selects minion roles" do
-    visit "/setup/discovery"
+    with_status_ok do
+      visit "/setup/discovery"
+    end
 
     puts ">>> Waiting for page to settle"
     with_screenshot(name: :wait_for_settle) do
@@ -112,7 +121,9 @@ feature "Boostrap cluster" do
   end
 
   scenario "User bootstraps the cluster" do
-    visit "/setup/bootstrap"
+    with_status_ok do
+      visit "/setup/bootstrap"
+    end
 
     puts ">>> Configuring last settings"
     with_screenshot(name: :bootstrap_cluster_settings) do
