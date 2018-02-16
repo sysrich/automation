@@ -27,6 +27,7 @@ RUN_DESTROY=
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
 IMAGE=${CAASP_IMAGE:-channel://devel}
+VANILLA=${CAASP_VANILLA:-}
 PROXY=${CAASP_HTTP_PROXY:-}
 PARALLELISM=${CAASP_PARALLELISM:-1}
 ENABLE_TILLER=${CAASP_ENABLE_TILLER:-false}
@@ -62,6 +63,7 @@ Usage:
     -w|--workers <INT>       Number of workers to build (Default: CAASP_NUM_WORKERS)
     -d|--destroy             Run the CaaSP KVM Destroy Step
     -i|--image               Image to use (Default: CAASP_IMAGE)
+    --vanilla                Do not inject devenv code, use vanilla caasp (Default: false)
     --enable-tiller          Enable Helm Tiller
 
   * Bootstraping a cluster
@@ -127,6 +129,9 @@ while [[ $# > 0 ]] ; do
       IMAGE="$2"
       shift
       ;;
+    --vanilla)
+      VANILLA="true"
+      ;;
     --enable-tiller)
       ENABLE_TILLER=true
       ;;
@@ -158,6 +163,7 @@ done
 CAASP_KVM_ARGS="-m $MASTERS -w $WORKERS --image $IMAGE"
 [ -n "$PARALLELISM" ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --parallelism=$PARALLELISM"
 [ -n "$PROXY"       ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --proxy $PROXY"
+[ -n "$VANILLA"     ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --vanilla"
 
 export ENVIRONMENT="$DIR/caasp-kvm/environment.json"
 

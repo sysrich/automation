@@ -8,12 +8,12 @@ DIR="$( cd "$( dirname "$0" )" && pwd )"
 ACTION=
 RUN_BUILD=
 RUN_DESTROY=
-VANILLA=${VANILLA:-}
 
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
 IMAGE=${CAASP_IMAGE:-channel://devel}
 VELUM_IMAGE=${CAASP_VELUM_IMAGE:-channel://devel}
+VANILLA=${CAASP_VANILLA:-}
 PROXY=${CAASP_HTTP_PROXY:-}
 PARALLELISM=${CAASP_PARALLELISM:-1}
 
@@ -115,6 +115,9 @@ while [[ $# > 0 ]] ; do
       VELUM_IMAGE="$2"
       shift
       ;;
+    --vanilla)
+      VANILLA="true"
+      ;;
     -p|--parallelism)
       PARALLELISM="$2"
       shift
@@ -166,9 +169,6 @@ while [[ $# > 0 ]] ; do
     --worker-cpu)
       WORKER_CPU="$2"
       shift
-      ;;
-    --vanilla)
-      VANILLA="true"
       ;;
     -h|--help)
       usage
