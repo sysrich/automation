@@ -49,6 +49,12 @@ feature "Boostrap cluster" do
       click_button("accept-all")
     end
 
+    puts ">>> Waiting 30 seconds as a workaround"
+    # ugly workaround for https://bugzilla.suse.com/show_bug.cgi?id=1050450
+    # FIXME: drop it when bug is fixed
+    sleep 30
+    puts "<<< Waiting 30 seconds as a workaround"
+
     with_status_ok do
       visit "/setup/discovery"
     end
