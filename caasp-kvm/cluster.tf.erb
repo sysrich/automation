@@ -1,5 +1,9 @@
 <%# This is the embedded ruby template for the cluster.tf target         -%>
 <%# generate the target by running "erb cluster.tf.erb > cluster.tf"     -%>
+<% if ENV['DISABLE_MELTDOWN_SPECTRE'] == "true" -%>
+<% require 'json' -%>
+<% boot_args = JSON.parse(File.read("#{File.dirname(__FILE__)}/../downloads/kernel-initrd-cmds.json")) -%>
+<% end -%>
 #####################
 # libvirt variables #
 #####################
@@ -149,6 +153,17 @@ resource "libvirt_domain" "admin" {
   metadata   = "${var.name_prefix}caasp-admin.${var.caasp_domain_name},admin,${count.index}"
   cloudinit = "${libvirt_cloudinit.admin.id}"
 
+<% if !boot_args.nil? -%>
+  kernel = "<%= boot_args["kernel"] %>"
+  initrd = "<%= boot_args["initrd"] %>"
+
+  cmdline {
+  <% boot_args["args"].each do |k, v| -%>
+    "<%= k %>" = "<%= v %>"
+  <% end -%>
+  }
+<% end -%>
+
   disk {
     volume_id = "${libvirt_volume.admin.id}"
   }
@@ -261,6 +276,17 @@ resource "libvirt_domain" "master" {
   metadata   = "${var.name_prefix}caasp-master-${count.index}.${var.caasp_domain_name},master,${count.index},${var.name_prefix}"
   depends_on = ["libvirt_domain.admin"]
 
+<% if !boot_args.nil? -%>
+  kernel = "<%= boot_args["kernel"] %>"
+  initrd = "<%= boot_args["initrd"] %>"
+
+  cmdline {
+  <% boot_args["args"].each do |k, v| -%>
+    "<%= k %>" = "<%= v %>"
+  <% end -%>
+  }
+<% end -%>
+
   disk {
     volume_id = "${element(libvirt_volume.master.*.id, count.index)}"
   }
@@ -334,6 +360,17 @@ resource "libvirt_domain" "worker" {
   cloudinit  = "${element(libvirt_cloudinit.worker.*.id, count.index)}"
   metadata   = "${var.name_prefix}caasp-worker-${count.index}.${var.caasp_domain_name},worker,${count.index},${var.name_prefix}"
   depends_on = ["libvirt_domain.admin"]
+
+<% if !boot_args.nil? -%>
+  kernel = "<%= boot_args["kernel"] %>"
+  initrd = "<%= boot_args["initrd"] %>"
+
+  cmdline {
+  <% boot_args["args"].each do |k, v| -%>
+    "<%= k %>" = "<%= v %>"
+  <% end -%>
+  }
+<% end -%>
 
   disk {
     volume_id = "${element(libvirt_volume.worker.*.id, count.index)}"
