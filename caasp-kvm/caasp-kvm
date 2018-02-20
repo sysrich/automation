@@ -226,7 +226,7 @@ build() {
 
   if [ -n "$DISABLE_MELTDOWN_SPECTRE" ] ; then
     log "Preparing artifacts required to disable spectre and meltdown patches"
-    $DIR/../misc-tools/extract-kernel-initrd-cmdline-args --disable-meltdown-spectre --output $DIR/../downloads --report $DIR/../downloads/kernel-initrd-cmds.json $DIR/../downloads/$(basename $IMAGE) || error "Error preparing artifacts required to disable meltdown and spectre"
+    $DIR/../misc-tools/extract-kernel-initrd-cmdline-args --disable-meltdown-spectre --output $DIR/../downloads --report $DIR/../downloads/kernel-initrd-cmds.json $DIR/../downloads/kvm-$(basename $IMAGE) || error "Error preparing artifacts required to disable meltdown and spectre"
   fi
 
   if [ -n "$CAASP_VELUM_DIR" -a "$VANILLA" != "true" ] ; then
