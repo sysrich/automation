@@ -14,6 +14,7 @@ WORKERS=${CAASP_NUM_WORKERS:-2}
 IMAGE=${CAASP_IMAGE:-channel://devel}
 VELUM_IMAGE=${CAASP_VELUM_IMAGE:-channel://devel}
 VANILLA=${CAASP_VANILLA:-}
+DISABLE_MELTDOWN_SPECTRE=${CAASP_DISABLE_MELTDOWN_SPECTRE:-}
 PROXY=${CAASP_HTTP_PROXY:-}
 PARALLELISM=${CAASP_PARALLELISM:-1}
 
@@ -37,12 +38,13 @@ Usage:
 
   * Building a cluster
 
-    -b|--build             Run the CaaSP KVM Build Step
-    -m|--masters <INT>     Number of masters to build (Default: CAASP_NUM_MASTERS=$MASTERS)
-    -w|--workers <INT>     Number of workers to build (Default: CAASP_NUM_WORKERS=$WORKERS)
-    -i|--image <STR>       Image to use (Default: CAASP_IMAGE=$IMAGE)
-    --velum-image <STR>    Velum Image to use (Default: CAASP_VELUM_IMAGE=$VELUM_IMAGE)
-    --vanilla              Do not inject devenv code, use vanilla caasp (Default: false)
+    -b|--build                       Run the CaaSP KVM Build Step
+    -m|--masters <INT>               Number of masters to build (Default: CAASP_NUM_MASTERS=$MASTERS)
+    -w|--workers <INT>               Number of workers to build (Default: CAASP_NUM_WORKERS=$WORKERS)
+    -i|--image <STR>                 Image to use (Default: CAASP_IMAGE=$IMAGE)
+    --velum-image <STR>              Velum Image to use (Default: CAASP_VELUM_IMAGE=$VELUM_IMAGE)
+    --vanilla                        Do not inject devenv code, use vanilla caasp (Default: false)
+    --disable-meltdown-spectre-fixes Disable meltdown and spectre fixes (Default: false)
 
   * Destroying a cluster
 
@@ -117,6 +119,9 @@ while [[ $# > 0 ]] ; do
       ;;
     --vanilla)
       VANILLA="true"
+      ;;
+    --disable-meltdown-spectre-fixes)
+      DISABLE_MELTDOWN_SPECTRE="true"
       ;;
     -p|--parallelism)
       PARALLELISM="$2"
@@ -219,6 +224,11 @@ build() {
   log "Downloading CaaSP KVM Image"
   $DIR/../misc-tools/download-image --proxy "${PROXY}" --type kvm $IMAGE
 
+  if [ -n "$DISABLE_MELTDOWN_SPECTRE" ] ; then
+    log "Preparing artifacts required to disable spectre and meltdown patches"
+    $DIR/../misc-tools/extract-kernel-initrd-cmdline-args --disable-meltdown-spectre --output $DIR/../downloads --report $DIR/../downloads/kernel-initrd-cmds.json $DIR/../downloads/$(basename $IMAGE) || error "Error preparing artifacts required to disable meltdown and spectre"
+  fi
+
   if [ -n "$CAASP_VELUM_DIR" -a "$VANILLA" != "true" ] ; then
     log "Downloading Velum Development Docker Image"
     $DIR/../misc-tools/download-image --proxy "${PROXY}" --type docker --image-name sles12-velum-development $VELUM_IMAGE | tee velum-download.log
@@ -246,10 +256,10 @@ build() {
   fi
 
   log "Generating terraform manifest from erb template"
-  VANILLA=${VANILLA} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
+  VANILLA=${VANILLA} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
 
   log "Applying terraform configuration"
-  terraform init && terraform apply $TF_ARGS
+  terraform init && terraform apply -auto-approve $TF_ARGS
 
   $DIR/tools/generate-environment
   $DIR/../misc-tools/generate-ssh-config $ENVIRONMENT
