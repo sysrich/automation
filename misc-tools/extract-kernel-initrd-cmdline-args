@@ -53,9 +53,9 @@ end
 def ensure_guestfs_tools_installed
   if !system("which virt-cat &> /dev/null")
     puts "guestfs-tools not installed, trying to install it via sudo zypper"
-    if !system("sudo zypper -n in guestfs-tools")
-      puts "guestfs-tools missing, install it via"
-      puts "zypper in guestfs-tools"
+    system("sudo zypper -n in guestfs-tools")
+    if !system("which virt-cat &> /dev/null")
+      puts "Wasn't able to install guestfs-tools by its own"
       exit 1
     end
   end
