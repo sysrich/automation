@@ -52,9 +52,12 @@ end
 
 def ensure_guestfs_tools_installed
   if !system("which virt-cat &> /dev/null")
-    puts "guestfs-tools missing, install it via"
-    puts "zypper in guestfs-tools"
-    exit 1
+    puts "guestfs-tools not installed, trying to install it via sudo zypper"
+    if !system("sudo zypper -n in guestfs-tools")
+      puts "guestfs-tools missing, install it via"
+      puts "zypper in guestfs-tools"
+      exit 1
+    end
   end
 end
 
