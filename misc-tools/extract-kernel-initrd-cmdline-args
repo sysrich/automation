@@ -117,8 +117,9 @@ def boot_args_to_terraform_format(args, disable_meltdown_spectre)
   targs = {}
 
   if disable_meltdown_spectre
-    targs["_"]          = "noptinospec"
+    targs["_"]          = "nospec"
     targs["spectre_v2"] = "off"
+    targs["pti"]        = "off"
   end
 
   args.split(" ").each do |arg|
