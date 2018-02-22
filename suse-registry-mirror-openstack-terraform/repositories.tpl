@@ -11,6 +11,6 @@ openssl req  -newkey rsa:2048 -nodes -keyout domain.key -x509 -days 365 -out dom
     -subj "/C=DE/ST=Bayern/L=Nuremberg/O=SUSE Linux/OU=QA-CSS/CN=${hostdomain}/emailAddress=qa-css@suse.de"
 EOF
 
-if -o ${https} ; then touch /root/https_enabled ; fi;
+if ${https} ; then touch /root/https_enabled ; fi;
 
 chmod +x /root/gencert
