@@ -45,6 +45,7 @@ DIST_PACKAGES="jq \
                python-heatclient \
                terraform \
                terraform-provider-libvirt \
+               guestfs-tools \
                qemu-kvm \
                docker \
                libvirt-daemon-qemu \
