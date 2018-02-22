@@ -45,8 +45,9 @@ feature "Upgrade Admin Node" do
     end
     puts ">>> reboot admin node clicked"
 
-    # Allow 30 seconds for Velum to be shutdown before proceeding
+    puts ">>> Waiting 30 seconds to allow Velum to shutdown"
     sleep 30
+    puts "<<< Waiting 30 seconds to allow Velum to shutdown"
 
     puts ">>> Wait for Velum to recover"
     1.upto(600) do |n|
@@ -65,5 +66,11 @@ feature "Upgrade Admin Node" do
       end
     end
     puts "<<< Velum has recovered"
+
+    # TODO: Salt is taking longer than expected to recover post-reboot, give it some
+    # extra time.
+    puts ">>> Waiting 60 seconds as a workaround"
+    sleep 60
+    puts "<<< Waiting 60 seconds as a workaround"
   end
 end
