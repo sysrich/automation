@@ -153,6 +153,10 @@ resource "libvirt_domain" "admin" {
   metadata   = "${var.name_prefix}caasp-admin.${var.caasp_domain_name},admin,${count.index}"
   cloudinit = "${libvirt_cloudinit.admin.id}"
 
+  cpu {
+    mode = "host-passthrough"
+  }
+
 <% if !boot_args.nil? -%>
   kernel = "<%= boot_args["kernel"] %>"
   initrd = "<%= boot_args["initrd"] %>"
@@ -276,6 +280,10 @@ resource "libvirt_domain" "master" {
   metadata   = "${var.name_prefix}caasp-master-${count.index}.${var.caasp_domain_name},master,${count.index},${var.name_prefix}"
   depends_on = ["libvirt_domain.admin"]
 
+  cpu {
+    mode = "host-passthrough"
+  }
+
 <% if !boot_args.nil? -%>
   kernel = "<%= boot_args["kernel"] %>"
   initrd = "<%= boot_args["initrd"] %>"
@@ -360,6 +368,10 @@ resource "libvirt_domain" "worker" {
   cloudinit  = "${element(libvirt_cloudinit.worker.*.id, count.index)}"
   metadata   = "${var.name_prefix}caasp-worker-${count.index}.${var.caasp_domain_name},worker,${count.index},${var.name_prefix}"
   depends_on = ["libvirt_domain.admin"]
+
+  cpu {
+    mode = "host-passthrough"
+  }
 
 <% if !boot_args.nil? -%>
   kernel = "<%= boot_args["kernel"] %>"
