@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require "json"
+require "fileutils"
 require "optparse"
 
 def parse_args
@@ -105,6 +106,12 @@ def extracted_filename(name, output_dir)
 end
 
 def extract_files(image, output_directory, *files_to_extract)
+  files_to_extract.each do |file|
+    if File.exist?(extracted_filename(file, output_directory))
+      FileUtils.rm_f(extracted_filename(file, output_directory))
+    end
+  end
+
   cmd = "virt-copy-out -a #{image} #{files_to_extract.join(" ")} #{output_directory}"
   puts "Extracting files via #{cmd}"
   if !system(cmd)
