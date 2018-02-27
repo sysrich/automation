@@ -61,6 +61,13 @@ resource "openstack_compute_secgroup_v2" "secgroup_base" {
     ip_protocol = "tcp"
     cidr        = "0.0.0.0/0"
   }
+
+  rule {
+    from_port   = 8472
+    to_port     = 8472
+    ip_protocol = "udp"
+    cidr        = "0.0.0.0/0"
+  }
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_admin" {
