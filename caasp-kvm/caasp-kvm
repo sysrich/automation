@@ -241,11 +241,8 @@ build() {
   fi
 
   if [ -n "$CAASP_VELUM_DIR" -a "$VANILLA" != "true" ] ; then
-    log "Downloading Velum Development Docker Image"
-    $DIR/../misc-tools/download-image --proxy "${PROXY}" --type docker --image-name sles12-velum-development $VELUM_IMAGE | tee velum-download.log
-
     log "Rebuilding Velum Development Docker Image"
-    $DIR/tools/build-velum-image "$CAASP_VELUM_DIR" "$(cat velum-download.log | grep "File on Disk" | cut -d ":" -f2 | sed -e 's/^[[:space:]]*//')" "${PROXY}"
+    $DIR/tools/build-velum-image "$CAASP_VELUM_DIR" "${VELUM_IMAGE}" "${PROXY}"
 
     log "Creating Velum Directories"
     mkdir -p "$CAASP_VELUM_DIR/tmp" "$CAASP_VELUM_DIR/log" "$CAASP_VELUM_DIR/vendor/bundle"
