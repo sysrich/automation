@@ -120,12 +120,13 @@ def get_canonical_url(args, url):
         raise Exception("Cannot find image location")
 
 def get_sha256(url, proxies):
+    print(" >> Downloading Sha256 File")
     partition = url.rpartition('/')
-    sha256file = requests.head(url + '.sha256')
+    sha256file = requests.head(url + '.sha256', proxies=proxies)
     
     if sha256file.status_code == 404:
         # try to find this file in /SHA256SUMS within the same directory
-        for line in requests.get(partition[0] + "/SHA256SUMS", proxies).text.split('\n'):
+        for line in requests.get(partition[0] + "/SHA256SUMS", proxies=proxies).text.split('\n'):
             # find sha256 for this file
             columns = line.split(" ")
             if columns[-1] == partition[2]:
@@ -134,10 +135,10 @@ def get_sha256(url, proxies):
         raise Exception("Cannot find remote image SHA256 in %s" % partition[0] + "/SHA256SUMS")
     elif sha256file.status_code == 302 or sha256file.status_code == 301:
         location = sha256file.headers.get('Location')
-        return get_sha256(location[:location.rfind('.sha256')], proxies)
+        return get_sha256(location[:location.rfind('.sha256')], proxies=proxies)
     elif sha256file.status_code == 200:
         # this will work if the SHA256 is stored as a PGP SIGNED MESSAGE in the .sha256 file
-        sha256 = requests.get(url, proxies).text.split('\n')[3]
+        sha256 = requests.get(url + '.sha256', proxies=proxies).text.split('\n')[3]
         if len(sha256) == 64:
             return sha256
         raise Exception("Cannot find remote image SHA256 in %s" % url + '.sha256')
