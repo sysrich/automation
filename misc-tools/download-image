@@ -8,6 +8,7 @@ import argparse
 import json
 import os
 import re
+import sys
 import urlparse
 from HTMLParser import HTMLParser
 
@@ -178,7 +179,6 @@ def get_channel_url(args):
 
     download_urls_fname = os.path.abspath(download_urls_fname)
 
-    print(" >> Extracting URLs from {}".format(download_urls_fname))
     try:
         with open(download_urls_fname) as f:
             j = json.load(f)
@@ -226,6 +226,7 @@ if __name__ == "__main__":
             help="Path of the download URLs JSON file (default: <script_location>/../misc-files/download-urls.json)",
             default=None)
     parser.add_argument('url', metavar='url', help='URL of image to download')
+    parser.add_argument('--expand-channel', action='store_true', help='Show URL of channel repository')
     args = parser.parse_args()
 
     if urlparse.urlparse(args.url).scheme in ['http', 'https']:
@@ -236,7 +237,11 @@ if __name__ == "__main__":
 
     elif urlparse.urlparse(args.url).scheme == "channel":
         if args.type in ["docker", "kvm", "openstack", "iso"]:
-            use_channel_file(args)
+            if args.expand_channel != False:
+                sys.stdout.write("%(repo)s%(ext)s" % {'repo': get_channel_url(args).split("images")[0], 'ext': 'standard'})
+                sys.exit(0)
+            else:
+                use_channel_file(args)
         else:
             print(" >> Unknown Image Type: " + args.type)
             raise SystemExit(1)
