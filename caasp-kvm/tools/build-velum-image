@@ -4,10 +4,22 @@ set -euo pipefail
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 
 VELUM_DIR="$1"
-IMAGE=${2:-}
+IMAGE="$2"
 
 # the output image
 VELUM_DEVEL_IMAGE="$DIR/../resources/docker-images/velum-development.tar"
+
+# Registry URLs JSON
+REGISTRY_URLS_JSON=$(realpath $DIR/../../misc-files/registry-urls.json)
+
+# Image reference
+if [[ $IMAGE == channel://* ]]; then
+  IMAGE_REFERENCE=$(jq -r ".baseurl.${IMAGE:10}" $REGISTRY_URLS_JSON)/sles12/velum-development:0.0
+elif [[ $IMAGE == file://* ]]; then
+  IMAGE_REFERENCE=sles12/velum-development:0.0
+else
+  IMAGE_REFERENCE=$IMAGE
+fi
 
 ##################################################################
 
@@ -23,12 +35,17 @@ do_commit() {
 }
 
 # docker load of the velum-development image tarball
-# Args: full path to the tarball
 load_velum_development_image() {
   log "Loading velum development image"
   docker rmi sles12/velum-development:0.0 || : 2> /dev/null
   docker rmi sles12/velum:development || : 2> /dev/null
-  docker load -i "$1"
+  docker load -i "${IMAGE:7}"
+}
+
+# docker pull of the velum-development image
+pull_velum_development_image() {
+  log "Pulling velum development image"
+  docker pull $IMAGE_REFERENCE
 }
 
 build_fresh_image() {
@@ -36,7 +53,7 @@ build_fresh_image() {
   # Reuse the gems already vendored into the devel image if possible.
   # This will pull only the development gems and the ones changed on master.
   # This greatly reduces the creation time of the image
-  local CONTAINER_BUILD=`docker run -v $VELUM_DIR:/srv/velum-latest -d sles12/velum-development:0.0 \
+  local CONTAINER_BUILD=`docker run -v $VELUM_DIR:/srv/velum-latest -d $IMAGE_REFERENCE \
                     bash -c "
                       cd /srv/velum-latest && \
                       mkdir -p /var/lib/velum && \
@@ -155,7 +172,11 @@ shift $(expr $OPTIND - 1 )
   exit 0
 }
 
-load_velum_development_image "$IMAGE"
+if [[ $IMAGE == file://* ]]; then
+  load_velum_development_image
+else
+  pull_velum_development_image
+fi
 build_fresh_image
 
 # FIXME: remove this once we upgrade to Rails 5

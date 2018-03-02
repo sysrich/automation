@@ -1,0 +1,9 @@
+{
+  "baseurl": {
+    "devel": "registry.suse.de/devel/casp/head/controllernode/images_container_base/x86_64",
+    "release": "registry.suse.de/suse/sle-12-sp3/update/products/casp30/container/x86_64",
+    "staging_a": "registry.suse.de/suse/sle-12-sp3/update/products/casp30/staging/a/container/x86_64",
+    "staging_b": "registry.suse.de/suse/sle-12-sp3/update/products/casp30/staging/b/container/x86_64"
+  },
+  "format_version": 1
+}
