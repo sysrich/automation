@@ -46,5 +46,17 @@
          "role" : "worker",
          "index" : "3"
       }
-   ]
+   ],
+   "proxy": {
+      "enabled": true,
+      "systemwide": true,
+      "http_proxy": "http://proxy.local:3128/",
+      "https_proxy": "http://proxy.local:3128/",
+      "no_proxy": ".local, localhost, 127.0.0.1"
+   },
+   "suse_registry_mirror": {
+      "enabled": true,
+      "url": "http://suse-mirror.local/",
+      "certificate": "FOO\nBAR\netc\n"
+  }
 }

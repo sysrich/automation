@@ -56,12 +56,52 @@ module Helpers
       visit "/setup"
     end
 
+    # Generic Settings Section
     fill_in "settings_dashboard", with: environment["dashboardHost"] || default_ip_address
+
+    # Cluster Services Section
     if ENV.fetch("ENABLE_TILLER", false)
       check "settings[tiller]"
     else
       uncheck "settings[tiller]"
     end
+
+    # Proxy Settings Section
+    if environment.fetch("proxy", {}).fetch("enabled", false)
+      find('#settings_enable_proxy_enable').trigger('click')
+      # Nasty hack to let the panel open
+      sleep 2
+      fill_in "settings_http_proxy", with: environment["proxy"]["http_proxy"]
+      fill_in "settings_https_proxy", with: environment["proxy"]["https_proxy"]
+      fill_in "settings_no_proxy", with: environment["proxy"]["no_proxy"] || "localhost, 127.0.0.1"
+
+      if environment["proxy"]["systemwide"]
+        find('#settings_proxy_systemwide_true').trigger('click')
+      else
+        find('#settings_proxy_systemwide_false').trigger('click')
+      end
+    else
+      find('#settings_enable_proxy_disable').trigger('click')
+    end
+    # Proxy Settings Section
+    if environment.fetch("suse_registry_mirror", {}).fetch("enabled", false)
+      find('#settings_suse_registry_mirror_enabled_enable').trigger('click')
+      # Nasty hack to let the panel open
+      sleep 2
+      fill_in "settings_suse_registry_mirror_url", with: environment["suse_registry_mirror"]["url"]
+
+      if environment["suse_registry_mirror"]["certificate"]
+        find('#settings_suse_registry_mirror_certificate_enabled_true').trigger('click')
+        # Nasty hack to let the panel open
+        sleep 2
+        fill_in "settings_suse_registry_mirror_certificate", with: environment["suse_registry_mirror"]["certificate"]
+      else
+        find('#settings_suse_registry_mirror_certificate_enabled_false').trigger('click')
+      end
+    else
+      find('#settings_suse_registry_mirror_enabled_disable').trigger('click')
+    end
+
     click_on "Next"
     puts "<<< Velum set up"
   end
