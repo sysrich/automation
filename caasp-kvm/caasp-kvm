@@ -16,6 +16,7 @@ VELUM_IMAGE=${CAASP_VELUM_IMAGE:-channel://devel}
 VANILLA=${CAASP_VANILLA:-}
 DISABLE_MELTDOWN_SPECTRE=${CAASP_DISABLE_MELTDOWN_SPECTRE:-}
 PROXY=${CAASP_HTTP_PROXY:-}
+LOCATION=${CAASP_LOCATION:-}
 PARALLELISM=${CAASP_PARALLELISM:-1}
 
 CAASP_SALT_DIR=${CAASP_SALT_DIR:-$DIR/../../salt}
@@ -56,6 +57,7 @@ Usage:
 
     -p|--parallelism            Set terraform parallelism (Default: CAASP_PARALLELISM)
     -P|--proxy                  Set HTTP proxy (Default: CAASP_HTTP_PROXY)
+    -L|--location               Set location used for downloads (Default: CAASP_LOCATION or 'default')
 
   * Local git checkouts
 
@@ -136,6 +138,10 @@ while [[ $# > 0 ]] ; do
       ;;
     -P|--proxy)
       PROXY="$2"
+      shift
+      ;;
+    -L|--location)
+      LOCATION="$2"
       shift
       ;;
     -d|--destroy)
@@ -233,7 +239,7 @@ build() {
   log "CaaS Platform Building"
 
   log "Downloading CaaSP KVM Image"
-  $DIR/../misc-tools/download-image --proxy "${PROXY}" --type kvm $IMAGE
+  $DIR/../misc-tools/download-image --proxy "${PROXY}" --location "${LOCATION}" --type kvm $IMAGE
 
   if [ "$DISABLE_MELTDOWN_SPECTRE" == "true" ] ; then
     log "Preparing artifacts required to disable spectre and meltdown patches"

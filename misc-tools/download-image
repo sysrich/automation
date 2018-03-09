@@ -186,10 +186,14 @@ def get_channel_url(args):
     except Exception as e:
         raise Exception("Unable to extract baseurl: {}".format(e))
 
-    if not base.get(channel, False):
+    channel = base.get(channel, False)
+    if not channel:
         raise Exception("Unknown channel: %s" % channel)
 
-    base_url = base[channel]
+    base_url = channel.get(args.location, channel.get("default", False))
+    if not base_url:
+        raise Exception("Malformed channel entry")
+
     if args.type == "docker":
         base_url += 'images_container_base'
     elif args.type in ["kvm", "openstack"]:
@@ -222,6 +226,7 @@ if __name__ == "__main__":
     parser.add_argument('--path', help="Where should the image be downloaded and linked (default: '../downloads')", default='../downloads')
     parser.add_argument('--image-name', help='Name of the Docker derived image to download (eg: "sles12-velum-development").')
     parser.add_argument('--proxy', help="Proxy server to use", default='')
+    parser.add_argument('--location', help="Download Location")
     parser.add_argument('--download-urls-fname',
             help="Path of the download URLs JSON file (default: <script_location>/../misc-files/download-urls.json)",
             default=None)

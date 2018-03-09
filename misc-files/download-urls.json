@@ -1,9 +1,18 @@
 {
   "baseurl": {
-    "devel": "http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/",
-    "release": "http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP30/",
-    "staging_a": "http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP30:/Staging:/A/",
-    "staging_b": "http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP30:/Staging:/B/"
+    "devel": {
+      "default": "http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/",
+      "provo": "http://nodes.provo-prod.caasp.suse.net:32501/ibs/Devel:/CASP:/Head:/ControllerNode/"
+    },
+    "release": {
+      "default": "http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP30/"
+    },
+    "staging_a": {
+      "default": "http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP30:/Staging:/A/"
+    },
+    "staging_b": {
+      "default": "http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP30:/Staging:/B/"
+    }
   },
-  "format_version": 1
+  "format_version": 2
 }

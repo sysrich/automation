@@ -101,6 +101,7 @@ sudo virsh pool-start default
 
         -p|--parallelism            Set terraform parallelism (Default: CAASP_PARALLELISM)
         -P|--proxy                  Set HTTP proxy (Default: CAASP_HTTP_PROXY)
+        -L|--location               Set location used for downloads (Default: CAASP_LOCATION or 'default')
 
       * Local git checkouts
 
