@@ -37,7 +37,7 @@ class ImageFinder(HTMLParser):
             raise SystemExit(1)
 
     def get_image(self):
-        return self.images.pop()
+        return self.images.pop().strip(" ")
 
     def handle_data(self, data):
         m = re.search(self.regexp, data)
