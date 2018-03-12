@@ -2,8 +2,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-ARTIFACTS_PATH=
-LOG_PATH=
+ARTIFACTS_PATH=$DIR/results
 KUBECONFIG=
 
 USAGE=$(cat <<USAGE
@@ -39,13 +38,7 @@ while [[ $# > 0 ]] ; do
       shift
       ;;
     --artifacts)
-      mkdir -p "$2"
       ARTIFACTS_PATH="$(realpath $2)"
-      shift
-      ;;
-    --log)
-      :> "$2"
-      LOG_PATH="$(realpath $2)"
       shift
       ;;
     -h|--help)
@@ -61,19 +54,15 @@ run_tests() {
     while ! KUBECONFIG=$KUBECONFIG kubectl logs -n sonobuoy sonobuoy | grep "sonobuoy is now blocking"; do
         sleep 1
     done
-    # Copy all e2e logs from the container
-    KUBECONFIG=$KUBECONFIG kubectl cp sonobuoy/sonobuoy:tmp/sonobuoy sonobuoy-results
-    find sonobuoy-results -name '*.tar.gz' | xargs -I{} tar -xf {} -C sonobuoy-results
-    find sonobuoy-results -name '*.tar.gz' | xargs rm
-    if [ ! -z "$LOG_PATH" ]; then
-        # Copy the main e2e.log execution log
-        find sonobuoy-results -name e2e.txt | xargs -I{} cp {} $LOG_PATH
-    fi
-    if [ ! -z "$ARTIFACTS_PATH" ]; then
-        # Copy the rest of the folders on artifacts
-        find sonobuoy-results -mindepth 1 -maxdepth 1 -type d | xargs -I{} cp -r {} $ARTIFACTS_PATH
-    fi
-    find sonobuoy-results -name e2e.txt | xargs tail -n1 | grep SUCCESS || abort "conformance tests failed"
+
+    # Create the artifacts path
+    mkdir -p $ARTIFACTS_PATH
+
+    # Copy results from the container
+    KUBECONFIG=$KUBECONFIG kubectl cp sonobuoy/sonobuoy:tmp/sonobuoy $ARTIFACTS_PATH
+    find $ARTIFACTS_PATH -name '*.tar.gz' | xargs -I{} tar -xf {} -C $ARTIFACTS_PATH
+    find $ARTIFACTS_PATH -name '*.tar.gz' | xargs rm
+    find $ARTIFACTS_PATH -name e2e.txt | xargs tail -n1 | grep SUCCESS || abort "conformance tests failed"
 }
 
 # checks
