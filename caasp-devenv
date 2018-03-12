@@ -32,6 +32,7 @@ DISABLE_MELTDOWN_SPECTRE=${CAASP_DISABLE_MELTDOWN_SPECTRE:-}
 PROXY=${CAASP_HTTP_PROXY:-}
 PARALLELISM=${CAASP_PARALLELISM:-1}
 ENABLE_TILLER=${CAASP_ENABLE_TILLER:-false}
+EXTRA_REPO=${CAASP_EXTRA_REPO:-}
 
 # base distribution used for setting up dependencies, and the packages to install
 DIST_BASE="opensuse.org/repositories/Virtualization:/containers"
@@ -57,7 +58,7 @@ Usage:
 
   * Setup your workstation
 
-    --setup                  Install Dev Env Dependencies
+    --setup                     Install Dev Env Dependencies
 
   * Building a cluster
 
@@ -75,16 +76,20 @@ Usage:
     Velum Username: test@test.com
     Velum Password: password
 
-    -B|--bootstrap           Bootstrap CaaSP cluster
+    -B|--bootstrap              Bootstrap CaaSP cluster
 
   * Testing a cluster
 
-    -T|--testinfra           Run testinfra tests
+    -T|--testinfra              Run testinfra tests
 
   * Common options
 
-    -p|--parallelism         Set terraform parallelism (Default: CAASP_PARALLELISM)
-    -P|--proxy               Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
+    -p|--parallelism            Set terraform parallelism (Default: CAASP_PARALLELISM)
+    -P|--proxy                  Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
+
+  * Advanced Options
+
+    --extra-repo <STR>          URL of a custom repository on the master(s)/worker(s) (Default: CAASP_EXTRA_REPO)
 
   * Examples:
 
@@ -95,6 +100,10 @@ Usage:
   Bootstrap and Test a pre-made cluster
 
   $0 --bootstrap --testinfra
+
+  Build a cluster and add a custom repository on the master/worker(s)
+
+  $0 --build -m 1 -w 2 --extra-repo https://download.opensuse.org/repositories/devel:/CaaSP:/Head:/ControllerNode:/TestUpdates
 
 USAGE
 )
@@ -158,6 +167,10 @@ while [[ $# > 0 ]] ; do
       PROXY="$2"
       shift
       ;;
+    --extra-repo)
+      EXTRA_REPO="$2"
+      shift
+      ;;
     -h|--help)
       usage
       ;;
@@ -168,10 +181,11 @@ done
 ##############################################################
 
 CAASP_KVM_ARGS="-m $MASTERS -w $WORKERS --image $IMAGE"
-[ -n "$PARALLELISM"              ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --parallelism=$PARALLELISM"
-[ -n "$PROXY"                    ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --proxy $PROXY"
-[ -n "$VANILLA"                  ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --vanilla"
+[ -n "$PARALLELISM" ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --parallelism=$PARALLELISM"
+[ -n "$PROXY"       ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --proxy $PROXY"
+[ -n "$VANILLA"     ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --vanilla"
 [ -n "$DISABLE_MELTDOWN_SPECTRE" ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --disable-meltdown-spectre-fixes"
+[ -n "$EXTRA_REPO"  ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --extra-repo $EXTRA_REPO"
 
 export ENVIRONMENT="$DIR/caasp-kvm/environment.json"
 
