@@ -4,6 +4,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 ARTIFACTS_PATH=
 LOG_PATH=
+KUBECONFIG=
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -56,12 +57,12 @@ while [[ $# > 0 ]] ; do
 done
 
 run_tests() {
-    kubectl apply -f https://raw.githubusercontent.com/cncf/k8s-conformance/master/sonobuoy-conformance.yaml
-    while ! kubectl logs -n sonobuoy sonobuoy | grep "sonobuoy is now blocking"; do
+    KUBECONFIG=$KUBECONFIG kubectl apply -f https://raw.githubusercontent.com/cncf/k8s-conformance/master/sonobuoy-conformance.yaml
+    while ! KUBECONFIG=$KUBECONFIG kubectl logs -n sonobuoy sonobuoy | grep "sonobuoy is now blocking"; do
         sleep 1
     done
     # Copy all e2e logs from the container
-    kubectl cp sonobuoy/sonobuoy:tmp/sonobuoy sonobuoy-results
+    KUBECONFIG=$KUBECONFIG kubectl cp sonobuoy/sonobuoy:tmp/sonobuoy sonobuoy-results
     find sonobuoy-results -name '*.tar.gz' | xargs -I{} tar -xf {} -C sonobuoy-results
     find sonobuoy-results -name '*.tar.gz' | xargs rm
     if [ ! -z "$LOG_PATH" ]; then
