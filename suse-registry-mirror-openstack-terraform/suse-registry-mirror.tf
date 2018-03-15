@@ -113,6 +113,7 @@ resource "null_resource" "suse-registry-mirror" {
 
   connection {
     type = "ssh"
+    user = "sles"
     host = "${openstack_compute_floatingip_associate_v2.admin_ext_ip.floating_ip}"
     private_key = "${file("ssh/id_suse-registry-mirror")}"
   }
@@ -123,8 +124,8 @@ resource "null_resource" "suse-registry-mirror" {
   }
   provisioner "remote-exec" {
     inline = [
-      "chmod +x /tmp/suse-registry-mirror.sh",
-      "/tmp/suse-registry-mirror.sh",
+      "sudo -u root chmod +x /tmp/suse-registry-mirror.sh",
+      "sudo -u root /tmp/suse-registry-mirror.sh",
     ]
   }
   depends_on = ["openstack_compute_instance_v2.suse-registry-mirror"]

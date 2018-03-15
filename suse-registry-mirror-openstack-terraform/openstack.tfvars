@@ -1,4 +1,4 @@
-image_name = "SLES12-SP3-JeOS-for-OpenStack-Cloud.x86_64-1.3.0-Build12.101"
+image_name = "SLES12-SP3-JeOS-for-OpenStack-Cloud.x86_64-1.3.0-Build12.131"
 internal_net = "caasp-net"
 external_net = "ext-net"
 admin_size = "m1.medium"
