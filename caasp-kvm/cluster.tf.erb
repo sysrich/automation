@@ -237,7 +237,7 @@ resource "libvirt_domain" "admin" {
 }
 
 output "ip_admin" {
-  value = "${libvirt_domain.admin.network_interface.0.addresses.0}"
+  value = "${libvirt_domain.admin.network_interface.0.addresses[0]}"
 }
 
 ###################
@@ -257,7 +257,7 @@ data "template_file" "master_cloud_init_user_data" {
   template = "${file("cloud-init/master.cfg.tpl")}"
 
   vars {
-    admin_ip = "${libvirt_domain.admin.network_interface.0.addresses.0}"
+    admin_ip = "${libvirt_domain.admin.network_interface.0.addresses[0]}"
   }
 
   depends_on = ["libvirt_domain.admin"]
@@ -326,7 +326,7 @@ resource "libvirt_domain" "master" {
 }
 
 output "masters" {
-  value = ["${libvirt_domain.master.*.network_interface.0.addresses.0}"]
+  value = ["${libvirt_domain.master.*.network_interface.0.addresses[0]}"]
 }
 
 ###################
@@ -346,7 +346,7 @@ data "template_file" "worker_cloud_init_user_data" {
   template = "${file("cloud-init/worker.cfg.tpl")}"
 
   vars {
-    admin_ip = "${libvirt_domain.admin.network_interface.0.addresses.0}"
+    admin_ip = "${libvirt_domain.admin.network_interface.0.addresses[0]}"
   }
 
   depends_on = ["libvirt_domain.admin"]
@@ -415,5 +415,5 @@ resource "libvirt_domain" "worker" {
 }
 
 output "workers" {
-  value = ["${libvirt_domain.worker.*.network_interface.0.addresses.0}"]
+  value = ["${libvirt_domain.worker.*.network_interface.0.addresses[0]}"]
 }
