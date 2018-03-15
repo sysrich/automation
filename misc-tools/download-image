@@ -12,10 +12,10 @@ import sys
 import urlparse
 from HTMLParser import HTMLParser
 
-QCOW_REGEX = '.*KVM.*x86_64-.*\.qcow2'
-DOCKER_REGEX = '%(docker_image)s.*x86_64-.*\.tar\.xz'
-OPENSTACK_REGEX = '.*OpenStack-Cloud.*x86_64-.*\.qcow2'
-ISO_REGEX = '.*-DVD-x86_64-.*-Media1\.iso'
+KVM_REGEX = '.*KVM.*x86_64-.*\.qcow2$'
+DOCKER_REGEX = '%(docker_image)s.*x86_64-.*\.tar\.xz$'
+OPENSTACK_REGEX = '.*OpenStack-Cloud.*x86_64-.*\.qcow2$'
+ISO_REGEX = '.*-DVD-x86_64-.*-Media1\.iso$'
 
 
 class ImageFinder(HTMLParser):
@@ -27,7 +27,7 @@ class ImageFinder(HTMLParser):
         if args.type == "docker":
             self.regexp = DOCKER_REGEX % {"docker_image": args.image_name}
         elif args.type == "kvm":
-            self.regexp = QCOW_REGEX
+            self.regexp = KVM_REGEX
         elif args.type == "openstack":
             self.regexp = OPENSTACK_REGEX
         elif args.type == "iso":
@@ -118,7 +118,7 @@ def get_canonical_url(args, url):
     elif image.status_code == 200:
         return url
     else:
-        raise Exception("Cannot find image location")
+        raise Exception("Cannot find image's real location: " + url)
 
 def get_sha256(url, proxies):
     print(" >> Downloading Sha256 File")

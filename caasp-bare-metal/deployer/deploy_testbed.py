@@ -682,7 +682,10 @@ def handle_iso(args):
     log.debug("Reading %s", duf)
     with open(duf) as f:
         j = json.load(f)
-        baseurl = j["baseurl"][args.channel]
+        if j["format_version"] == 1:
+            baseurl = j["baseurl"][args.channel]
+        else:
+            baseurl = j["baseurl"][args.channel]["default"]
     iso_list_url = os.path.join(baseurl, 'images/iso')
 
     # regexp - general enough for all Build<NNN> Media1 ISOs
