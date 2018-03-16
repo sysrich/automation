@@ -74,6 +74,7 @@ Usage:
     --master-cpu <INT>          RAM to allocate to worker node(s) (Default: CAASP_WORKER_RAM=$WORKER_RAM)
     --worker-cpu <INT>          CPUs to allocate to worker node(s) (Default: CAASP_WORKER_CPU=$WORKER_CPU)
     --extra-repo <STR>          URL of a custom repository on the master(s)/worker(s) (Default: CAASP_EXTRA_REPO)
+    --name-prefix <STR>         Name prefix for the terraform resources to make multiple clusters on one host possible (Default: "")
 
   * Examples:
 
