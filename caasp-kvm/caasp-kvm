@@ -281,7 +281,7 @@ build() {
   fi
 
   log "Generating terraform manifest from erb template"
-  VANILLA=${VANILLA} CAASP_BRIDGE=${$CAASP_BRIDGE} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
+  VANILLA=${VANILLA} CAASP_BRIDGE=${CAASP_BRIDGE} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
 
   log "Applying terraform configuration"
   terraform init && terraform apply -auto-approve $TF_ARGS
