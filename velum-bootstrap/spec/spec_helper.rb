@@ -86,8 +86,8 @@ RSpec.configure do |config|
   # fail fast
   config.fail_fast = true
 
-  # Set a timeout around the tests
-  timeout = ENV.fetch('TEST_TIMEOUT', 2200).to_i
+  # Set a fallback timeout around the tests
+  timeout = ENV.fetch('TEST_TIMEOUT', 7200).to_i
 
   config.around(:each) do |test|
     begin
