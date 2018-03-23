@@ -120,6 +120,32 @@ def get_canonical_url(args, url):
     else:
         raise Exception("Cannot find image's real location: " + url)
 
+def get_sha256(url, proxies):
+    print(" >> Downloading Sha256 File")
+    partition = url.rpartition('/')
+    sha256file = requests.head(url + '.sha256', proxies=proxies)
+    
+    if sha256file.status_code == 404:
+        # try to find this file in /SHA256SUMS within the same directory
+        for line in requests.get(partition[0] + "/SHA256SUMS", proxies=proxies).text.split('\n'):
+            # find sha256 for this file
+            columns = line.split(" ")
+            if columns[-1] == partition[2]:
+                if len(columns[0]) == 64:
+                    return columns[0]
+        raise Exception("Cannot find remote image SHA256 in %s" % partition[0] + "/SHA256SUMS")
+    elif sha256file.status_code == 302 or sha256file.status_code == 301:
+        location = sha256file.headers.get('Location')
+        return get_sha256(location[:location.rfind('.sha256')], proxies=proxies)
+    elif sha256file.status_code == 200:
+        # this will work if the SHA256 is stored as a PGP SIGNED MESSAGE in the .sha256 file
+        sha256 = requests.get(url + '.sha256', proxies=proxies).text.split('\n')[3]
+        if len(sha256) == 64:
+            return sha256
+        raise Exception("Cannot find remote image SHA256 in %s" % url + '.sha256')
+    else:
+        raise Exception("Cannot find remote image SHA256")
+
 def download_file(args, canonical_url=None):
     canonical_url = canonical_url or get_canonical_url(args, args.url)
     expected_path = get_expected_path(args)
@@ -136,7 +162,7 @@ def download_file(args, canonical_url=None):
         }
 
         try:
-            remote_sha_pre = requests.get(canonical_url + '.sha256', proxies=proxies).text.split('\n')[3]
+            remote_sha_pre = get_sha256(canonical_url, proxies=proxies)
 
             proxy_flag =  '--no-proxy' if args.proxy == '' else '-e use_proxy=yes -e http_proxy=' + args.proxy
 
@@ -146,7 +172,7 @@ def download_file(args, canonical_url=None):
             )
 
             local_sha = os.popen('sha256sum %s' % actual_path).read().split(' ')[0]
-            remote_sha_post = requests.get(canonical_url + '.sha256', proxies=proxies).text.split('\n')[3]
+            remote_sha_post = get_sha256(canonical_url, proxies=proxies)
 
             print(" >> Local SHA:                  %s" % local_sha)
             print(" >> Remote SHA (Pre Download):  %s" % remote_sha_pre)
