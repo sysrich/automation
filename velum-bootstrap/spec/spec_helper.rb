@@ -28,7 +28,7 @@ end
 Capybara.register_driver :poltergeist do |app|
   options = {
     timeout:           180,
-    js_errors:         false,
+    js_errors:         true,
     phantomjs_options: [
       "--proxy-type=none",
       "--load-images=yes"
