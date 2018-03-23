@@ -116,7 +116,7 @@ provider "libvirt" {
 
 # This is the CaaSP kvm image that has been created by IBS
 resource "libvirt_volume" "caasp_img" {
-  name   = "${basename(var.caasp_img_source_url)}"
+  name   = "${var.name_prefix}${basename(var.caasp_img_source_url)}"
   source = "../downloads/kvm-${basename(var.caasp_img_source_url)}"
   pool   = "${var.pool}"
 }
@@ -125,9 +125,9 @@ resource "libvirt_volume" "caasp_img" {
 # Networking #
 ##############
 resource "libvirt_network" "network" {
-    name      = "caasp-net"
+    name      = "${var.name_prefix}caasp-net"
     mode      = "${var.caasp_net_mode}"
-    domain    = "${var.caasp_domain_name}"
+    domain    = "${var.name_prefix}${var.caasp_domain_name}"
     addresses = ["${var.caasp_net_network}"]
 }
 
