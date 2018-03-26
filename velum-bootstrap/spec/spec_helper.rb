@@ -11,7 +11,7 @@ Dir[File.join(File.dirname(File.dirname(__FILE__)), "spec", "support", "**", "*.
   each { |f| require f }
 
 def environment
-  env = JSON.parse(File.read(ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), '../../../')}terraform/environment.json")))
+  env = JSON.parse(File.read(ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), '../../')}caasp-kvm/environment.json")))
   abort("Please specify kubernetesExternalHost in environment.json") unless env["kubernetesExternalHost"]
   abort("Please specify at least 2 minions in environment.json") if env["minions"].count < 2
   return env
@@ -28,10 +28,10 @@ end
 Capybara.register_driver :poltergeist do |app|
   options = {
     timeout:           180,
-    js_errors:         false,
+    js_errors:         true,
     phantomjs_options: [
       "--proxy-type=none",
-      "--load-images=no"
+      "--load-images=yes"
     ]
   }
   # NOTE: uncomment the line below to get more info on the current run.
@@ -86,8 +86,8 @@ RSpec.configure do |config|
   # fail fast
   config.fail_fast = true
 
-  # Set a timeout around the tests
-  timeout = ENV.fetch('TEST_TIMEOUT', 2200).to_i
+  # Set a fallback timeout around the tests
+  timeout = ENV.fetch('TEST_TIMEOUT', 7200).to_i
 
   config.around(:each) do |test|
     begin

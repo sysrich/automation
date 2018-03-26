@@ -39,6 +39,24 @@ class TestKubernetesWorker(object):
         host_service = host.service(service)
         assert host_service.is_enabled
 
+    @pytest.mark.parametrize("service", [
+        "kube-apiserver",
+        "kube-controller-manager",
+        "kube-scheduler",
+    ])
+    def test_services_stopped(self, host, service):
+        host_service = host.service(service)
+        assert host_service.is_running == False
+
+    @pytest.mark.parametrize("service", [
+        "kube-apiserver",
+        "kube-controller-manager",
+        "kube-scheduler",
+    ])
+    def test_services_disabled(self, host, service):
+        host_service = host.service(service)
+        assert host_service.is_enabled == False
+
     def test_salt_role(self, host):
         assert 'kube-minion' in host.salt("grains.get", "roles")
 
@@ -46,12 +64,34 @@ class TestKubernetesWorker(object):
         machine_id = host.file('/etc/machine-id').content_string.rstrip()
         assert machine_id in host.salt("grains.get", "id")
 
+    def _test_etcd_aliveness(self, host, hostname):
+        if 'etcd' in host.salt("grains.get", "roles"):
+            machine_id = host.file('/etc/machine-id').content_string.rstrip()
+            cmd = "etcdctl --ca-file /etc/pki/trust/anchors/SUSE_CaaSP_CA.crt "\
+                  "--key-file /etc/pki/minion.key "\
+                  "--cert-file /etc/pki/minion.crt "\
+                  "--endpoints='https://%s:2379' "\
+                  "cluster-health" % hostname
+
+            # TODO: Switch back to run_expect once we remove compatibility for
+            #       our generated hostnames.
+            health = host.run(cmd)
+
+            return "cluster is healthy" in health.stdout
+        else:
+            return True
+
     def test_etcd_aliveness(self, host):
+        # TODO: Remove the machine_id compatibility once we remove our
+        #       generated hostnames.
         machine_id = host.file('/etc/machine-id').content_string.rstrip()
-        cmd = "etcdctl --ca-file /etc/pki/trust/anchors/SUSE_CaaSP_CA.crt "\
-              "--key-file /etc/pki/minion.key "\
-              "--cert-file /etc/pki/minion.crt "\
-              "--endpoints='https://%s.infra.caasp.local:2379' "\
-              "cluster-health" % machine_id
-        health = host.run_expect([0], cmd)
-        assert "cluster is healthy" in health.stdout
+        hostname = host.file('/etc/hostname').content_string.rstrip()
+
+        result = False
+        if self._test_etcd_aliveness(host, "%s.infra.caasp.local" % machine_id):
+            result = True
+
+        if self._test_etcd_aliveness(host, hostname):
+            result = True
+
+        assert result is True

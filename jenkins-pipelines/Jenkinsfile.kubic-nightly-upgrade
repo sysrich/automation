@@ -13,10 +13,22 @@ kvmTypeOptions.vanilla = true
 coreKubicProjectPeriodic(
     environmentTypeOptions: kvmTypeOptions
 ) {
+    // Install Update Repo
+    prepareUpgradeEnvironment(
+        environment: environment,
+        extraRepos: [
+            'TestUpdate': 'http://download.suse.de/ibs/Devel:/CASP:/2.0:/ControllerNode:/TestUpdate/standard/Devel:CASP:2.0:ControllerNode:TestUpdate.repo'
+        ]
+    )
+
+    // Run Transactional Update
+    transactionalUpdate(
+        environment: environment
+    )
+
     // Run through the upgrade orchestration
     upgradeEnvironment(
-        environment: environment,
-        fakeUpdatesAvailable: true
+        environment: environment
     )
 
     // Run the Core Project Tests again

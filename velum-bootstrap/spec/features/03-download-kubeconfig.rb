@@ -17,7 +17,9 @@ feature "Download Kubeconfig" do
   end
 
   scenario "User downloads the kubeconfig file" do
-    visit "/"
+    with_status_ok do
+      visit "/"
+    end
 
     expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 240)
 

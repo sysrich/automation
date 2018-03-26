@@ -27,11 +27,34 @@ end
 
 manifest = YAML.load_file(ARGV[0])
 
-# ugly hack to replace production with development inside
-# of annotations
-# Don't patch this for now, as it changes the DB name from velum_production -> velum_development.
-#manifest["metadata"]["annotations"]["pod.beta.kubernetes.io/init-containers"].gsub!("production", "development")
+# Extend init containers to also set up `test` database by reusing the production database set up
+# logic.
+manifest["spec"]["initContainers"] += [
+  {
+    "name" => "mariadb-user-secrets-test",
+    "image" => "sles12/mariadb:__TAG__",
+    "command" => ["/setup-mysql.sh"],
+    "env" => [{ "name" => "ENV", "value" => "test" }],
+    "volumeMounts" => [
+      {
+        "mountPath" => "/infra-secrets",
+        "name" => "infra-secrets"
+      },
+      {
+        "mountPath" => "/var/run/mysql",
+        "name" => "mariadb-unix-socket"
+      },
+      {
+        "mountPath" => "/setup-mysql.sh",
+        "name" => "setup-mysql",
+        "readOnly" => true
+      }
+    ]
+  }
+]
 
+# Extend velum containers to use the development image, mount the source code and also set
+# the development environment variable for the rails environment.
 manifest["spec"]["containers"].each do |container|
   if container["image"] =~ /.*velum.*/
     container["image"] = "sles12/velum:development"
@@ -52,6 +75,8 @@ manifest["spec"]["containers"].each do |container|
   end
 end
 
+# Add manifest volumes where Velum source code resides in order to mount it in the containers
+# for the development environment.
 manifest["spec"]["volumes"] << {
   "name" => "velum-devel",
   "hostPath" => {"path" => "/var/lib/misc/velum-dev" },

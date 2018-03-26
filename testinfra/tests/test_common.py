@@ -18,7 +18,6 @@ import pytest
 class TestCommon(object):
     """docstring for TestBaseEnv"""
     @pytest.mark.parametrize("service", [
-        "etcd",
         "salt-minion"
     ])
     def test_services_running(self, host, service):
@@ -26,7 +25,6 @@ class TestCommon(object):
         assert host_service.is_running
 
     @pytest.mark.parametrize("service", [
-        "etcd",
         "salt-minion"
     ])
     def test_services_enabled(self, host, service):

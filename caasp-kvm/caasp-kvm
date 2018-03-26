@@ -12,12 +12,17 @@ RUN_DESTROY=
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
 IMAGE=${CAASP_IMAGE:-channel://devel}
+VELUM_IMAGE=${CAASP_VELUM_IMAGE:-channel://devel}
+VANILLA=${CAASP_VANILLA:-}
+DISABLE_MELTDOWN_SPECTRE=${CAASP_DISABLE_MELTDOWN_SPECTRE:-}
 PROXY=${CAASP_HTTP_PROXY:-}
+LOCATION=${CAASP_LOCATION:-}
 PARALLELISM=${CAASP_PARALLELISM:-1}
 
 CAASP_SALT_DIR=${CAASP_SALT_DIR:-$DIR/../../salt}
 CAASP_MANIFESTS_DIR=${CAASP_MANIFESTS_DIR:-$DIR/../../caasp-container-manifests}
 CAASP_VELUM_DIR=${CAASP_VELUM_DIR:-$DIR/../../velum}
+CAASP_NAME_PREFIX=${CAASP_NAME_PREFIX:-}
 
 ADMIN_RAM=${CAASP_ADMIN_RAM:-4096}
 ADMIN_CPU=${CAASP_ADMIN_CPU:-4}
@@ -25,6 +30,8 @@ MASTER_RAM=${CAASP_MASTER_RAM:-2048}
 MASTER_CPU=${CAASP_MASTER_CPU:-2}
 WORKER_RAM=${CAASP_WORKER_RAM:-2048}
 WORKER_CPU=${CAASP_WORKER_CPU:-2}
+
+EXTRA_REPO=${CAASP_EXTRA_REPO:-}
 
 # the environment file
 ENVIRONMENT=$DIR/environment.json
@@ -34,34 +41,40 @@ Usage:
 
   * Building a cluster
 
-    -b|--build             Run the CaaSP KVM Build Step
-    -m|--masters <INT>     Number of masters to build (Default: CAASP_NUM_MASTERS=$MASTERS)
-    -w|--workers <INT>     Number of workers to build (Default: CAASP_NUM_WORKERS=$WORKERS)
-    -i|--image <STR>       Image to use (Default: CAASP_IMAGE=$IMAGE)
+    -b|--build                       Run the CaaSP KVM Build Step
+    -m|--masters <INT>               Number of masters to build (Default: CAASP_NUM_MASTERS=$MASTERS)
+    -w|--workers <INT>               Number of workers to build (Default: CAASP_NUM_WORKERS=$WORKERS)
+    -i|--image <STR>                 Image to use (Default: CAASP_IMAGE=$IMAGE)
+    --velum-image <STR>              Velum Image to use (Default: CAASP_VELUM_IMAGE=$VELUM_IMAGE)
+    --vanilla                        Do not inject devenv code, use vanilla caasp (Default: false)
+    --disable-meltdown-spectre-fixes Disable meltdown and spectre fixes (Default: false)
 
   * Destroying a cluster
 
-    -d|--destroy           Run the CaaSP KVM Destroy Step
+    -d|--destroy                Run the CaaSP KVM Destroy Step
 
   * Common options
 
-    -p|--parallelism       Set terraform parallelism (Default: CAASP_PARALLELISM)
-    -P|--proxy             Set HTTP proxy (Default: CAASP_HTTP_PROXY)
+    -p|--parallelism            Set terraform parallelism (Default: CAASP_PARALLELISM)
+    -P|--proxy                  Set HTTP proxy (Default: CAASP_HTTP_PROXY)
+    -L|--location               Set location used for downloads (Default: CAASP_LOCATION or 'default')
 
   * Local git checkouts
 
-     --salt-dir <DIR>      the Salt repo checkout (Default: CAASP_SALT_DIR)
-     --manifests-dir <DIR> the manifests repo checkout (Default: CAASP_MANIFESTS_DIR)
-     --velum-dir <DIR>     the Velum repo checkout (Default: CAASP_VELUM_DIR)
+     --salt-dir <DIR>           the Salt repo checkout (Default: CAASP_SALT_DIR)
+     --manifests-dir <DIR>      the manifests repo checkout (Default: CAASP_MANIFESTS_DIR)
+     --velum-dir <DIR>          the Velum repo checkout (Default: CAASP_VELUM_DIR)
 
   * Advanced Options
 
-    --admin-ram <INT>      RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=$ADMIN_RAM)
-    --admin-cpu <INT>      CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=$ADMIN_CPU)
-    --master-ram <INT>     RAM to allocate to master node(s) (Default: CAASP_MASTER_RAM=$MASTER_RAM)
-    --worker-ram <INT>     CPUs to allocate to master node(s) (Default: CAASP_MASTER_CPU=$MASTER_CPU)
-    --master-cpu <INT>     RAM to allocate to worker node(s) (Default: CAASP_WORKER_RAM=$WORKER_RAM)
-    --worker-cpu <INT>     CPUs to allocate to worker node(s) (Default: CAASP_WORKER_CPU=$WORKER_CPU)
+    --admin-ram <INT>           RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=$ADMIN_RAM)
+    --admin-cpu <INT>           CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=$ADMIN_CPU)
+    --master-ram <INT>          RAM to allocate to master node(s) (Default: CAASP_MASTER_RAM=$MASTER_RAM)
+    --worker-ram <INT>          CPUs to allocate to master node(s) (Default: CAASP_MASTER_CPU=$MASTER_CPU)
+    --master-cpu <INT>          RAM to allocate to worker node(s) (Default: CAASP_WORKER_RAM=$WORKER_RAM)
+    --worker-cpu <INT>          CPUs to allocate to worker node(s) (Default: CAASP_WORKER_CPU=$WORKER_CPU)
+    --extra-repo <STR>          URL of a custom repository on the master(s)/worker(s) (Default: CAASP_EXTRA_REPO)
+    --name-prefix <STR>         Name prefix for the terraform resources to make multiple clusters on one host possible (Default: "")
 
   * Examples:
 
@@ -72,6 +85,10 @@ Usage:
   Build a 1 master, 2 worker cluster using the latest staging A image
 
   $0 --build -m 1 -w 2 --image channel://staging_a
+
+  Build a 1 master, 2 worker cluster and add a custom repository on the master(s)/worker(s)
+
+  $0 --build -m 1 -w 2 --extra-repo https://download.opensuse.org/repositories/devel:/CaaSP:/Head:/ControllerNode:/TestUpdates
 
   Destroy a cluster
 
@@ -106,12 +123,26 @@ while [[ $# > 0 ]] ; do
       IMAGE="$2"
       shift
       ;;
+    --velum-image)
+      VELUM_IMAGE="$2"
+      shift
+      ;;
+    --vanilla)
+      VANILLA="true"
+      ;;
+    --disable-meltdown-spectre-fixes)
+      DISABLE_MELTDOWN_SPECTRE="true"
+      ;;
     -p|--parallelism)
       PARALLELISM="$2"
       shift
       ;;
     -P|--proxy)
       PROXY="$2"
+      shift
+      ;;
+    -L|--location)
+      LOCATION="$2"
       shift
       ;;
     -d|--destroy)
@@ -124,6 +155,10 @@ while [[ $# > 0 ]] ; do
       ;;
     --manifests-dir)
       CAASP_MANIFESTS_DIR="$2"
+      shift
+      ;;
+    --name-prefix)
+      CAASP_NAME_PREFIX="$2"
       shift
       ;;
     --velum-dir)
@@ -152,6 +187,10 @@ while [[ $# > 0 ]] ; do
       ;;
     --worker-cpu)
       WORKER_CPU="$2"
+      shift
+      ;;
+    --extra-repo)
+      EXTRA_REPO="$2"
       shift
       ;;
     -h|--help)
@@ -191,16 +230,26 @@ if [ -n "$CAASP_MANIFESTS_DIR" ] ; then
   log "Using Manifests dir: $CAASP_MANIFESTS_DIR"
 fi
 
+if [ -n "$CAASP_NAME_PREFIX" ] ; then
+  TF_ARGS="$TF_ARGS -var name_prefix=$CAASP_NAME_PREFIX"
+  log "Using name prefix for terraform: $CAASP_NAME_PREFIX"
+fi
+
 # Core methods
 build() {
   log "CaaS Platform Building"
 
   log "Downloading CaaSP KVM Image"
-  $DIR/../misc-tools/download-image --proxy "${PROXY}" --type kvm $IMAGE
+  $DIR/../misc-tools/download-image --proxy "${PROXY}" --location "${LOCATION}" --type kvm $IMAGE
 
-  if [ -n "$CAASP_VELUM_DIR" ] ; then
-    log "Building Velum Development Image"
-    $DIR/tools/build-velum-image "$CAASP_VELUM_DIR" "${PROXY}"
+  if [ "$DISABLE_MELTDOWN_SPECTRE" == "true" ] ; then
+    log "Preparing artifacts required to disable spectre and meltdown patches"
+    $DIR/../misc-tools/extract-kernel-initrd-cmdline-args --disable-meltdown-spectre --output $DIR/../downloads --report $DIR/../downloads/kernel-initrd-cmds.json $DIR/../downloads/kvm-$(basename $IMAGE) || error "Error preparing artifacts required to disable meltdown and spectre"
+  fi
+
+  if [ -n "$CAASP_VELUM_DIR" -a "$VANILLA" != "true" ] ; then
+    log "Rebuilding Velum Development Docker Image"
+    $DIR/tools/build-velum-image "$CAASP_VELUM_DIR" "${VELUM_IMAGE}" "${PROXY}"
 
     log "Creating Velum Directories"
     mkdir -p "$CAASP_VELUM_DIR/tmp" "$CAASP_VELUM_DIR/log" "$CAASP_VELUM_DIR/vendor/bundle"
@@ -211,16 +260,26 @@ build() {
     cp -r $CAASP_MANIFESTS_DIR/* "$injected/"
 
     log "Patching Container Manifests"
-    $DIR/tools/fix-kubelet-manifest -o $injected/public.yaml $injected/public.yaml
+    # TODO: Remove the if/else once https://github.com/kubic-project/caasp-container-manifests/pull/135 is merged
+    if [ -f "$injected/manifests/public.yaml" ]; then
+      $DIR/tools/fix-kubelet-manifest -o $injected/manifests/public.yaml $injected/manifests/public.yaml
+    else
+      $DIR/tools/fix-kubelet-manifest -o $injected/public.yaml $injected/public.yaml
+    fi
   else
     log "Skipping Velum environment"
   fi
 
+  log "Generating terraform manifest from erb template"
+  VANILLA=${VANILLA} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
+
   log "Applying terraform configuration"
-  terraform init && terraform apply $TF_ARGS
+  terraform init && terraform apply -auto-approve $TF_ARGS
 
   $DIR/tools/generate-environment
   $DIR/../misc-tools/generate-ssh-config $ENVIRONMENT
+
+  [ -n "$EXTRA_REPO" ] && $DIR/../misc-tools/inject_repo.sh $EXTRA_REPO
 
   log "Waiting for Velum to start - this may take a while"
   PYTHONUNBUFFERED=1 "$DIR/../misc-tools/wait-for-velum" https://$(jq -r '.dashboardExternalHost' "$ENVIRONMENT")
@@ -230,7 +289,8 @@ build() {
 
 destroy() {
   log "Destroying terraform configuration"
-  terraform destroy -force $TF_ARGS && \
+  terraform init && \
+    terraform destroy -force $TF_ARGS && \
     rm -f "$ENVIRONMENT"
 }
 
