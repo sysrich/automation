@@ -27,51 +27,69 @@ RUN_DESTROY=
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
 IMAGE=${CAASP_IMAGE:-channel://devel}
+VANILLA=${CAASP_VANILLA:-}
+DISABLE_MELTDOWN_SPECTRE=${CAASP_DISABLE_MELTDOWN_SPECTRE:-}
 PROXY=${CAASP_HTTP_PROXY:-}
 PARALLELISM=${CAASP_PARALLELISM:-1}
+ENABLE_TILLER=${CAASP_ENABLE_TILLER:-false}
+EXTRA_REPO=${CAASP_EXTRA_REPO:-}
 
 # base distribution used for setting up dependencies, and the packages to install
 DIST_BASE="opensuse.org/repositories/Virtualization:/containers"
 DIST_PACKAGES="jq \
                python-tox \
                python-devel \
+               python-requests \
                libsodium-devel \
                python-openstackclient \
                python-novaclient \
                python-heatclient \
                terraform \
-               terraform-provider-libvirt"
+               terraform-provider-libvirt \
+               guestfs-tools \
+               qemu-kvm \
+               docker \
+               libvirt-daemon-qemu \
+               guestfs-tools \
+               ca-certificates-suse"
 
 USAGE=$(cat <<USAGE
 Usage:
 
   * Setup your workstation
 
-    --setup                  Install Dev Env Dependencies
+    --setup                     Install Dev Env Dependencies
 
   * Building a cluster
 
-    -b|--build               Run the CaaSP KVM Build Step
-    -m|--masters <INT>       Number of masters to build (Default: CAASP_NUM_MASTERS)
-    -w|--workers <INT>       Number of workers to build (Default: CAASP_NUM_WORKERS)
-    -d|--destroy             Run the CaaSP KVM Destroy Step
-    -i|--image               Image to use (Default: CAASP_IMAGE)
+    -b|--build                       Run the CaaSP KVM Build Step
+    -m|--masters <INT>               Number of masters to build (Default: CAASP_NUM_MASTERS)
+    -w|--workers <INT>               Number of workers to build (Default: CAASP_NUM_WORKERS)
+    -d|--destroy                     Run the CaaSP KVM Destroy Step
+    -i|--image                       Image to use (Default: CAASP_IMAGE)
+    --vanilla                        Do not inject devenv code, use vanilla caasp (Default: false)
+    --disable-meltdown-spectre-fixes Disable meltdown and spectre fixes (Default: false)
+    --enable-tiller                  Enable Helm Tiller
 
   * Bootstraping a cluster
 
     Velum Username: test@test.com
     Velum Password: password
 
-    -B|--bootstrap           Bootstrap CaaSP cluster
+    -B|--bootstrap              Bootstrap CaaSP cluster
 
   * Testing a cluster
 
-    -T|--testinfra           Run testinfra tests
+    -T|--testinfra              Run testinfra tests
 
   * Common options
 
-    -p|--parallelism         Set terraform parallelism (Default: CAASP_PARALLELISM)
-    -P|--proxy               Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
+    -p|--parallelism            Set terraform parallelism (Default: CAASP_PARALLELISM)
+    -P|--proxy                  Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
+
+  * Advanced Options
+
+    --extra-repo <STR>          URL of a custom repository on the master(s)/worker(s) (Default: CAASP_EXTRA_REPO)
 
   * Examples:
 
@@ -82,6 +100,10 @@ Usage:
   Bootstrap and Test a pre-made cluster
 
   $0 --bootstrap --testinfra
+
+  Build a cluster and add a custom repository on the master/worker(s)
+
+  $0 --build -m 1 -w 2 --extra-repo https://download.opensuse.org/repositories/devel:/CaaSP:/Head:/ControllerNode:/TestUpdates
 
 USAGE
 )
@@ -120,6 +142,15 @@ while [[ $# > 0 ]] ; do
       IMAGE="$2"
       shift
       ;;
+    --vanilla)
+      VANILLA="true"
+      ;;
+    --disable-meltdown-spectre-fixes)
+      DISABLE_MELTDOWN_SPECTRE="true"
+      ;;
+    --enable-tiller)
+      ENABLE_TILLER=true
+      ;;
     -B|--bootstrap)
       ACTION=1
       RUN_BOOTSTRAP=1
@@ -136,6 +167,10 @@ while [[ $# > 0 ]] ; do
       PROXY="$2"
       shift
       ;;
+    --extra-repo)
+      EXTRA_REPO="$2"
+      shift
+      ;;
     -h|--help)
       usage
       ;;
@@ -148,6 +183,9 @@ done
 CAASP_KVM_ARGS="-m $MASTERS -w $WORKERS --image $IMAGE"
 [ -n "$PARALLELISM" ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --parallelism=$PARALLELISM"
 [ -n "$PROXY"       ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --proxy $PROXY"
+[ -n "$VANILLA"     ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --vanilla"
+[ -n "$DISABLE_MELTDOWN_SPECTRE" ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --disable-meltdown-spectre-fixes"
+[ -n "$EXTRA_REPO"  ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --extra-repo $EXTRA_REPO"
 
 export ENVIRONMENT="$DIR/caasp-kvm/environment.json"
 
@@ -156,15 +194,31 @@ setup() {
   log "Installing CaaSP Development Environment Requiemnts"
   local dist=$(lsb-release -sd | tr -d '"' | tr " " "_")
 
+  if ! zypper lr -dU | grep --quiet "suse.de/ibs/SUSE:/CA" ; then
+    log "Adding SUSE:CA Zypper repo"
+    sudo zypper ar "http://download.suse.de/ibs/SUSE:/CA/${dist}/SUSE:CA.repo"
+    sudo zypper --gpg-auto-import-keys ref SUSE_CA
+  fi
+
   if ! zypper lr -dU | grep --quiet "$DIST_BASE" ; then
     log "Adding Virtualization:containers Zypper repo"
-    sudo zypper ar --refresh "http://download.$DIST_BASE/${dist}/Virtualization:containers.repo"
+    sudo zypper ar "http://download.$DIST_BASE/${dist}/Virtualization:containers.repo"
+    sudo zypper --gpg-auto-import-keys ref Virtualization_containers
   fi
 
   # || : is necessary, as Zypper exits non-zero for "no changes".
   sudo zypper in --no-confirm $DIST_PACKAGES || :
 
+  # Enable and start services, if disabled
+  sudo systemctl enable --now docker
+  sudo systemctl enable --now libvirtd
+
+  # Ensure the current user has access to docker and libvirt
+  sudo usermod -aG docker,libvirt $USER
+
   (cd "$DIR/velum-bootstrap" && ./velum-interactions --setup)
+
+  warn "You should now logout and back in again, in order for group membership changes to be reflected"
 }
 
 build() {
@@ -174,8 +228,14 @@ build() {
 
 bootstrap() {
   log "Bootstrap CaaSP Environment"
+
+  local extra_flags=""
+  if [ "$ENABLE_TILLER" == "true" ]; then
+    extra_flags="$extra_flags --enable-tiller"
+  fi
+
   [ -f "$ENVIRONMENT" ] || error "no environment file found at $ENVIRONMENT"
-  (cd "$DIR/velum-bootstrap" && ./velum-interactions --configure --bootstrap )
+  (cd "$DIR/velum-bootstrap" && ./velum-interactions --configure --bootstrap $extra_flags)
 }
 
 testinfra() {

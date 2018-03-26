@@ -9,9 +9,13 @@ variable "internal_net" {}
 variable "external_net" {}
 variable "admin_size" {}
 variable "master_size" {}
-variable "masters" {}
+variable "mons" {}
 variable "worker_size" {}
-variable "workers" {}
+variable "osds" {}
+variable "sles_base" {}
+variable "sles_update" {}
+variable "ses_base" {}
+variable "ses_update" {}
 
 provider "openstack" {
   domain_name = "${var.domain_name}"
@@ -22,24 +26,51 @@ provider "openstack" {
   insecure = "true"
 }
 
-data "template_file" "cloud-init" {
-  template = "${file("cloud-init.cls")}"
+data "template_file" "admin" {
+  template = "${file("admin.tpl")}"
 
   vars {
-    admin_address = "${openstack_compute_instance_v2.admin.access_ip_v4}"
+    sles_base = "${var.sles_base}"
+    sles_update = "${var.sles_update}"
+    ses_base = "${var.ses_base}"
+    ses_update = "${var.ses_update}"
+  }
+}
+
+data "template_file" "mon" {
+  template = "${file("mon.tpl")}"
+
+  vars {
+    sles_base = "${var.sles_base}"
+    sles_update = "${var.sles_update}"
+    ses_base = "${var.ses_base}"
+    ses_update = "${var.ses_update}"
+    saltmaster = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
+  }
+}
+
+data "template_file" "osd" {
+  template = "${file("osd.tpl")}"
+
+  vars {
+    sles_base = "${var.sles_base}"
+    sles_update = "${var.sles_update}"
+    ses_base = "${var.ses_base}"
+    ses_update = "${var.ses_update}"
+    saltmaster = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
   }
 }
 
 resource "openstack_compute_keypair_v2" "keypair" {
-  name       = "caasp-ssh"
+  name       = "ses-ssh"
   region     = "${var.region_name}"
   public_key = "${file("ssh/id_caasp.pub")}"
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_base" {
-  name        = "caasp-base"
+  name        = "ses-base"
   region      = "${var.region_name}"
-  description = "Basic security group for CaaSP"
+  description = "Basic security group for ses"
 
   rule {
     from_port   = -1
@@ -61,19 +92,12 @@ resource "openstack_compute_secgroup_v2" "secgroup_base" {
     ip_protocol = "tcp"
     cidr        = "0.0.0.0/0"
   }
-
-  rule {
-    from_port   = 8472
-    to_port     = 8472
-    ip_protocol = "udp"
-    cidr        = "0.0.0.0/0"
-  }
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_admin" {
-  name        = "caasp-admin"
+  name        = "ses-admin"
   region      = "${var.region_name}"
-  description = "CaaSP security group for admin"
+  description = "ses security group for admin"
 
   rule {
     from_port   = 80
@@ -102,12 +126,18 @@ resource "openstack_compute_secgroup_v2" "secgroup_admin" {
     ip_protocol = "tcp"
     cidr        = "0.0.0.0/0"
   }
+  rule {
+    from_port   = 6780
+    to_port     = 7500
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
 }
 
-resource "openstack_compute_secgroup_v2" "secgroup_master" {
-  name        = "caasp-master"
+resource "openstack_compute_secgroup_v2" "secgroup_mon" {
+  name        = "ses-mon"
   region      = "${var.region_name}"
-  description = "CaaSP security group for masters"
+  description = "ses security group for mons"
 
   rule {
     from_port   = 2380
@@ -143,12 +173,18 @@ resource "openstack_compute_secgroup_v2" "secgroup_master" {
     ip_protocol = "udp"
     cidr        = "0.0.0.0/0"
   }
+  rule {
+    from_port   = 6780
+    to_port     = 7500
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
 }
 
-resource "openstack_compute_secgroup_v2" "secgroup_worker" {
-  name        = "caasp-worker"
+resource "openstack_compute_secgroup_v2" "secgroup_osd" {
+  name        = "ses-osd"
   region      = "${var.region_name}"
-  description = "CaaSP security group for workers"
+  description = "ses security group for osds"
 
   rule {
     from_port   = 80
@@ -212,10 +248,16 @@ resource "openstack_compute_secgroup_v2" "secgroup_worker" {
     ip_protocol = "udp"
     cidr        = "0.0.0.0/0"
   }
+  rule {
+    from_port   = 6780
+    to_port     = 7500
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
 }
 
 resource "openstack_compute_instance_v2" "admin" {
-  name       = "caasp-admin"
+  name       = "ses-admin"
   region     = "${var.region_name}"
   image_name = "${var.image_name}"
 
@@ -224,7 +266,7 @@ resource "openstack_compute_instance_v2" "admin" {
   }
 
   flavor_name = "${var.admin_size}"
-  key_pair    = "caasp-ssh"
+  key_pair    = "ses-ssh"
 
   network {
     name = "${var.internal_net}"
@@ -235,7 +277,29 @@ resource "openstack_compute_instance_v2" "admin" {
     "${openstack_compute_secgroup_v2.secgroup_admin.name}"
   ]
 
-  user_data = "${file("cloud-init.adm")}"
+  user_data = "${data.template_file.admin.rendered}"
+}
+
+resource "null_resource" "deepsea" {
+
+  connection {
+    type = "ssh"
+    host = "${openstack_compute_floatingip_associate_v2.admin_ext_ip.floating_ip}"
+    private_key = "${file("ssh/id_caasp")}"
+  }
+
+  provisioner "file" {
+    source      = "deepsea.sh"
+    destination = "/tmp/deepsea.sh"
+  }
+  provisioner "remote-exec" {
+    inline = [
+      "chmod +x /tmp/deepsea.sh",
+      "/tmp/deepsea.sh",
+    ]
+  }
+  depends_on = ["openstack_compute_instance_v2.admin", "openstack_compute_instance_v2.osd", 
+  "openstack_compute_instance_v2.mon", "openstack_compute_volume_attach_v2.salt-minion-attach"]
 }
 
 resource "openstack_networking_floatingip_v2" "admin_ext" {
@@ -247,9 +311,9 @@ resource "openstack_compute_floatingip_associate_v2" "admin_ext_ip" {
   instance_id = "${openstack_compute_instance_v2.admin.id}"
 }
 
-resource "openstack_compute_instance_v2" "master" {
-  count      = "${var.masters}"
-  name       = "caasp-master${count.index}"
+resource "openstack_compute_instance_v2" "mon" {
+  count      = "${var.mons}"
+  name       = "ses-mon${count.index}"
   region     = "${var.region_name}"
   image_name = "${var.image_name}"
 
@@ -258,7 +322,7 @@ resource "openstack_compute_instance_v2" "master" {
   }
 
   flavor_name = "${var.master_size}"
-  key_pair    = "caasp-ssh"
+  key_pair    = "ses-ssh"
 
   network {
     name = "${var.internal_net}"
@@ -266,26 +330,27 @@ resource "openstack_compute_instance_v2" "master" {
 
   security_groups = [
     "${openstack_compute_secgroup_v2.secgroup_base.name}",
-    "${openstack_compute_secgroup_v2.secgroup_master.name}"
+    "${openstack_compute_secgroup_v2.secgroup_mon.name}"
   ]
 
-  user_data = "${data.template_file.cloud-init.rendered}"
+  user_data = "${data.template_file.mon.rendered}"
 }
 
-resource "openstack_networking_floatingip_v2" "master_ext" {
-  count = "${var.masters}"
-  pool  = "${var.external_net}"
+resource "openstack_blockstorage_volume_v2" "osd-blk" {
+  count = "${var.osds}",
+  size = 2
+  name = "osd-blk${count.index}"
 }
 
-resource "openstack_compute_floatingip_associate_v2" "master_ext_ip" {
-  count       = "${var.masters}"
-  floating_ip = "${element(openstack_networking_floatingip_v2.master_ext.*.address, count.index)}"
-  instance_id = "${element(openstack_compute_instance_v2.master.*.id, count.index)}"
+resource "openstack_compute_volume_attach_v2" "salt-minion-attach" {
+  count = "${var.osds}"
+  instance_id = "${element(openstack_compute_instance_v2.osd.*.id, count.index)}"
+  volume_id = "${element(openstack_blockstorage_volume_v2.osd-blk.*.id, count.index)}"
 }
 
-resource "openstack_compute_instance_v2" "worker" {
-  count      = "${var.workers}"
-  name       = "caasp-worker${count.index}"
+resource "openstack_compute_instance_v2" "osd" {
+  count      = "${var.osds}"
+  name       = "ses-osd${count.index}"
   region     = "${var.region_name}"
   image_name = "${var.image_name}"
 
@@ -294,7 +359,7 @@ resource "openstack_compute_instance_v2" "worker" {
   }
 
   flavor_name = "${var.worker_size}"
-  key_pair    = "caasp-ssh"
+  key_pair    = "ses-ssh"
 
   network {
     name = "${var.internal_net}"
@@ -302,32 +367,24 @@ resource "openstack_compute_instance_v2" "worker" {
 
   security_groups = [
     "${openstack_compute_secgroup_v2.secgroup_base.name}",
-    "${openstack_compute_secgroup_v2.secgroup_worker.name}"
+    "${openstack_compute_secgroup_v2.secgroup_osd.name}"
   ]
 
-  user_data = "${data.template_file.cloud-init.rendered}"
+  user_data = "${data.template_file.osd.rendered}"
 }
 
-resource "openstack_networking_floatingip_v2" "worker_ext" {
-  count = "${var.workers}"
-  pool  = "${var.external_net}"
-}
-
-resource "openstack_compute_floatingip_associate_v2" "worker_ext_ip" {
-  count       = "${var.workers}"
-  floating_ip = "${element(openstack_networking_floatingip_v2.worker_ext.*.address, count.index)}"
-  instance_id = "${element(openstack_compute_instance_v2.worker.*.id, count.index)}"
-}
-
-
-output "ip_admin" {
+output "external_ip_admin" {
   value = "${openstack_networking_floatingip_v2.admin_ext.address}"
 }
 
-output "ip_masters" {
-  value = ["${openstack_networking_floatingip_v2.master_ext.*.address}"]
+output "internal_ip_admin" {
+  value = ["${openstack_compute_instance_v2.admin.access_ip_v4}"]
 }
 
-output "ip_workers" {
-  value = ["${openstack_networking_floatingip_v2.worker_ext.*.address}"]
+output "internal_ip_mons" {
+  value = ["${openstack_compute_instance_v2.mon.*.access_ip_v4}"]
+}
+
+output "internal_ip_osds" {
+  value = ["${openstack_compute_instance_v2.osd.*.access_ip_v4}"]
 }

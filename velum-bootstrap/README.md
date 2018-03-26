@@ -5,6 +5,40 @@ the CaaS platform. They are meant to be run against a CaaSP cluster.
 
 This can be either a production environment installed from images, or a caasp-kvm build cluster.
 
+## CLI Syntax
+
+    Usage:
+
+      * Setup your workstation
+
+        --setup                          Install Dependencies
+
+      * Building a cluster
+
+        -c|--configure                   Configure Velum
+        -b|--bootstrap                   Bootstrap (implies Download Kubeconfig)
+        -k|--download-kubeconfig         Download Kubeconfig
+        --enable-tiller                  Enable Helm Tiller
+
+      * Updating a cluster
+
+        -a|--update-admin                Update admin node
+        -m|--update-minions              Update masters and workers
+
+      * General Options
+
+        -e|--environment                 Set path to environment.json
+
+      * Examples:
+
+      Bootstrap a cluster
+
+      ./velum-interactions --configure --bootstrap
+
+      Update a cluster
+
+      ./velum-interactions --update-admin --update-minions
+
 ## Requirements
 
 You can install the necessary dependancy packages with:

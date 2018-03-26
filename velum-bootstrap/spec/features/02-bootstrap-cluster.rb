@@ -28,9 +28,11 @@ feature "Boostrap cluster" do
   end
 
   scenario "User accepts all minions" do
-    visit "/setup/discovery"
+    with_status_ok do
+      visit "/setup/discovery"
+    end
 
-    puts ">>> Wait until all minions are pending to be accepted"
+    puts ">>> Wait until all #{node_number} minions are pending to be accepted"
     with_screenshot(name: :pending_minions) do
       expect(page).to have_selector("a", text: "Accept Node", count: node_number, wait: 400)
     end
@@ -47,13 +49,18 @@ feature "Boostrap cluster" do
       click_button("accept-all")
     end
 
+    puts ">>> Waiting 120 seconds as a workaround"
     # ugly workaround for https://bugzilla.suse.com/show_bug.cgi?id=1050450
     # FIXME: drop it when bug is fixed
-    sleep 30
-    visit "/setup/discovery"
+    sleep 120
+    puts "<<< Waiting 120 seconds as a workaround"
 
-    # Min of 120 seconds, Max of 600 seconds, ideal = nodes * 30
-    accept_timeout = [[120, node_number * 30].max, 600].min
+    with_status_ok do
+      visit "/setup/discovery"
+    end
+
+    # Min of 240 seconds, Max of 600 seconds, ideal = nodes * 30
+    accept_timeout = [[240, node_number * 30].max, 600].min
     puts ">>> Wait until Minion keys are accepted by salt (Timeout: #{accept_timeout})"
     with_screenshot(name: :accepted_keys) do
       expect(page).to have_css("input[name='roles[worker][]']", count: node_number, wait: accept_timeout)
@@ -73,11 +80,13 @@ feature "Boostrap cluster" do
   end
 
   scenario "User selects minion roles" do
-    visit "/setup/discovery"
+    with_status_ok do
+      visit "/setup/discovery"
+    end
 
     puts ">>> Waiting for page to settle"
     with_screenshot(name: :wait_for_settle) do
-      expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 120)
+      expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 240)
     end
     puts "<<< Page has settled"
 
@@ -108,7 +117,9 @@ feature "Boostrap cluster" do
   end
 
   scenario "User bootstraps the cluster" do
-    visit "/setup/bootstrap"
+    with_status_ok do
+      visit "/setup/bootstrap"
+    end
 
     puts ">>> Configuring last settings"
     with_screenshot(name: :bootstrap_cluster_settings) do
@@ -123,8 +134,8 @@ feature "Boostrap cluster" do
       click_on "Bootstrap cluster"
     end
 
-    # Min of 1800 seconds, Max of 7200 seconds, ideal = nodes * 120 seconds
-    orchestration_timeout = [[1800, node_number * 120].max, 7200].min
+    # Min of 3600 seconds, Max of 7200 seconds, ideal = nodes * 120 seconds
+    orchestration_timeout = [[3600, node_number * 120].max, 7200].min
     puts ">>> Wait until orchestration is complete (Timeout: #{orchestration_timeout})"
     with_screenshot(name: :orchestration_complete) do
       within(".nodes-container") do

@@ -136,6 +136,9 @@ resources:
         - protocol: tcp
           port_range_min: 2379
           port_range_max: 2379
+        - protocol: udp
+          port_range_min: 8472
+          port_range_max: 8472
 
   secgroup_admin:
     type: OS::Neutron::SecurityGroup
@@ -153,6 +156,9 @@ resources:
         - protocol: tcp
           port_range_min: 389
           port_range_max: 389
+        - protocol: udp
+          port_range_min: 123
+          port_range_max: 123
 
   secgroup_master:
     type: OS::Neutron::SecurityGroup
@@ -233,6 +239,15 @@ resources:
 
             suse_caasp:
               role: admin
+
+            ntp:
+              servers:
+                - 0.opensuse.pool.ntp.org
+                - 1.opensuse.pool.ntp.org
+                - 2.opensuse.pool.ntp.org
+            runcmd:
+              - /usr/bin/systemctl enable --now ntpd
+
           params:
             $root_password: { get_param: root_password }
 

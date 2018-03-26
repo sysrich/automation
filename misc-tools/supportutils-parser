@@ -25,9 +25,31 @@ yaml.add_representer(literal_comment, literal_comment_representer)
 def parse_args():
     ap = ArgumentParser(description='Extract errors from Salt events log')
     ap.add_argument('input_fname', help='supportutils tarball or yml file')
-    ap.add_argument('-w', action='store_true', help='write <input basename>.salt_failures')
+    ap.add_argument('-w', action='store_true', help='write <input basename>.salt_failures.txt')
     ap.add_argument('-i', action='store_true', help='ignore missing velum-salt-events.yml in tarball')
     return ap.parse_args()
+
+
+def cleanup_changes(changes):
+    """Remove successful change events as they are not interesting
+    Changes results are nested under:
+    'changes' -> 'ret' -> <id> -> <change_name> -> 'result' -> true|false
+    """
+    ret = changes.get('ret')
+    if not isinstance(ret, dict):
+        return
+
+    for change_id, changes_block in ret.items():
+        for change_name, change_data in changes_block.items():
+            if change_name == 'retcode' or not isinstance(change_data, dict):
+                # not a real change
+                continue
+
+            if change_data.get('result') == True:
+                # drop uninteresting change
+                del changes['ret'][change_id][change_name]
+
+
 
 
 def main():
@@ -60,12 +82,24 @@ def main():
         if chunk.get("success", True):
             continue
 
+        # ignore uninteresting failure
+        if chunk.get("user") == "Reactor" and chunk.get("fun") == "runner.state.orchestrate":
+            fa = [
+                'orch.update-etc-hosts',
+                {'test': None, 'pillarenv': None, 'exclude': None, 'pillar': None,
+                    'saltenv': 'base', 'orchestration_jid': None}]
+            ret = {'outputter': 'highstate', 'retcode': 1,
+                    'data': {'caasp-admin.devenv.caasp.suse.net_master': {}}}
+            if chunk.get('fun_args') == fa and chunk['return'] == ret:
+                continue
+
         if isinstance(chunk['return'], dict) and 'data' in chunk['return']:
             d = chunk['return']['data'].values()[0]
             if d == {}:
                 out.append(yaml.dump(chunk))
                 out.append("-" * 80 + '\n')
             else:
+                # items nested by one level
                 for sev_name, sev_body in d.items():
                     if sev_body['result'] == True:
                         continue
@@ -73,6 +107,10 @@ def main():
                     if sev_body.get('comment', '').startswith('One or more requisite failed: '):
                         # ignore uninteresting failures
                         continue
+
+                    changes = sev_body.get('changes')
+                    if isinstance(changes, dict) and 'ret' in changes:
+                        cleanup_changes(changes)
 
                     out.append("{} >>> {}".format(chunk['fun'], sev_name))
                     # beautify comment
@@ -89,7 +127,7 @@ def main():
 
     if args.w:
         if out:
-            out_fn = args.input_fname[:-4] + '.salt_failures'
+            out_fn = args.input_fname[:-4] + '.salt_failures.txt'
             print("Writing {}".format(out_fn))
             with open(out_fn, 'w') as f:
                 f.writelines(out)

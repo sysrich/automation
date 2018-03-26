@@ -10,11 +10,19 @@ module Helpers
     $counter += 1
   end
 
+  def with_status_ok(&block)
+    yield
+    expect(page.status_code).to eq(200)
+  end
+
   private
 
   def login
     puts ">>> User logs in"
-    visit "/users/sign_in"
+    with_status_ok do
+      visit "/users/sign_in"
+    end
+
     fill_in "user_email", with: "test@test.com"
     fill_in "user_password", with: "password"
     click_on "Log in"
@@ -23,7 +31,10 @@ module Helpers
 
   def register
     puts ">>> Registering user"
-    visit "/users/sign_up"
+    with_status_ok do
+      visit "/users/sign_up"
+    end
+
     fill_in "user_email", with: "test@test.com"
     fill_in "user_password", with: "password"
     fill_in "user_password_confirmation", with: "password"
@@ -41,8 +52,16 @@ module Helpers
 
   def configure
     puts ">>> Setting up velum"
-    visit "/setup"
+    with_status_ok do
+      visit "/setup"
+    end
+
     fill_in "settings_dashboard", with: environment["dashboardHost"] || default_ip_address
+    if ENV.fetch("ENABLE_TILLER", false)
+      check "settings[tiller]"
+    else
+      uncheck "settings[tiller]"
+    end
     click_on "Next"
     puts "<<< Velum set up"
   end

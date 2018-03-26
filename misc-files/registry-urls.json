@@ -1,0 +1,6 @@
+{
+  "baseurl": {
+    "devel": "registry.suse.de/devel/casp/2.0/controllernode/images_container_base/x86_64"
+  },
+  "format_version": 1
+}
