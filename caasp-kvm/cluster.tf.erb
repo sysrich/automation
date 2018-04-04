@@ -124,7 +124,7 @@ resource "libvirt_volume" "caasp_img" {
 ##############
 # Networking #
 ##############
-<% if not ENV['CAASP_BRIDGE'] -%>
+<% if ENV['CAASP_BRIDGE'] == '' -%>
 resource "libvirt_network" "network" {
     name      = "${var.name_prefix}caasp-net"
     mode      = "${var.caasp_net_mode}"
@@ -175,7 +175,7 @@ resource "libvirt_domain" "admin" {
   }
 
   network_interface {
-<% if not ENV['CAASP_BRIDGE'] -%>
+<% if ENV['CAASP_BRIDGE'] == '' -%>
     network_id     = "${libvirt_network.network.id}"
     hostname       = "${var.name_prefix}caasp-admin"
     addresses      = ["${cidrhost("${var.caasp_net_network}", 256)}"]
@@ -306,7 +306,7 @@ resource "libvirt_domain" "master" {
   }
 
   network_interface {
-<% if not ENV['CAASP_BRIDGE'] -%>
+<% if ENV['CAASP_BRIDGE'] == '' -%>
     network_id     = "${libvirt_network.network.id}"
     hostname       = "${var.name_prefix}caasp-master-${count.index}"
     addresses      = ["${cidrhost("${var.caasp_net_network}", 512 + count.index)}"]
@@ -399,7 +399,7 @@ resource "libvirt_domain" "worker" {
   }
 
   network_interface {
-<% if not ENV['CAASP_BRIDGE'] -%>
+<% if ENV['CAASP_BRIDGE'] == '' -%>
     network_id     = "${libvirt_network.network.id}"
     hostname       = "${var.name_prefix}caasp-worker-${count.index}"
     addresses      = ["${cidrhost("${var.caasp_net_network}", 768 + count.index)}"]
