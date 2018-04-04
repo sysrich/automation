@@ -64,8 +64,8 @@ fi
 
 [ -d ssh ] || mkdir ssh
 
-if ! [ -f ssh/id_caasp ]; then
-  ssh-keygen -b 2048 -t rsa -f ssh/id_caasp -N ""
+if ! [ -f ssh/id_ses ]; then
+  ssh-keygen -b 2048 -t rsa -f ssh/id_ses -N ""
 fi
 
 if [ -v $OS_AUTH_URL ] || [ -v $OS_PROJECT_NAME ] || \
