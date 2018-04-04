@@ -20,20 +20,20 @@ variable "ses_update" {}
 provider "openstack" {
   domain_name = "${var.domain_name}"
   tenant_name = "${var.project_name}"
-  user_name = "${var.user_name}"
-  password = "${var.password}"
-  auth_url = "${var.auth_url}"
-  insecure = "true"
+  user_name   = "${var.user_name}"
+  password    = "${var.password}"
+  auth_url    = "${var.auth_url}"
+  insecure    = "true"
 }
 
 data "template_file" "admin" {
   template = "${file("admin.tpl")}"
 
   vars {
-    sles_base = "${var.sles_base}"
+    sles_base   = "${var.sles_base}"
     sles_update = "${var.sles_update}"
-    ses_base = "${var.ses_base}"
-    ses_update = "${var.ses_update}"
+    ses_base    = "${var.ses_base}"
+    ses_update  = "${var.ses_update}"
   }
 }
 
@@ -41,11 +41,11 @@ data "template_file" "mon" {
   template = "${file("mon.tpl")}"
 
   vars {
-    sles_base = "${var.sles_base}"
+    sles_base   = "${var.sles_base}"
     sles_update = "${var.sles_update}"
-    ses_base = "${var.ses_base}"
-    ses_update = "${var.ses_update}"
-    saltmaster = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
+    ses_base    = "${var.ses_base}"
+    ses_update  = "${var.ses_update}"
+    saltmaster  = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
   }
 }
 
@@ -53,18 +53,18 @@ data "template_file" "osd" {
   template = "${file("osd.tpl")}"
 
   vars {
-    sles_base = "${var.sles_base}"
+    sles_base   = "${var.sles_base}"
     sles_update = "${var.sles_update}"
-    ses_base = "${var.ses_base}"
-    ses_update = "${var.ses_update}"
-    saltmaster = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
+    ses_base    = "${var.ses_base}"
+    ses_update  = "${var.ses_update}"
+    saltmaster  = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
   }
 }
 
 resource "openstack_compute_keypair_v2" "keypair" {
   name       = "ses-ssh"
   region     = "${var.region_name}"
-  public_key = "${file("ssh/id_caasp.pub")}"
+  public_key = "${file("ssh/id_ses.pub")}"
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_base" {
@@ -126,6 +126,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_admin" {
     ip_protocol = "tcp"
     cidr        = "0.0.0.0/0"
   }
+
   rule {
     from_port   = 6780
     to_port     = 7500
@@ -173,6 +174,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_mon" {
     ip_protocol = "udp"
     cidr        = "0.0.0.0/0"
   }
+
   rule {
     from_port   = 6780
     to_port     = 7500
@@ -248,6 +250,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_osd" {
     ip_protocol = "udp"
     cidr        = "0.0.0.0/0"
   }
+
   rule {
     from_port   = 6780
     to_port     = 7500
@@ -262,7 +265,7 @@ resource "openstack_compute_instance_v2" "admin" {
   image_name = "${var.image_name}"
 
   connection {
-    private_key = "${file("ssh/id_caasp.pub")}"
+    private_key = "${file("ssh/id_ses.pub")}"
   }
 
   flavor_name = "${var.admin_size}"
@@ -274,32 +277,36 @@ resource "openstack_compute_instance_v2" "admin" {
 
   security_groups = [
     "${openstack_compute_secgroup_v2.secgroup_base.name}",
-    "${openstack_compute_secgroup_v2.secgroup_admin.name}"
+    "${openstack_compute_secgroup_v2.secgroup_admin.name}",
   ]
 
   user_data = "${data.template_file.admin.rendered}"
 }
 
 resource "null_resource" "deepsea" {
-
   connection {
-    type = "ssh"
-    host = "${openstack_compute_floatingip_associate_v2.admin_ext_ip.floating_ip}"
-    private_key = "${file("ssh/id_caasp")}"
+    user        = "sles"
+    type        = "ssh"
+    host        = "${openstack_compute_floatingip_associate_v2.admin_ext_ip.floating_ip}"
+    private_key = "${file("ssh/id_ses")}"
   }
 
   provisioner "file" {
     source      = "deepsea.sh"
     destination = "/tmp/deepsea.sh"
   }
+
   provisioner "remote-exec" {
     inline = [
-      "chmod +x /tmp/deepsea.sh",
-      "/tmp/deepsea.sh",
+      "sudo -u root chmod +x /tmp/deepsea.sh",
+      "sudo -u root /tmp/deepsea.sh",
     ]
   }
-  depends_on = ["openstack_compute_instance_v2.admin", "openstack_compute_instance_v2.osd", 
-  "openstack_compute_instance_v2.mon", "openstack_compute_volume_attach_v2.salt-minion-attach"]
+
+  depends_on = ["openstack_compute_instance_v2.admin", "openstack_compute_instance_v2.osd",
+    "openstack_compute_instance_v2.mon",
+    "openstack_compute_volume_attach_v2.salt-minion-attach",
+  ]
 }
 
 resource "openstack_networking_floatingip_v2" "admin_ext" {
@@ -318,7 +325,7 @@ resource "openstack_compute_instance_v2" "mon" {
   image_name = "${var.image_name}"
 
   connection {
-    private_key = "${file("ssh/id_caasp.pub")}"
+    private_key = "${file("ssh/id_ses.pub")}"
   }
 
   flavor_name = "${var.master_size}"
@@ -330,22 +337,22 @@ resource "openstack_compute_instance_v2" "mon" {
 
   security_groups = [
     "${openstack_compute_secgroup_v2.secgroup_base.name}",
-    "${openstack_compute_secgroup_v2.secgroup_mon.name}"
+    "${openstack_compute_secgroup_v2.secgroup_mon.name}",
   ]
 
   user_data = "${data.template_file.mon.rendered}"
 }
 
 resource "openstack_blockstorage_volume_v2" "osd-blk" {
-  count = "${var.osds}",
-  size = 2
-  name = "osd-blk${count.index}"
+  count = "${var.osds}"
+  size  = 2
+  name  = "osd-blk${count.index}"
 }
 
 resource "openstack_compute_volume_attach_v2" "salt-minion-attach" {
-  count = "${var.osds}"
+  count       = "${var.osds}"
   instance_id = "${element(openstack_compute_instance_v2.osd.*.id, count.index)}"
-  volume_id = "${element(openstack_blockstorage_volume_v2.osd-blk.*.id, count.index)}"
+  volume_id   = "${element(openstack_blockstorage_volume_v2.osd-blk.*.id, count.index)}"
 }
 
 resource "openstack_compute_instance_v2" "osd" {
@@ -355,7 +362,7 @@ resource "openstack_compute_instance_v2" "osd" {
   image_name = "${var.image_name}"
 
   connection {
-    private_key = "${file("ssh/id_caasp.pub")}"
+    private_key = "${file("ssh/id_ses.pub")}"
   }
 
   flavor_name = "${var.worker_size}"
@@ -367,7 +374,7 @@ resource "openstack_compute_instance_v2" "osd" {
 
   security_groups = [
     "${openstack_compute_secgroup_v2.secgroup_base.name}",
-    "${openstack_compute_secgroup_v2.secgroup_osd.name}"
+    "${openstack_compute_secgroup_v2.secgroup_osd.name}",
   ]
 
   user_data = "${data.template_file.osd.rendered}"
