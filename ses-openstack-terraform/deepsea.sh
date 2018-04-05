@@ -95,6 +95,9 @@ done
 
 echo -e '\n# RGW\nrole-rgw/cluster/'$(hostname -f).sls >> $policyf
 
+stringarray=($C)
+echo -e '\n# OpenAttic\nrole-openattic/cluster/'$(echo ${stringarray[0]} | sed -e 's/yml/sls/') >> $policyf
+
 echo -e '
 # COMMON
 config/stack/default/global.yml 
