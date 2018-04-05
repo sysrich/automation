@@ -1,5 +1,5 @@
 require "spec_helper"
-require 'yaml'
+require "yaml"
 
 feature "Boostrap cluster" do
 
@@ -144,7 +144,7 @@ feature "Boostrap cluster" do
     end
     puts "<<< Orchestration completed"
 
-    puts ">>> Orchestration succeeded"
+    puts ">>> Checking if orchestration succeeded"
     with_screenshot(name: :orchestration_succeeded) do
       within(".nodes-container") do
         expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 5)

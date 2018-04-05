@@ -20,6 +20,7 @@ DIR="$( cd "$( dirname "$0" )" && pwd )"
 # options
 RUN_SETUP=
 RUN_BUILD=
+RUN_UPDATE_DEPLOYMENT=
 RUN_BOOTSTRAP=
 RUN_TESTINFRA=
 RUN_DESTROY=
@@ -65,6 +66,7 @@ Usage:
     -b|--build                       Run the CaaSP KVM Build Step
     -m|--masters <INT>               Number of masters to build (Default: CAASP_NUM_MASTERS)
     -w|--workers <INT>               Number of workers to build (Default: CAASP_NUM_WORKERS)
+    -u|--update-deployment           Update Terraform deployment (Default: false)
     -d|--destroy                     Run the CaaSP KVM Destroy Step
     -i|--image                       Image to use (Default: CAASP_IMAGE)
     --vanilla                        Do not inject devenv code, use vanilla caasp (Default: false)
@@ -100,6 +102,10 @@ Usage:
   Bootstrap and Test a pre-made cluster
 
   $0 --bootstrap --testinfra
+
+  Add a worker node to a running cluster
+
+  $0 --update-deployment -m 1 -w 3
 
   Build a cluster and add a custom repository on the master/worker(s)
 
@@ -137,6 +143,10 @@ while [[ $# > 0 ]] ; do
     -d|--destroy)
       ACTION=1
       RUN_DESTROY=1
+      ;;
+    -u|--update-deployment)
+      ACTION=1
+      RUN_UPDATE_DEPLOYMENT=1
       ;;
     -i|--image)
       IMAGE="$2"
@@ -226,6 +236,11 @@ build() {
   (cd "$DIR/caasp-kvm" && ./caasp-kvm --build $CAASP_KVM_ARGS )
 }
 
+update_deployment() {
+  log "Updating CaaSP KVM Environment"
+  (cd "$DIR/caasp-kvm" && ./caasp-kvm --update-deployment $CAASP_KVM_ARGS )
+}
+
 bootstrap() {
   log "Bootstrap CaaSP Environment"
 
@@ -249,9 +264,10 @@ destroy() {
   (cd "$DIR/caasp-kvm" && ./caasp-kvm --destroy $CAASP_KVM_ARGS)
 }
 
-[ -n "$ACTION"        ] || usage
-[ -n "$RUN_SETUP"     ] && setup
-[ -n "$RUN_BUILD"     ] && build
+[ -n "$ACTION" ] || usage
+[ -n "$RUN_SETUP" ] && setup
+[ -n "$RUN_BUILD" -a -z "$RUN_UPDATE_DEPLOYMENT" ] && build
+[ -n "$RUN_UPDATE_DEPLOYMENT" ] && update_deployment
 [ -n "$RUN_BOOTSTRAP" ] && bootstrap
 [ -n "$RUN_TESTINFRA" ] && testinfra
-[ -n "$RUN_DESTROY"   ] && destroy
+[ -n "$RUN_DESTROY" ] && destroy

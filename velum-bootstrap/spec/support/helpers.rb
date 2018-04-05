@@ -57,7 +57,7 @@ module Helpers
     end
 
     fill_in "settings_dashboard", with: environment["dashboardHost"] || default_ip_address
-    if ENV.fetch("ENABLE_TILLER", false)
+    if ENV.fetch("ENABLE_TILLER", false) == "true"
       check "settings[tiller]"
     else
       uncheck "settings[tiller]"

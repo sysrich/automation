@@ -8,6 +8,7 @@ DIR="$( cd "$( dirname "$0" )" && pwd )"
 ACTION=
 RUN_BUILD=
 RUN_DESTROY=
+RUN_UPDATE_DEPLOYMENT=
 
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
@@ -44,6 +45,7 @@ Usage:
     -b|--build                       Run the CaaSP KVM Build Step
     -m|--masters <INT>               Number of masters to build (Default: CAASP_NUM_MASTERS=$MASTERS)
     -w|--workers <INT>               Number of workers to build (Default: CAASP_NUM_WORKERS=$WORKERS)
+    -u|--update-deployment           Update Terraform deployment (Default: false)
     -i|--image <STR>                 Image to use (Default: CAASP_IMAGE=$IMAGE)
     --velum-image <STR>              Velum Image to use (Default: CAASP_VELUM_IMAGE=$VELUM_IMAGE)
     --vanilla                        Do not inject devenv code, use vanilla caasp (Default: false)
@@ -89,6 +91,10 @@ Usage:
   Build a 1 master, 2 worker cluster and add a custom repository on the master(s)/worker(s)
 
   $0 --build -m 1 -w 2 --extra-repo https://download.opensuse.org/repositories/devel:/CaaSP:/Head:/ControllerNode:/TestUpdates
+
+  Add a worker node to a running cluster
+
+  $0 --update-deployment -m 1 -w 3
 
   Destroy a cluster
 
@@ -148,6 +154,10 @@ while [[ $# > 0 ]] ; do
     -d|--destroy)
       ACTION=1
       RUN_DESTROY=1
+      ;;
+    -u|--update-deployment)
+      ACTION=1
+      RUN_UPDATE_DEPLOYMENT=1
       ;;
     --salt-dir)
       CAASP_SALT_DIR="$2"
@@ -273,11 +283,7 @@ build() {
   log "Generating terraform manifest from erb template"
   VANILLA=${VANILLA} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
 
-  log "Applying terraform configuration"
-  terraform init && terraform apply -auto-approve $TF_ARGS
-
-  $DIR/tools/generate-environment
-  $DIR/../misc-tools/generate-ssh-config $ENVIRONMENT
+  update_deployment
 
   [ -n "$EXTRA_REPO" ] && $DIR/../misc-tools/inject_repo.sh $EXTRA_REPO
 
@@ -287,6 +293,14 @@ build() {
   log "CaaS Platform Ready for bootstrap"
 }
 
+update_deployment() {
+  log "Applying terraform configuration"
+  terraform init && terraform apply -auto-approve $TF_ARGS
+
+  $DIR/tools/generate-environment
+  $DIR/../misc-tools/generate-ssh-config $ENVIRONMENT
+}
+
 destroy() {
   log "Destroying terraform configuration"
   terraform init && \
@@ -294,8 +308,9 @@ destroy() {
     rm -f "$ENVIRONMENT"
 }
 
-[ -n "$ACTION"      ] || usage
-[ -n "$RUN_BUILD"   ] && build
+[ -n "$ACTION" ] || usage
+[ -n "$RUN_BUILD" -a -z "$RUN_UPDATE_DEPLOYMENT" ] && build
+[ -n "$RUN_UPDATE_DEPLOYMENT" ] && update_deployment
 [ -n "$RUN_DESTROY" ] && destroy
 
 exit 0

@@ -1,0 +1,34 @@
+def kubicLib = library("kubic-jenkins-library@${env.BRANCH_NAME}").com.suse.kubic
+
+// Configure the build properties
+properties([
+    buildDiscarder(logRotator(numToKeepStr: '31', daysToKeepStr: '31')),
+    disableConcurrentBuilds(),
+    pipelineTriggers([cron('@daily')])
+])
+
+def kvmTypeOptions = kubicLib.CaaspKvmTypeOptions.new();
+kvmTypeOptions.vanilla = true
+
+coreKubicProjectPeriodic(
+    environmentTypeOptions: kvmTypeOptions
+) {
+    // empty preBootstrapBody
+} {
+    // create another worker node
+    updateEnvironmentCaaspKvm(
+        environment: environment,
+        masterCount: 3,
+        workerCount: 3
+    )
+    // register it via velum
+    bootstrapNewNode(
+        environment: environment
+    )
+} {
+    // Run the Core Project Tests again
+    coreKubicProjectTests(
+        environment: environment,
+        podName: 'default'
+    )
+}
