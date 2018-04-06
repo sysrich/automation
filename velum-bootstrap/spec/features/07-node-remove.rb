@@ -34,6 +34,15 @@ feature "Remove a Node" do
       first(".remove-node-link").click
     end
 
+    # if we are going to remove a master node in the future explicitly
+    # remember to check if the number of masters are even
+    if (node_number-1) < 3
+      with_screenshot(name: :unsupported_topology_modal) do
+        expect(page).to have_content("Unsupported cluster topology")
+        click_button "Proceed anyway"
+      end
+    end
+
     orchestration_timeout = [[3600, 120].max, 7200].min
     puts ">>> Waiting for node removal"
     with_screenshot(name: :wait_node_removal) do
