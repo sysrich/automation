@@ -19,7 +19,7 @@ coreKubicProjectPeriodic(
     removeNode(
         environment: environment
     )
-} {
+
     // Run the Core Project Tests again
     coreKubicProjectTests(
         environment: environment,
