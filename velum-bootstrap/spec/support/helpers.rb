@@ -2,12 +2,9 @@
 # for end to end tests.
 module Helpers
   def with_screenshot(name:, &block)
-    $counter ||= 0
-    formatted_counter = format('%02d', $counter)
-    save_screenshot("screenshots/#{formatted_counter}_before_#{name}.png", full: true)
+    save_screenshot("screenshots/#{Time.now.to_i}_before_#{name}.png", full: true)
     yield
-    save_screenshot("screenshots/#{formatted_counter}_after_#{name}.png", full: true)
-    $counter += 1
+    save_screenshot("screenshots/#{Time.now.to_i}_after_#{name}.png", full: true)
   end
 
   def with_status_ok(&block)
