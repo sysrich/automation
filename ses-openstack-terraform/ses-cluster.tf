@@ -141,6 +141,13 @@ resource "openstack_compute_secgroup_v2" "secgroup_mon" {
   description = "ses security group for mons"
 
   rule {
+    from_port   = 80
+    to_port     = 80
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
+
+  rule {
     from_port   = 2380
     to_port     = 2380
     ip_protocol = "tcp"
@@ -343,6 +350,17 @@ resource "openstack_compute_instance_v2" "mon" {
   user_data = "${data.template_file.mon.rendered}"
 }
 
+resource "openstack_networking_floatingip_v2" "mon_ext" {
+  count = "${var.mons}"
+  pool  = "${var.external_net}"
+}
+
+resource "openstack_compute_floatingip_associate_v2" "mon_ext_ip" {
+  count       = "${var.mons}"
+  floating_ip = "${element(openstack_networking_floatingip_v2.mon_ext.*.address, count.index)}"
+  instance_id = "${element(openstack_compute_instance_v2.mon.*.id, count.index)}"
+}
+
 resource "openstack_blockstorage_volume_v2" "osd-blk" {
   count = "${var.osds}"
   size  = 2
@@ -390,6 +408,10 @@ output "internal_ip_admin" {
 
 output "internal_ip_mons" {
   value = ["${openstack_compute_instance_v2.mon.*.access_ip_v4}"]
+}
+
+output "external_ip_mons" {
+  value = ["${openstack_networking_floatingip_v2.mon_ext.*.address}"]
 }
 
 output "internal_ip_osds" {
