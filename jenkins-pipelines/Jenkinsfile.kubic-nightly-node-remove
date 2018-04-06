@@ -15,10 +15,12 @@ coreKubicProjectPeriodic(
 ) {
     // empty preBootstrapBody
 } {
-    // register it via velum
-    removeNode(
-        environment: environment
-    )
+    stage('Remove Node') {
+        // Remove node via velum
+        removeNode(
+            environment: environment
+        )
+    }
 
     // Run the Core Project Tests again
     coreKubicProjectTests(
