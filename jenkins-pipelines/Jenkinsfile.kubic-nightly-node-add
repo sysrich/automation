@@ -21,8 +21,9 @@ coreKubicProjectPeriodic(
         masterCount: 3,
         workerCount: 3
     )
+
     // register it via velum
-    bootstrapNewNode(
+    addNode(
         environment: environment
     )
 
