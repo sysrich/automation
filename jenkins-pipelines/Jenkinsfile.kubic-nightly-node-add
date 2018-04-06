@@ -15,17 +15,19 @@ coreKubicProjectPeriodic(
 ) {
     // empty preBootstrapBody
 } {
-    // create another worker node
-    updateEnvironmentCaaspKvm(
-        environment: environment,
-        masterCount: 3,
-        workerCount: 3
-    )
+    stage('Add Node') {
+        // create another worker node
+        updateEnvironmentCaaspKvm(
+            environment: environment,
+            masterCount: 3,
+            workerCount: 3
+        )
 
-    // register it via velum
-    addNode(
-        environment: environment
-    )
+        // Register it via velum
+        addNode(
+            environment: environment
+        )
+    }
 
     // Run the Core Project Tests again
     coreKubicProjectTests(
