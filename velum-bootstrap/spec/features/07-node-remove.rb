@@ -4,7 +4,6 @@ require "yaml"
 feature "Remove a Node" do
 
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
-  let(:worker_number) { environment["minions"].count { |element| element["role"] == "worker" } }
 
   before(:each) do
     login
@@ -24,7 +23,7 @@ feature "Remove a Node" do
     puts ">>> Checking if node can be removed"
     with_screenshot(name: :node_removable) do
       within(".nodes-container") do
-        expect(page).to have_link(text: "Remove", count: worker_number, wait: 120)
+        expect(page).to have_link(text: "Remove", count: node_number, wait: 120)
       end
     end
     puts "<<< A node can be removed"
