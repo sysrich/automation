@@ -13,6 +13,8 @@ kvmTypeOptions.vanilla = true
 coreKubicProjectPeriodic(
     environmentTypeOptions: kvmTypeOptions
 ) {
+    // empty preBootstrapBody
+} {
     // Install Update Repo
     prepareUpgradeEnvironment(
         environment: environment,
