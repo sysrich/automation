@@ -33,11 +33,8 @@ feature "Remove a Node" do
       first(".remove-node-link").click
     end
 
-    # if we are going to remove a master node in the future explicitly
-    # remember to check if the number of masters are even
-    if (node_number-1) < 3
+    if page.has_content?("Unsupported cluster topology", wait: 5)
       with_screenshot(name: :unsupported_topology_modal) do
-        expect(page).to have_content("Unsupported cluster topology")
         click_button "Proceed anyway"
       end
     end
