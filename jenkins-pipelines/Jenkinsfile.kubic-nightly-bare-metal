@@ -20,6 +20,8 @@ coreKubicProjectPeriodic(
     masterCount: env.MASTER_COUNT.toInteger(),
     workerCount: env.WORKER_COUNT.toInteger()
 ) {
+    // empty preBootstrapBody
+} {
     // Run through the upgrade orchestration
     upgradeEnvironment(
         environment: environment,
