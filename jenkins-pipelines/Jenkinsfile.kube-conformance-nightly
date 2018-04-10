@@ -11,6 +11,8 @@ properties([
 // method signature which contains the closure. Unsure why at the
 // moment.
 coreKubicProjectPeriodic(foo: "bar") {
+    // empty preBootstrapBody
+} {
     stage('Run K8S Conformance Tests') {
         runTestK8sConformance(environment: environment)
     }
