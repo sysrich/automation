@@ -24,6 +24,7 @@ CAASP_SALT_DIR=${CAASP_SALT_DIR:-$DIR/../../salt}
 CAASP_MANIFESTS_DIR=${CAASP_MANIFESTS_DIR:-$DIR/../../caasp-container-manifests}
 CAASP_VELUM_DIR=${CAASP_VELUM_DIR:-$DIR/../../velum}
 CAASP_NAME_PREFIX=${CAASP_NAME_PREFIX:-}
+CAASP_BRIDGE=${CAASP_BRIDGE:-}
 
 ADMIN_RAM=${CAASP_ADMIN_RAM:-4096}
 ADMIN_CPU=${CAASP_ADMIN_CPU:-4}
@@ -50,6 +51,7 @@ Usage:
     --velum-image <STR>              Velum Image to use (Default: CAASP_VELUM_IMAGE=$VELUM_IMAGE)
     --vanilla                        Do not inject devenv code, use vanilla caasp (Default: false)
     --disable-meltdown-spectre-fixes Disable meltdown and spectre fixes (Default: false)
+    --bridge <STR>                   Bridge network interface to use (Default: none / create a network)
 
   * Destroying a cluster
 
@@ -171,6 +173,10 @@ while [[ $# > 0 ]] ; do
       CAASP_NAME_PREFIX="$2"
       shift
       ;;
+    --bridge)
+      CAASP_BRIDGE="$2"
+      shift
+      ;;
     --velum-dir)
       CAASP_VELUM_DIR="$2"
       shift
@@ -240,6 +246,10 @@ if [ -n "$CAASP_MANIFESTS_DIR" ] ; then
   log "Using Manifests dir: $CAASP_MANIFESTS_DIR"
 fi
 
+if [ -n "$CAASP_BRIDGE" ] ; then
+  log "Using bridged network: $CAASP_BRIDGE"
+fi
+
 if [ -n "$CAASP_NAME_PREFIX" ] ; then
   TF_ARGS="$TF_ARGS -var name_prefix=$CAASP_NAME_PREFIX"
   log "Using name prefix for terraform: $CAASP_NAME_PREFIX"
@@ -281,7 +291,7 @@ build() {
   fi
 
   log "Generating terraform manifest from erb template"
-  VANILLA=${VANILLA} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
+  VANILLA=${VANILLA} CAASP_BRIDGE=${CAASP_BRIDGE} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
 
   update_deployment
 
