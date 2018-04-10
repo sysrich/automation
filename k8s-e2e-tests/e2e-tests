@@ -62,7 +62,7 @@ run_tests() {
     KUBECONFIG=$KUBECONFIG kubectl cp sonobuoy/sonobuoy:tmp/sonobuoy $ARTIFACTS_PATH
     find $ARTIFACTS_PATH -name '*.tar.gz' | xargs -I{} tar -xf {} -C $ARTIFACTS_PATH
     find $ARTIFACTS_PATH -name '*.tar.gz' | xargs rm
-    find $ARTIFACTS_PATH -name e2e.txt | xargs tail -n1 | grep SUCCESS || abort "conformance tests failed"
+    find $ARTIFACTS_PATH -name e2e.log | xargs tail -n4 | grep SUCCESS || abort "conformance tests failed"
 }
 
 # checks
