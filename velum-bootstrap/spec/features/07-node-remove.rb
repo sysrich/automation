@@ -30,7 +30,13 @@ feature "Remove a Node" do
 
     puts ">>> Click to remove a node"
     with_screenshot(name: :node_removal) do
-      first(".remove-node-link").click
+      node_link = find(".remove-node-link", match: :first)
+      # mark node as inactive in environment.json
+      environment(
+        action: :update,
+        body: set_minion_status(node_link["data-id"], "removed")
+      )
+      node_link.click
     end
 
     if page.has_content?("Unsupported cluster topology", wait: 5)

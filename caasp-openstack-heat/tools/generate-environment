@@ -14,7 +14,7 @@ STACK_RESOURCES=$(openstack stack resource list -f json -n 10 $STACK_NAME)
 echo "Building Admin Details"
 ADMIN_ID=$(set -o pipefail; echo "$STACK_RESOURCES" | jq -r '.[] | select(.resource_name=="admin") | .physical_resource_id')
 ADMIN_NOVA_JSON=$(set -o pipefail; openstack server show -f json $ADMIN_ID)
-ADMIN_MINION_JSON=$(set -o pipefail; echo "$ADMIN_NOVA_JSON" | jq -c "{role: \"admin\", fqdn: .name, addresses: {publicIpv4: .addresses | split(\"=\") | .[1] | split(\",\") | .[1] | gsub(\" \"; \"\"), privateIpv4: .addresses | split(\"=\") | .[1] | split(\",\") | .[0]}, index: \"$INDEX\", minionId: (.id | gsub(\"-\"; \"\"))}")
+ADMIN_MINION_JSON=$(set -o pipefail; echo "$ADMIN_NOVA_JSON" | jq -c "{role: \"admin\", fqdn: .name, addresses: {publicIpv4: .addresses | split(\"=\") | .[1] | split(\",\") | .[1] | gsub(\" \"; \"\"), privateIpv4: .addresses | split(\"=\") | .[1] | split(\",\") | .[0]}, index: \"$INDEX\", minionId: (.id | gsub(\"-\"; \"\")), status: \"unused\"}")
 ADMIN_PRIVATE_IPV4=$(set -o pipefail; echo "$ADMIN_NOVA_JSON" | jq -r ".addresses | split(\"=\") | .[1] | split(\",\") | .[0]")
 ADMIN_PUBLIC_IPV4=$(set -o pipefail; echo "$ADMIN_NOVA_JSON" | jq -r ".addresses | split(\"=\") | .[1] | split(\",\") | .[1] | gsub(\" \"; \"\")")
 ENVIRONMENT=$(set -o pipefail; echo "$ENVIRONMENT" | jq ".minions |= . + [$ADMIN_MINION_JSON]")
