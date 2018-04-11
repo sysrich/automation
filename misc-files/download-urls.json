@@ -1,8 +1,7 @@
 {
   "baseurl": {
     "devel": {
-      "default": "http://download.suse.de/ibs/Devel:/CASP:/2.1:/ControllerNode/",
-      "provo": "http://nodes.provo-prod.caasp.suse.net:32501/ibs/Devel:/CASP:/2.1:/ControllerNode/"
+      "default": "http://download.suse.de/ibs/Devel:/CASP:/2.1:/ControllerNode/"
     },
     "release": {
       "default": "http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP21/"
