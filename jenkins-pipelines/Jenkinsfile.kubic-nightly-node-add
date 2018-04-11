@@ -19,6 +19,7 @@ coreKubicProjectPeriodic(
         // create another worker node
         updateEnvironmentCaaspKvm(
             environment: environment,
+            typeOptions: environmentTypeOptions,
             masterCount: 3,
             workerCount: 3
         )
