@@ -36,7 +36,8 @@ def create_environment_json(admin_host_ipaddr, available_hosts):
            "addresses" : {
               "privateIpv4" : ipaddr,
               "publicIpv4" : ipaddr,
-           }
+           },
+           "status" : "unused",
         })
 
         if idx == 0:

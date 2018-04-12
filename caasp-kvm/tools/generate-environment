@@ -29,7 +29,7 @@ chmod 600 "$SSH_KEY"
 
 echo "Generating $ENVIRONMENT file"
 out=$(cat $TF_STATE | \
-    jq ".modules[].resources[] | select(.type==\"libvirt_domain\") | .primary | .attributes | { fqdn: .metadata | split(\",\") | .[0], addresses: {publicIpv4: .[\"network_interface.0.addresses.0\"], privateIpv4: .[\"network_interface.0.addresses.0\"]}, role: .metadata | split(\",\") | .[1], index: .metadata | split(\",\") | .[2] } " | jq -s . | jq "{minions: .}")
+    jq ".modules[].resources[] | select(.type==\"libvirt_domain\") | .primary | .attributes | { fqdn: .metadata | split(\",\") | .[0], addresses: {publicIpv4: .[\"network_interface.0.addresses.0\"], privateIpv4: .[\"network_interface.0.addresses.0\"]}, role: .metadata | split(\",\") | .[1], index: .metadata | split(\",\") | .[2], status: \"unused\" } " | jq -s . | jq "{minions: .}")
 
 for node in $(echo "$out" | jq -r '.minions[] | select(.["minion_id"]? == null) | [.addresses.publicIpv4] | join(" ")'); do
     machine_id=$(ssh root@$node $SSH_ARGS cat /etc/machine-id)

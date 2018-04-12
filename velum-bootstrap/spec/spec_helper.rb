@@ -10,15 +10,36 @@ FileUtils.mkdir_p(File.join(File.dirname(__FILE__), "../", "screenshots"))
 Dir[File.join(File.dirname(File.dirname(__FILE__)), "spec", "support", "**", "*.rb")].
   each { |f| require f }
 
-def environment
-  env = JSON.parse(File.read(ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), '../../')}caasp-kvm/environment.json")))
+def environment_path
+  ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), '../../')}caasp-kvm/environment.json")
+end
+
+def environment(action: :read, body: nil)
+  env = JSON.parse(File.read(environment_path))
   abort("Please specify kubernetesExternalHost in environment.json") unless env["kubernetesExternalHost"]
   abort("Please specify at least 2 minions in environment.json") if env["minions"].count < 2
+
+  case action
+  when :update
+    File.open(environment_path, "w") do |f|
+      f.puts(body)
+    end if body
+  end
   return env
 rescue JSON::ParserError
   fail("Invalid JSON format")
 rescue
   fail("Please specify ENVIRONMENT to point to a valid environment.json path")
+end
+
+# returns a new env with a minion set as $status
+def set_minion_status(minion_id, status)
+  env = JSON.parse(File.read(environment_path))
+  updated_minions = env["minions"].each do |m|
+    m["minionID"] == minion_id && m["status"] = status
+  end
+  env["minions"] = updated_minions
+  env
 end
 
 def admin_minion

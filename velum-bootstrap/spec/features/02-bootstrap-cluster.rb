@@ -5,6 +5,7 @@ feature "Boostrap cluster" do
 
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
   let(:hostnames) { environment["minions"].map { |m| m["fqdn"] if m["role"] != "admin" }.compact }
+  let(:minion_ids) { environment["minions"].map { |m| m["minionId"] if m["role"] != "admin" }.compact }
 
   before(:each) do
     unless self.inspect.include? "User registers"
@@ -151,5 +152,12 @@ feature "Boostrap cluster" do
       end
     end
     puts "<<< Orchestration succeeded"
+
+    minion_ids.each do |id|
+      environment(
+        action: :update,
+        body: set_minion_status(id, "bootstrapped")
+      )
+    end
   end
 end
