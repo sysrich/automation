@@ -45,20 +45,29 @@ feature "Remove a Node" do
       end
     end
 
-    orchestration_timeout = [[3600, 120].max, 7200].min
-    puts ">>> Waiting for node removal"
-    with_screenshot(name: :wait_node_removal) do
+    puts ">>> Waiting for pending node removal"
+    with_screenshot(name: :pending_node_removal) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-check-circle-o, .fa-times-circle", count: 1, wait: orchestration_timeout)
+        expect(page).to have_text("Pending removal", count: 1, wait: 120)
       end
     end
-    puts "<<< node removal finished"
+    puts "<<< node removal pending"
+
+    orchestration_timeout = [[3600, 120].max, 7200].min
+    puts ">>> Waiting for node removal to be done"
+    with_screenshot(name: :wait_node_removal) do
+      within(".nodes-container") do
+        expect(page).not_to have_text("Pending removal", wait: orchestration_timeout)
+      end
+    end
+    puts "<<< node removal done"
 
     puts ">>> Checking if node removal orchestration succeeded"
     with_screenshot(name: :node_removal_orchestration_succeeded) do
       within(".nodes-container") do
         expect(page).to have_css(".fa-check-circle-o", count: node_number-1, wait: 5)
       end
+      expect(page).not_to have_css(".failed-remove-alert", wait: 5)
     end
     puts "<<< Node removal orchestration succeeded"
   end
