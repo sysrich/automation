@@ -67,7 +67,7 @@ feature "Remove a Node" do
       within(".nodes-container") do
         expect(page).to have_css(".fa-check-circle-o", count: node_number-1, wait: 5)
       end
-      expect(page).not_to have_css(".failed-remove-alert", wait: 5)
+      expect(page).not_to have_text("Removal Failed", wait: 5)
     end
     puts "<<< Node removal orchestration succeeded"
   end
