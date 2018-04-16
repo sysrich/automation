@@ -1,0 +1,42 @@
+def kubicLib = library("kubic-jenkins-library@${env.BRANCH_NAME}").com.suse.kubic
+
+// Configure the build properties
+properties([
+    buildDiscarder(logRotator(numToKeepStr: '31', daysToKeepStr: '31')),
+    disableConcurrentBuilds(),
+    // no pipelineTriggers yet, manual trigger for now
+    parameters([
+        string(name: 'IMAGE', defaultValue: 'http://download.suse.de/ibs/Devel:/CASP:/SandBox/images/SUSE-CaaS-Platform-3.0-for-KVM-and-Xen.x86_64.qcow2', description: 'SandBox build'),
+        booleanParam(name: 'RUN_CONFORMANCE_TESTS', defaultValue: false, description: 'Run k8s conformance test suite')
+    ])
+])
+
+def kvmTypeOptions = kubicLib.CaaspKvmTypeOptions.new();
+kvmTypeOptions.image = env.IMAGE
+
+coreKubicProjectPeriodic(
+    environmentTypeOptions: kvmTypeOptions
+) {
+    // Run Transactional Update
+    transactionalUpdate(
+        environment: environment
+    )
+
+    // Run through the upgrade orchestration
+    upgradeEnvironment(
+        environment: environment,
+        fakeUpdatesAvailable: true
+    )
+} {
+    // Run the Core Project Tests again
+    coreKubicProjectTests(
+        environment: environment,
+        podName: 'default'
+    )
+
+    if (env.RUN_CONFORMANCE_TESTS) {
+        stage('Run K8S Conformance Tests') {
+            runTestK8sConformance(environment: environment)
+        }
+    }
+}
