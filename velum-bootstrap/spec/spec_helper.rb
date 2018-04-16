@@ -22,7 +22,7 @@ def environment(action: :read, body: nil)
   case action
   when :update
     File.open(environment_path, "w") do |f|
-      f.puts(body)
+      f.puts(JSON.dump(body))
     end if body
   end
   return env
