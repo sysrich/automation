@@ -11,7 +11,7 @@ output.
 
 ## CaaSP KVM
 
-A tool to build a KVM based development cluster.
+A tool to build a KVM based development cluster for CaaSP and Kubic.
 
 ## CaaSP OpenStack Heat
 

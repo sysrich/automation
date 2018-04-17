@@ -22,48 +22,48 @@ variable "pool" {
 # Cluster variables #
 #####################
 
-variable "caasp_img_source_url" {
+variable "img_source_url" {
   type        = "string"
   default     = "channel://devel"
   description = "CaaSP image to use for KVM - you can use 'http://', 'file://' or 'channel://' formatted addresses. 'http' and 'file' point to remote http, and local images on disk, while 'channel' refers to the release channel from IBS. e.g. 'channel://devel' will download the latest image from the devel channel. Currently supported channels are: devel, staging_a, staging_b, and release"
 }
 
-variable "caasp_admin_memory" {
+variable "admin_memory" {
   default     = 4096
   description = "The amount of RAM for a admin node"
 }
 
-variable "caasp_admin_vcpu" {
+variable "admin_vcpu" {
   default     = 4
   description = "The amount of virtual CPUs for a admin node"
 }
 
-variable "caasp_master_count" {
+variable "master_count" {
   default     = 1
   description = "Number of masters to be created"
 }
 
-variable "caasp_master_memory" {
+variable "master_memory" {
   default     = 2048
   description = "The amount of RAM for a master"
 }
 
-variable "caasp_master_vcpu" {
+variable "master_vcpu" {
   default     = 2
   description = "The amount of virtual CPUs for a master"
 }
 
-variable "caasp_worker_count" {
+variable "worker_count" {
   default     = 2
   description = "Number of workers to be created"
 }
 
-variable "caasp_worker_memory" {
+variable "worker_memory" {
   default     = 2048
   description = "The amount of RAM for a worker"
 }
 
-variable "caasp_worker_vcpu" {
+variable "worker_vcpu" {
   default     = 2
   description = "The amount of virtual CPUs for a worker"
 }
@@ -71,25 +71,25 @@ variable "caasp_worker_vcpu" {
 variable "name_prefix" {
   type        = "string"
   default     = ""
-  description = "Optional prefix to be able to have multiple caasp clusters on one host"
+  description = "Optional prefix to be able to have multiple clusters on one host"
 }
 
-variable "caasp_domain_name" {
+variable "domain_name" {
   type        = "string"
   default     = "devenv.caasp.suse.net"
   description = "The domain name"
 }
 
-variable "caasp_net_mode" {
+variable "net_mode" {
   type        = "string"
   default     = "nat"
-  description = "Network mode used by the caasp cluster"
+  description = "Network mode used by the cluster"
 }
 
-variable "caasp_net_network" {
+variable "network" {
   type        = "string"
   default     = "10.17.0.0/22"
-  description = "Network used by the caasp cluster"
+  description = "Network used by the cluster"
 }
 
 ####################
@@ -115,9 +115,9 @@ provider "libvirt" {
 }
 
 # This is the CaaSP kvm image that has been created by IBS
-resource "libvirt_volume" "caasp_img" {
-  name   = "${var.name_prefix}${basename(var.caasp_img_source_url)}"
-  source = "../downloads/kvm-${basename(var.caasp_img_source_url)}"
+resource "libvirt_volume" "img" {
+  name   = "${var.name_prefix}${basename(var.img_source_url)}"
+  source = "../downloads/kvm-${basename(var.img_source_url)}"
   pool   = "${var.pool}"
 }
 
@@ -126,10 +126,10 @@ resource "libvirt_volume" "caasp_img" {
 ##############
 <% if ENV['CAASP_BRIDGE'] == '' -%>
 resource "libvirt_network" "network" {
-    name      = "${var.name_prefix}caasp-net"
-    mode      = "${var.caasp_net_mode}"
-    domain    = "${var.name_prefix}${var.caasp_domain_name}"
-    addresses = ["${var.caasp_net_network}"]
+    name      = "${var.name_prefix}net"
+    mode      = "${var.net_mode}"
+    domain    = "${var.name_prefix}${var.domain_name}"
+    addresses = ["${var.network}"]
 }
 <% end -%>
 
@@ -137,22 +137,22 @@ resource "libvirt_network" "network" {
 # Admin node #
 ##############
 resource "libvirt_volume" "admin" {
-  name           = "${var.name_prefix}caasp_admin.qcow2"
+  name           = "${var.name_prefix}admin.qcow2"
   pool           = "${var.pool}"
-  base_volume_id = "${libvirt_volume.caasp_img.id}"
+  base_volume_id = "${libvirt_volume.img.id}"
 }
 
 resource "libvirt_cloudinit" "admin" {
-  name      = "${var.name_prefix}caasp_admin_cloud_init.iso"
+  name      = "${var.name_prefix}admin_cloud_init.iso"
   pool      = "${var.pool}"
   user_data = "${file("cloud-init/admin.cfg")}"
 }
 
 resource "libvirt_domain" "admin" {
-  name      = "${var.name_prefix}caasp_admin"
-  memory    = "${var.caasp_admin_memory}"
-  vcpu      = "${var.caasp_admin_vcpu}"
-  metadata   = "${var.name_prefix}caasp-admin.${var.caasp_domain_name},admin,${count.index}"
+  name      = "${var.name_prefix}admin"
+  memory    = "${var.admin_memory}"
+  vcpu      = "${var.admin_vcpu}"
+  metadata   = "${var.name_prefix}admin.${var.domain_name},admin,${count.index}"
   cloudinit = "${libvirt_cloudinit.admin.id}"
 
   cpu {
@@ -177,8 +177,8 @@ resource "libvirt_domain" "admin" {
   network_interface {
 <% if ENV['CAASP_BRIDGE'] == '' -%>
     network_id     = "${libvirt_network.network.id}"
-    hostname       = "${var.name_prefix}caasp-admin"
-    addresses      = ["${cidrhost("${var.caasp_net_network}", 256)}"]
+    hostname       = "${var.name_prefix}admin"
+    addresses      = ["${cidrhost("${var.network}", 256)}"]
 <% else -%> 
     bridge = "<%= ENV['CAASP_BRIDGE'] %>"
 <% end -%>
@@ -251,15 +251,15 @@ output "ip_admin" {
 ###################
 
 resource "libvirt_volume" "master" {
-  name           = "${var.name_prefix}caasp_master_${count.index}.qcow2"
+  name           = "${var.name_prefix}master_${count.index}.qcow2"
   pool           = "${var.pool}"
-  base_volume_id = "${libvirt_volume.caasp_img.id}"
-  count          = "${var.caasp_master_count}"
+  base_volume_id = "${libvirt_volume.img.id}"
+  count          = "${var.master_count}"
 }
 
 data "template_file" "master_cloud_init_user_data" {
   # needed when 0 master nodes are defined
-  count    = "${var.caasp_master_count}"
+  count    = "${var.master_count}"
   template = "${file("cloud-init/master.cfg.tpl")}"
 
   vars {
@@ -271,19 +271,19 @@ data "template_file" "master_cloud_init_user_data" {
 
 resource "libvirt_cloudinit" "master" {
   # needed when 0 master nodes are defined
-  count     = "${var.caasp_master_count}"
-  name      = "${var.name_prefix}caasp_master_cloud_init_${count.index}.iso"
+  count     = "${var.master_count}"
+  name      = "${var.name_prefix}master_cloud_init_${count.index}.iso"
   pool      = "${var.pool}"
   user_data = "${element(data.template_file.master_cloud_init_user_data.*.rendered, count.index)}"
 }
 
 resource "libvirt_domain" "master" {
-  count      = "${var.caasp_master_count}"
-  name       = "${var.name_prefix}caasp_master_${count.index}"
-  memory     = "${var.caasp_master_memory}"
-  vcpu       = "${var.caasp_master_vcpu}"
+  count      = "${var.master_count}"
+  name       = "${var.name_prefix}master_${count.index}"
+  memory     = "${var.master_memory}"
+  vcpu       = "${var.master_vcpu}"
   cloudinit  = "${element(libvirt_cloudinit.master.*.id, count.index)}"
-  metadata   = "${var.name_prefix}caasp-master-${count.index}.${var.caasp_domain_name},master,${count.index},${var.name_prefix}"
+  metadata   = "${var.name_prefix}master-${count.index}.${var.domain_name},master,${count.index},${var.name_prefix}"
   depends_on = ["libvirt_domain.admin"]
 
   cpu {
@@ -308,8 +308,8 @@ resource "libvirt_domain" "master" {
   network_interface {
 <% if ENV['CAASP_BRIDGE'] == '' -%>
     network_id     = "${libvirt_network.network.id}"
-    hostname       = "${var.name_prefix}caasp-master-${count.index}"
-    addresses      = ["${cidrhost("${var.caasp_net_network}", 512 + count.index)}"]
+    hostname       = "${var.name_prefix}master-${count.index}"
+    addresses      = ["${cidrhost("${var.network}", 512 + count.index)}"]
 <% else -%> 
     bridge = "<%= ENV['CAASP_BRIDGE'] %>"
 <% end -%>
@@ -344,15 +344,15 @@ output "masters" {
 ###################
 
 resource "libvirt_volume" "worker" {
-  name           = "${var.name_prefix}caasp_worker_${count.index}.qcow2"
+  name           = "${var.name_prefix}worker_${count.index}.qcow2"
   pool           = "${var.pool}"
-  base_volume_id = "${libvirt_volume.caasp_img.id}"
-  count          = "${var.caasp_worker_count}"
+  base_volume_id = "${libvirt_volume.img.id}"
+  count          = "${var.worker_count}"
 }
 
 data "template_file" "worker_cloud_init_user_data" {
   # needed when 0 worker nodes are defined
-  count    = "${var.caasp_worker_count}"
+  count    = "${var.worker_count}"
   template = "${file("cloud-init/worker.cfg.tpl")}"
 
   vars {
@@ -364,19 +364,19 @@ data "template_file" "worker_cloud_init_user_data" {
 
 resource "libvirt_cloudinit" "worker" {
   # needed when 0 worker nodes are defined
-  count     = "${var.caasp_worker_count}"
-  name      = "${var.name_prefix}caasp_worker_cloud_init_${count.index}.iso"
+  count     = "${var.worker_count}"
+  name      = "${var.name_prefix}worker_cloud_init_${count.index}.iso"
   pool      = "${var.pool}"
   user_data = "${element(data.template_file.worker_cloud_init_user_data.*.rendered, count.index)}"
 }
 
 resource "libvirt_domain" "worker" {
-  count      = "${var.caasp_worker_count}"
-  name       = "${var.name_prefix}caasp_worker_${count.index}"
-  memory     = "${var.caasp_worker_memory}"
-  vcpu       = "${var.caasp_worker_vcpu}"
+  count      = "${var.worker_count}"
+  name       = "${var.name_prefix}worker_${count.index}"
+  memory     = "${var.worker_memory}"
+  vcpu       = "${var.worker_vcpu}"
   cloudinit  = "${element(libvirt_cloudinit.worker.*.id, count.index)}"
-  metadata   = "${var.name_prefix}caasp-worker-${count.index}.${var.caasp_domain_name},worker,${count.index},${var.name_prefix}"
+  metadata   = "${var.name_prefix}worker-${count.index}.${var.domain_name},worker,${count.index},${var.name_prefix}"
   depends_on = ["libvirt_domain.admin"]
 
   cpu {
@@ -401,8 +401,8 @@ resource "libvirt_domain" "worker" {
   network_interface {
 <% if ENV['CAASP_BRIDGE'] == '' -%>
     network_id     = "${libvirt_network.network.id}"
-    hostname       = "${var.name_prefix}caasp-worker-${count.index}"
-    addresses      = ["${cidrhost("${var.caasp_net_network}", 768 + count.index)}"]
+    hostname       = "${var.name_prefix}worker-${count.index}"
+    addresses      = ["${cidrhost("${var.network}", 768 + count.index)}"]
 <% else -%> 
     bridge = "<%= ENV['CAASP_BRIDGE'] %>"
 <% end -%>

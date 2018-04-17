@@ -126,6 +126,10 @@ sudo virsh pool-start default
 
       ./caasp-kvm --build -m 1 -w 2
 
+      Build a 1 master, 2 worker cluster using the latest kubic image
+
+      ./caasp-kvm --build -m 1 -w 2 --image channel://kubic
+
       Build a 1 master, 2 worker cluster using the latest staging A image
 
       ./caasp-kvm --build -m 1 -w 2 --image channel://staging_a
