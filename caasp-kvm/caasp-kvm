@@ -262,6 +262,11 @@ if [ -n "$CAASP_NAME_PREFIX" ] ; then
 fi
 
 # Core methods
+render_cluster_tf() {
+  log "Generating terraform manifest from erb template"
+  VANILLA=${VANILLA} CAASP_BRIDGE=${CAASP_BRIDGE} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
+}
+
 build() {
   log "CaaS Platform Building"
 
@@ -296,9 +301,6 @@ build() {
     log "Skipping Velum environment"
   fi
 
-  log "Generating terraform manifest from erb template"
-  VANILLA=${VANILLA} CAASP_BRIDGE=${CAASP_BRIDGE} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
-
   update_deployment
 
   [ -n "$EXTRA_REPO" ] && $DIR/../misc-tools/inject_repo.sh $EXTRA_REPO
@@ -310,14 +312,15 @@ build() {
 }
 
 plan() {
-  log "Generating terraform manifest from erb template"
-  VANILLA=${VANILLA} CAASP_BRIDGE=${CAASP_BRIDGE} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
+  render_cluster_tf
 
   log "Planning terraform configuration"
   terraform plan $TF_ARGS
 }
 
 update_deployment() {
+  render_cluster_tf
+
   log "Applying terraform configuration"
   terraform init && terraform apply -auto-approve $TF_ARGS
 
@@ -339,4 +342,3 @@ destroy() {
 [ -n "$RUN_DESTROY" ] && destroy
 
 exit 0
-
