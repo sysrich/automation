@@ -9,6 +9,7 @@ ACTION=
 RUN_BUILD=
 RUN_DESTROY=
 RUN_UPDATE_DEPLOYMENT=
+RUN_PLAN=
 
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
@@ -71,6 +72,7 @@ Usage:
 
   * Advanced Options
 
+    --plan                      Run the CaaSP KVM Plan Step
     --admin-ram <INT>           RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=$ADMIN_RAM)
     --admin-cpu <INT>           CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=$ADMIN_CPU)
     --master-ram <INT>          RAM to allocate to master node(s) (Default: CAASP_MASTER_RAM=$MASTER_RAM)
@@ -180,6 +182,10 @@ while [[ $# > 0 ]] ; do
     --velum-dir)
       CAASP_VELUM_DIR="$2"
       shift
+      ;;
+    --plan)
+      ACTION=1
+      RUN_PLAN=1
       ;;
     --admin-ram)
       ADMIN_RAM="$2"
@@ -303,6 +309,14 @@ build() {
   log "CaaS Platform Ready for bootstrap"
 }
 
+plan() {
+  log "Generating terraform manifest from erb template"
+  VANILLA=${VANILLA} CAASP_BRIDGE=${CAASP_BRIDGE} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
+
+  log "Planning terraform configuration"
+  terraform plan $TF_ARGS
+}
+
 update_deployment() {
   log "Applying terraform configuration"
   terraform init && terraform apply -auto-approve $TF_ARGS
@@ -319,6 +333,7 @@ destroy() {
 }
 
 [ -n "$ACTION" ] || usage
+[ -n "$RUN_PLAN" ] && plan
 [ -n "$RUN_BUILD" -a -z "$RUN_UPDATE_DEPLOYMENT" ] && build
 [ -n "$RUN_UPDATE_DEPLOYMENT" ] && update_deployment
 [ -n "$RUN_DESTROY" ] && destroy
