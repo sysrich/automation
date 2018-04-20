@@ -111,6 +111,7 @@ sudo virsh pool-start default
 
       * Advanced Options
 
+        --plan                 Run the CaaSP KVM Plan Step
         --admin-ram <INT>      RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=4096)
         --admin-cpu <INT>      CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=4)
         --master-ram <INT>     RAM to allocate to master node(s) (Default: CAASP_MASTER_RAM=2048)

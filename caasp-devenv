@@ -24,6 +24,7 @@ RUN_UPDATE_DEPLOYMENT=
 RUN_BOOTSTRAP=
 RUN_TESTINFRA=
 RUN_DESTROY=
+RUN_PLAN=
 
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
@@ -91,6 +92,7 @@ Usage:
 
   * Advanced Options
 
+    --plan                      Run the CaaSP KVM Plan Step
     --extra-repo <STR>          URL of a custom repository on the master(s)/worker(s) (Default: CAASP_EXTRA_REPO)
 
   * Examples:
@@ -177,6 +179,10 @@ while [[ $# > 0 ]] ; do
       PROXY="$2"
       shift
       ;;
+    --plan)
+      ACTION=1
+      RUN_PLAN=1
+      ;;
     --extra-repo)
       EXTRA_REPO="$2"
       shift
@@ -231,6 +237,11 @@ setup() {
   warn "You should now logout and back in again, in order for group membership changes to be reflected"
 }
 
+plan() {
+  log "Planning CaaSP KVM Environment"
+  (cd "$DIR/caasp-kvm" && ./caasp-kvm --plan $CAASP_KVM_ARGS )
+}
+
 build() {
   log "Starting CaaSP KVM Environment"
   (cd "$DIR/caasp-kvm" && ./caasp-kvm --build $CAASP_KVM_ARGS )
@@ -266,6 +277,7 @@ destroy() {
 
 [ -n "$ACTION" ] || usage
 [ -n "$RUN_SETUP" ] && setup
+[ -n "$RUN_PLAN" ] && plan
 [ -n "$RUN_BUILD" -a -z "$RUN_UPDATE_DEPLOYMENT" ] && build
 [ -n "$RUN_UPDATE_DEPLOYMENT" ] && update_deployment
 [ -n "$RUN_BOOTSTRAP" ] && bootstrap
