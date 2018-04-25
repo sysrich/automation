@@ -152,7 +152,7 @@ resource "libvirt_domain" "admin" {
   name      = "${var.name_prefix}admin"
   memory    = "${var.admin_memory}"
   vcpu      = "${var.admin_vcpu}"
-  metadata   = "${var.name_prefix}admin.${var.domain_name},admin,${count.index}"
+  metadata  = "admin.${var.domain_name},admin,${count.index}"
   cloudinit = "${libvirt_cloudinit.admin.id}"
 
   cpu {
@@ -283,7 +283,7 @@ resource "libvirt_domain" "master" {
   memory     = "${var.master_memory}"
   vcpu       = "${var.master_vcpu}"
   cloudinit  = "${element(libvirt_cloudinit.master.*.id, count.index)}"
-  metadata   = "${var.name_prefix}master-${count.index}.${var.domain_name},master,${count.index},${var.name_prefix}"
+  metadata   = "master-${count.index}.${var.domain_name},master,${count.index},${var.name_prefix}"
   depends_on = ["libvirt_domain.admin"]
 
   cpu {
@@ -376,7 +376,7 @@ resource "libvirt_domain" "worker" {
   memory     = "${var.worker_memory}"
   vcpu       = "${var.worker_vcpu}"
   cloudinit  = "${element(libvirt_cloudinit.worker.*.id, count.index)}"
-  metadata   = "${var.name_prefix}worker-${count.index}.${var.domain_name},worker,${count.index},${var.name_prefix}"
+  metadata   = "worker-${count.index}.${var.domain_name},worker,${count.index},${var.name_prefix}"
   depends_on = ["libvirt_domain.admin"]
 
   cpu {
