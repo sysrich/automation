@@ -17,12 +17,15 @@ a cluster starting from a fresh OS install.
 Add the containers repository for the correct version of Docker, among other things. 
 See Notes section.   
 ```
-sudo zypper ar obs://Virtualization:containers/openSUSE_Leap_42.2 Virtualization:containers
+sudo zypper ar obs://Virtualization:containers/openSUSE_Leap_42.3 Virtualization:containers
 ```
-You must also have SUSE's CA certificates installed, as documented on
-http://ca.suse.de . Replace distribution 42.2 with your version if different. 
+
+**NOTE**: Kubic users can skip the next step
+
+If you want to use CaaSP, you must also have SUSE's CA certificates installed, as documented on
+http://ca.suse.de . Replace distribution 42.3 with your version if different.
 ```
-zypper ar --refresh http://download.suse.de/ibs/SUSE:/CA/openSUSE_Leap_42.2/SUSE:CA.repo
+zypper ar --refresh http://download.suse.de/ibs/SUSE:/CA/openSUSE_Leap_42.3/SUSE:CA.repo
 zypper in -y ca-certificates-suse p11-kit-nss-trust
 ```
 The first time you install a package from a new repository zypper will ask you to accept or 
@@ -39,7 +42,9 @@ systemctl enable docker
 systemctl start docker
 ```
 
-# VPN access
+# VPN access (CaaSP only)
+**NOTE**: This does not apply to Kubic environments
+
 Many of the required resources are hosted inside SUSE's private R&D network; in
 order to access and connect to these resouces, you may need a SUSE R&D openvpn
 connection; see the
