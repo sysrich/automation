@@ -21,7 +21,7 @@ feature "Add a Node" do
     puts ">>> Checking if new nodes appeared"
     with_screenshot(name: :new_nodes_appearance) do
       within(".pending-nodes-container") do
-        expect(page).to have_button("accept-all", wait: 120)
+        expect(page).to have_button("accept-all", wait: 720)
       end
     end
     puts "<<< New nodes have appeared"

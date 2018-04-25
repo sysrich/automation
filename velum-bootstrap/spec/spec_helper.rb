@@ -114,14 +114,14 @@ RSpec.configure do |config|
     begin
       Timeout::timeout(timeout) { test.run }
     rescue Timeout::Error
-      save_screenshot("screenshots/timeout.png", full: true)
+      save_screenshot("screenshots/timeout-#{Time.now.to_i}.png", full: true)
       fail
     end
   end
 
   config.after(:each) do |example|
     if example.exception
-      save_screenshot("screenshots/error_state.png", full: true)
+      save_screenshot("screenshots/error_state-#{Time.now.to_i}.png", full: true)
     end
   end
 end
