@@ -106,6 +106,10 @@ Usage:
 
   $0 --bootstrap --testinfra
 
+  Build a 1 master, 2 worker cluster using the latest kubic image
+
+  $0 --build -m 1 -w 2 --image channel://kubic
+
   Add a worker node to a running cluster
 
   $0 --update-deployment -m 1 -w 3

@@ -11,6 +11,9 @@ RUN_DESTROY=
 RUN_UPDATE_DEPLOYMENT=
 RUN_PLAN=
 
+# caasp or kubic
+DIST=${CAASP_DIST:-caasp}
+
 MASTERS=${CAASP_NUM_MASTERS:-1}
 WORKERS=${CAASP_NUM_WORKERS:-2}
 IMAGE=${CAASP_IMAGE:-channel://devel}
@@ -87,6 +90,10 @@ Usage:
   Build a 1 master, 2 worker cluster
 
   $0 --build -m 1 -w 2
+
+  Build a 1 master, 2 worker cluster using the latest kubic image
+
+  $0 --build -m 1 -w 2 --image channel://kubic
 
   Build a 1 master, 2 worker cluster using the latest staging A image
 
@@ -224,16 +231,28 @@ done
 
 ################################################################
 
-TF_ARGS="-parallelism=$PARALLELISM \
-         -var caasp_img_source_url=$IMAGE \
-         -var caasp_master_count=$MASTERS \
-         -var caasp_worker_count=$WORKERS \
-         -var caasp_admin_memory=$ADMIN_RAM \
-         -var caasp_admin_vcpu=$ADMIN_CPU \
-         -var caasp_master_memory=$MASTER_RAM \
-         -var caasp_master_vcpu=$MASTER_CPU \
-         -var caasp_worker_memory=$WORKER_RAM \
-         -var caasp_worker_vcpu=$WORKER_CPU"
+if [[ $IMAGE =~ kubic ]]; then
+  VELUM_IMAGE=channel://kubic
+  DIST=kubic
+# check if internal network is reachable and fail early
+elif ! ping -q -c1 download.suse.de 2>&1 >/dev/null; then
+  cat <<EOF
+Internal network not reachable!
+  use $0 --image channel://kubic
+EOF
+  exit 1
+fi
+
+TF_ARGS="-var parallelism=$PARALLELISM \
+         -var img_source_url=$IMAGE \
+         -var master_count=$MASTERS \
+         -var worker_count=$WORKERS \
+         -var admin_memory=$ADMIN_RAM \
+         -var admin_vcpu=$ADMIN_CPU \
+         -var master_memory=$MASTER_RAM \
+         -var master_vcpu=$MASTER_CPU \
+         -var worker_memory=$WORKER_RAM \
+         -var worker_vcpu=$WORKER_CPU"
 
 if [ -n "$CAASP_SALT_DIR" ] ; then
   CAASP_SALT_DIR="$(realpath $CAASP_SALT_DIR)"

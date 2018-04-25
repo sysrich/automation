@@ -4,6 +4,9 @@
       "default": "http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/",
       "provo": "http://nodes.provo-prod.caasp.suse.net:32501/ibs/Devel:/CASP:/Head:/ControllerNode/"
     },
+    "kubic": {
+      "default": "http://download.opensuse.org/repositories/devel:/CaaSP:/images/"
+    },
     "release": {
       "default": "http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP30/"
     },
