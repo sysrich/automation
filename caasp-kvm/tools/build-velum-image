@@ -12,6 +12,24 @@ VELUM_DEVEL_IMAGE="$DIR/../resources/docker-images/velum-development.tar"
 # Registry URLs JSON
 REGISTRY_URLS_JSON=$(realpath $DIR/../../misc-files/registry-urls.json)
 
+# Helper function to get the velum-development reference
+# most logic is to dynamically get to the newest tag
+# can be dropped when registry.opensuse.org has a "latest" tag
+kubic_velum_development_reference() {
+  declare BASE_URL
+  declare RELATIVE_PATH
+  REGISTRY_URL=$(jq -r ".baseurl.${IMAGE:10}" $REGISTRY_URLS_JSON | sed 's/\/x86_64//g')
+  IFS="/" read BASE_URL RELATIVE_PATH <<< "$REGISTRY_URL"
+
+  TAGS_URL="https://$BASE_URL/v2/$RELATIVE_PATH/$IMAGE_DIST/velum-development/tags/list"
+
+  TAGS=$(curl -s $TAGS_URL | jq -r '.tags')
+
+  # And getting the first tag
+  FIRST_TAG=$(echo $TAGS | jq -r '.[0]')
+  echo $BASE_URL/$RELATIVE_PATH/$IMAGE_DIST/velum-development:${FIRST_TAG}
+}
+
 # get distribution
 if [[ $IMAGE =~ kubic ]]; then
   IMAGE_DIST=kubic
@@ -22,7 +40,7 @@ else
 fi
 # Image reference
 if [[ $IMAGE == channel://* ]]; then
-  IMAGE_REFERENCE=$(jq -r ".baseurl.${IMAGE:10}" $REGISTRY_URLS_JSON)/$IMAGE_DIST/velum-development:0.0 # FIXME path to tag
+  IMAGE_REFERENCE=$(kubic_velum_development_reference)
 elif [[ $IMAGE == file://* ]]; then
   IMAGE_REFERENCE=$IMAGE_DIST/velum-development:0.0
 else
