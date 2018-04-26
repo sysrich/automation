@@ -3,6 +3,8 @@ require "yaml"
 
 feature "Add a Node" do
 
+  let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
+
   before(:each) do
     login
   end
@@ -54,7 +56,7 @@ feature "Add a Node" do
     end
     puts "<<< Page has settled"
 
-    new_nodes_count = environment["minions"].count
+    new_nodes_count = node_number
     puts ">>> Selecting minion roles"
     with_screenshot(name: :select_new_minion_roles) do
       environment["minions"].each do |minion|
@@ -87,7 +89,7 @@ feature "Add a Node" do
     puts ">>> Wait until node add orchestration is complete (Timeout: #{orchestration_timeout})"
     with_screenshot(name: :node_add_orchestration_complete) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-check-circle-o, .fa-times-circle", count: new_nodes_count, wait: orchestration_timeout)
+        expect(page).to have_css(".fa-check-circle-o, .fa-times-circle", count: node_number, wait: orchestration_timeout)
       end
     end
     puts "<<< Node add orchestration completed"
@@ -95,7 +97,7 @@ feature "Add a Node" do
     puts ">>> Checking if node add orchestration succeeded"
     with_screenshot(name: :node_add_orchestration_succeeded) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-check-circle-o", count: new_nodes_count, wait: 5)
+        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 5)
       end
     end
     puts "<<< Node add orchestration succeeded"
