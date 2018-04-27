@@ -8,8 +8,8 @@ timezone: Etc/UTC
 
 # Set hostname and FQDN
 # TODO: We only generate 1 cloud-init, so can't include the index here?
-#hostname: caasp-master-INDEX-HERE
-#fqdn: caasp-master-INDEX-HERE.devenv.caasp.suse.net
+#hostname: master-INDEX-HERE
+#fqdn: master-INDEX-HERE.devenv.caasp.suse.net
 
 # set root password
 chpasswd:
