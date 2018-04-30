@@ -243,7 +243,7 @@ EOF
   exit 1
 fi
 
-TF_ARGS="-var parallelism=$PARALLELISM \
+TF_ARGS="-parallelism=$PARALLELISM \
          -var img_source_url=$IMAGE \
          -var master_count=$MASTERS \
          -var worker_count=$WORKERS \
