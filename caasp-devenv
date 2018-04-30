@@ -54,7 +54,11 @@ DIST_PACKAGES="jq \
                docker \
                libvirt-daemon-qemu \
                guestfs-tools \
+               git \
                ca-certificates-suse"
+
+# kubic-project needed repos to clone via https on build(sep by 1 space)
+KUBIC_NEEDED_GITHUB_REPOS="caasp-container-manifests velum salt"
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -127,6 +131,19 @@ warn()       { log "WARNING: $@" ; }
 error()      { log "ERROR: $@" ; exit 1 ; }
 check_file() { [ -f "$1" ] || error "File $1 doesn't exist!" ; }
 usage()      { echo "$USAGE" ; exit 0 ; }
+
+# clone needed github repos (dependencies)
+clone_needed_github_repos() {
+  git_repos="$1"
+  pushd $DIR/../
+  for git_repo in $git_repos; do
+  	if [ ! -d "$git_repo" ]; then
+             git clone "https://github.com/kubic-project/$git_repo.git"
+        fi
+  done
+  popd
+} 
+
 
 # parse options
 while [[ $# > 0 ]] ; do
@@ -236,6 +253,9 @@ setup() {
 
   # Ensure the current user has access to docker and libvirt
   sudo usermod -aG docker,libvirt $USER
+
+  # clone needed kubic github repos
+  clone_needed_github_repos "$KUBIC_NEEDED_GITHUB_REPOS"
 
   (cd "$DIR/velum-bootstrap" && ./velum-interactions --setup)
 
