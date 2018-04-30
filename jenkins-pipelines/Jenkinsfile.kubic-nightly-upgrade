@@ -19,7 +19,7 @@ coreKubicProjectPeriodic(
     prepareUpgradeEnvironment(
         environment: environment,
         extraRepos: [
-            'TestUpdate': 'http://download.suse.de/ibs/Devel:/CASP:/2.0:/ControllerNode:/TestUpdate/standard/Devel:CASP:2.0:ControllerNode:TestUpdate.repo'
+            'SUSE-CAASP-2.1-POOL-x86_64-Media1': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP3:/Update:/Products:/CASP21/images/repo/SUSE-CAASP-2.0-POOL-x86_64-Media1/'
         ]
     )
 
