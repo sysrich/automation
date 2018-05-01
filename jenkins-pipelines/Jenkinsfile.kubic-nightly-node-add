@@ -18,7 +18,7 @@ coreKubicProjectPeriodic(
 } {
     stage('Add Node') {
         // create another worker node
-        updateEnvironmentCaaspKvm(
+        environment = updateEnvironmentCaaspKvm(
             environment: environment,
             typeOptions: environmentTypeOptions,
             masterCount: 3,
@@ -26,7 +26,7 @@ coreKubicProjectPeriodic(
         )
 
         // Register it via velum
-        addNode(
+        environment = addNode(
             environment: environment
         )
     }
@@ -36,4 +36,6 @@ coreKubicProjectPeriodic(
         environment: environment,
         podName: 'default'
     )
+
+    return environment
 }

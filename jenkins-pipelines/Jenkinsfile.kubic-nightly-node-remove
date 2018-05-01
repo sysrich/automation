@@ -17,7 +17,7 @@ coreKubicProjectPeriodic(
 } {
     stage('Remove Node') {
         // Remove node via velum
-        removeNode(
+        environment = removeNode(
             environment: environment
         )
     }
@@ -27,4 +27,6 @@ coreKubicProjectPeriodic(
         environment: environment,
         podName: 'default'
     )
+
+    return environment
 }
