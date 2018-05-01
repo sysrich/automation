@@ -48,6 +48,8 @@ DIST_PACKAGES="jq \
                python-novaclient \
                python-heatclient \
                terraform \
+               ruby-devel \
+               gcc \
                terraform-provider-libvirt \
                guestfs-tools \
                qemu-kvm \
