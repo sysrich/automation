@@ -42,8 +42,8 @@ feature "update Admin Node" do
     # Allow 10 seconds for Velum to re-render nodes with spinners
     sleep 10
 
-    # Min of 3600 seconds, Max of 7200 seconds, ideal = nodes * 120 seconds
-    update_timeout = [[3600, node_number * 120].max, 7200].min
+    # Min of 7200 seconds, Max of 10800 seconds, ideal = nodes * 1200 seconds (20 minutes)
+    update_timeout = [[7200, node_number * 1200].max, 10800].min
     puts ">>> Wait until update is complete (Timeout: #{update_timeout})"
     with_screenshot(name: :update_complete) do
       within(".nodes-container") do
