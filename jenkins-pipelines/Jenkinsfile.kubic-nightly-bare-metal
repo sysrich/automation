@@ -4,7 +4,7 @@ library "kubic-jenkins-library@${env.BRANCH_NAME}"
 properties([
     buildDiscarder(logRotator(numToKeepStr: '31', daysToKeepStr: '31')),
     disableConcurrentBuilds(),
-    pipelineTriggers([cron('@daily')]),
+    pipelineTriggers([cron('H H(3-5) * * *')]),
     parameters([
         string(name: 'MASTER_COUNT', defaultValue: '1', description: 'Number of Master Nodes'),
         string(name: 'WORKER_COUNT', defaultValue: '3', description: 'Number of Worker Nodes'),
