@@ -16,6 +16,10 @@ opts_parser = OptionParser.new do |opts|
     opts.on("-oOUTPUT", "--output OUTPUT", "Write patched manifest to specified file") do |o|
       options[:out] = o
     end
+
+    opts.on("-k", "--kubic", "Patch image names from sles to kubic") do |k|
+      options[:kubic] = k
+    end
 end
 opts_parser.parse!
 
@@ -81,6 +85,12 @@ manifest["spec"]["volumes"] << {
   "name" => "velum-devel",
   "hostPath" => {"path" => "/var/lib/misc/velum-dev" },
 }
+
+# in the devsetup we are overwriting again the kubic changes during build time
+# so again replace sles12 image path with kubic
+if options[:kubic]
+  manifest = YAML.load(YAML.dump(manifest).gsub!("sles12", "kubic"))
+end
 
 if options[:out]
   File.open(options[:out], "w") do |out|
