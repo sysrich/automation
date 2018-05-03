@@ -10,7 +10,7 @@ properties([
         ]
     ]),
     parameters([
-        choice(choices: 'devel\nrelease', description: 'What channel should the image be loaded from?', name: 'CHANNEL')
+        choice(choices: 'devel\nrelease\nstaging_a\nstaging_b', description: 'What channel should the image be loaded from?', name: 'CHANNEL')
     ])
 ])
 
