@@ -12,7 +12,7 @@ gem 'rack', '~> 1.6.5'
 gem 'pry'
 gem 'pry-nav'
 
-group :travis_test do
+group :travis_ci do
   gem 'rubocop'
   gem 'rubocop-rspec'
 end
