@@ -285,15 +285,15 @@ function checksum_file() {
     [parameter(Mandatory = $true)]$sha256sum
   )
 
-  log_task "Getting hash for $file"
+  log_task "Get hash for $file"
   $file_hash = Get-FileHash $file -Algorithm SHA256
 
   if ($sha256sum -eq $file_hash.Hash) {
-    log_info -Message "Checksum is valid for $file `n- Expected: $sha256sum`n- Found   : $(($file_hash.Hash).ToLower())`n- Filesize: $((Get-Item $file).Length)mb"
+    log_info -Message "Checksum is valid for $file `n- Expected: $sha256sum`n- Found   : $(($file_hash.Hash).ToLower())`n- Filesize: $((Get-Item $file).Length)b"
     return $true
   }
   Else {
-    log_error -Message  "Checksum is invalid for $file `n- Expected: $sha256sum`n- Found   : $(($file_hash.Hash).ToLower())`n- Filesize: $((Get-Item $file).Length)mb"
+    log_error -Message  "Checksum is invalid for $file `n- Expected: $sha256sum`n- Found   : $(($file_hash.Hash).ToLower())`n- Filesize: $((Get-Item $file).Length)b"
     return $false
   }
 }
@@ -346,7 +346,7 @@ Function delete_file() {
   }
 }
 
-Function list_image() {
+Function list_images() {
   Param(
     [parameter(Mandatory = $true)][string]$image_dir
   )
@@ -356,7 +356,7 @@ Function list_image() {
     log_task "List images/files on $ComputeHost in $image_dir"
     log_info "Files:"
     ForEach ($f in $lsfiles) {
-      log_info "- $($f.name) ($($f.length))"
+      log_info "- $($f.name) ($($f.length)b)"
     }
 
     log_info "Available images:"
@@ -382,8 +382,9 @@ Function delete_image() {
       If ($(is_file_locked "$unc_image_base_path.vhd") -eq $false) {
         log_task "Delete $image on $($ComputeHost)"
         delete_file "$unc_image_base_path.vhd"
-        if (Test-Path "$unc_image_base_path.vhdfixed.xz") { delete_file "$unc_image_base_path.vhdfixed.xz" }
-        if (Test-Path "$unc_image_base_path.sha256") { delete_file "$unc_image_base_path.sha256" }
+        # Clean up
+        If (Test-Path "$unc_image_base_path.vhdfixed.xz") { delete_file "$unc_image_base_path.vhdfixed.xz" }
+        If (Test-Path "$unc_image_base_path.vhdfixed.xz.sha256") { delete_file "$unc_image_base_path.vhdfixed.xz.sha256" }
         log_info "Image deleted"
       }
       Else {
@@ -453,10 +454,21 @@ function fetch_image() {
     
     $extracted_filename = $filename.replace('.xz', '')
     $target_filename = $filename.replace('fixed.xz', '')
-    If (-not $(Test-Path $dir\$target_filename)) {
-      log_info -Message "Extracting $dir\$filename"
-      Invoke-Command -ComputerName $ComputeHost -ScriptBlock {param($d, $f, $df) & 'C:\Program Files\7-Zip\7Z.exe' e $d\$f -o"$df" -y } -ArgumentList $dest_dir, $filename, $dest_dir
-      Rename-Item $dir\$extracted_filename "$dir\$target_filename"
+    try {
+      If (-not $(Test-Path $dir\$target_filename)) {
+        log_info -Message "Extracting $dir\$filename"
+        Invoke-Command -ComputerName $ComputeHost -ScriptBlock {param($d, $f, $df) & 'C:\Program Files\7-Zip\7Z.exe' e $d\$f -o"$df" -y } -ArgumentList $dest_dir, $filename, $dest_dir
+        Rename-Item $dir\$extracted_filename "$dir\$target_filename"
+      }
+    }
+    Catch {
+      log_error -Message "Extract file failed"
+      $_.Exception.Message
+    }
+    Finally {
+      # Clean up
+      If (Test-Path "$dir\$filename") { delete_file "$dir\$filename" }
+      If (Test-Path "$dir\$filename.sha256") { delete_file "$dir\$filename.sha256" }
     }
   }
 }
@@ -1123,7 +1135,7 @@ Start-Transcript -Path "$PSScriptRoot\$action-$date.log"
 switch ($action) {
   "listimages" {
     test_vars_not_null @("imageStoragePath")
-    list_image $CONF.imageStoragePath
+    list_images $CONF.imageStoragePath
   }
   "deleteimage" {
     test_vars_not_null @("imageStoragePath", "caaspImage")
