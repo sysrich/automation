@@ -1,13 +1,13 @@
 # A module containing helper methods to create a testing environment
 # for end to end tests.
 module Helpers
-  def with_screenshot(name:, &block)
+  def with_screenshot(name:)
     save_screenshot("screenshots/#{Time.now.to_i}_before_#{name}.png", full: true)
     yield
     save_screenshot("screenshots/#{Time.now.to_i}_after_#{name}.png", full: true)
   end
 
-  def with_status_ok(&block)
+  def with_status_ok
     yield
     expect(page.status_code).to eq(200)
   end
@@ -15,28 +15,28 @@ module Helpers
   private
 
   def login
-    puts ">>> User logs in"
+    puts '>>> User logs in'
     with_status_ok do
-      visit "/users/sign_in"
+      visit '/users/sign_in'
     end
 
-    fill_in "user_email", with: "test@test.com"
-    fill_in "user_password", with: "password"
-    click_on "Log in"
-    puts "<<< User logged in"
+    fill_in 'user_email', with: 'test@test.com'
+    fill_in 'user_password', with: 'password'
+    click_on 'Log in'
+    puts '<<< User logged in'
   end
 
   def register
-    puts ">>> Registering user"
+    puts '>>> Registering user'
     with_status_ok do
-      visit "/users/sign_up"
+      visit '/users/sign_up'
     end
 
-    fill_in "user_email", with: "test@test.com"
-    fill_in "user_password", with: "password"
-    fill_in "user_password_confirmation", with: "password"
-    click_on "Create Admin"
-    puts "<<< User registered"
+    fill_in 'user_email', with: 'test@test.com'
+    fill_in 'user_password', with: 'password'
+    fill_in 'user_password_confirmation', with: 'password'
+    click_on 'Create Admin'
+    puts '<<< User registered'
   end
 
   def default_interface
@@ -48,19 +48,19 @@ module Helpers
   end
 
   def configure
-    puts ">>> Setting up velum"
+    puts '>>> Setting up velum'
     with_status_ok do
-      visit "/setup"
+      visit '/setup'
     end
 
-    fill_in "settings_dashboard", with: environment["dashboardHost"] || default_ip_address
-    if ENV.fetch("ENABLE_TILLER", false) == "true"
-      check "settings[tiller]"
+    fill_in 'settings_dashboard', with: environment['dashboardHost'] || default_ip_address
+    if ENV.fetch('ENABLE_TILLER', false) == 'true'
+      check 'settings[tiller]'
     else
-      uncheck "settings[tiller]"
+      uncheck 'settings[tiller]'
     end
-    click_on "Next"
-    puts "<<< Velum set up"
+    click_on 'Next'
+    puts '<<< Velum set up'
   end
 end
 

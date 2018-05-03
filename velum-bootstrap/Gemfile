@@ -1,13 +1,18 @@
-source "https://rubygems.org"
+source 'https://rubygems.org'
 
-gem "rspec"
-gem "capybara"
-gem "poltergeist"
-gem "rspec_junit_formatter"
+gem 'capybara'
+gem 'poltergeist'
+gem 'rspec'
+gem 'rspec_junit_formatter'
 
 # make sure rack doesn't require ruby >= 2.2.2
 # # as we have ruby 2.1 on SLE12
-gem "rack", "~> 1.6.5"
+gem 'rack', '~> 1.6.5'
 
-gem "pry"
-gem "pry-nav"
+gem 'pry'
+gem 'pry-nav'
+
+group :travis_test do
+  gem 'rubocop'
+  gem 'rubocop-rspec'
+end
