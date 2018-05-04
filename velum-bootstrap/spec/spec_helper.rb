@@ -1,52 +1,52 @@
 # frozen_string_literal: true
 
-require 'json'
-require 'capybara/rspec'
-require 'capybara/poltergeist'
-require 'fileutils'
+require "json"
+require "capybara/rspec"
+require "capybara/poltergeist"
+require "fileutils"
 
-FileUtils.mkdir_p(File.join(File.dirname(__FILE__), '../', 'screenshots'))
+FileUtils.mkdir_p(File.join(File.dirname(__FILE__), "../", "screenshots"))
 
 # Automatically require all files in spec/support directory
-Dir[File.join(File.dirname(File.dirname(__FILE__)), 'spec', 'support', '**', '*.rb')]
+Dir[File.join(File.dirname(File.dirname(__FILE__)), "spec", "support", "**", "*.rb")]
   .each { |f| require f }
 
 def environment_path
-  ENV.fetch('ENVIRONMENT', "#{File.join(File.dirname(__FILE__), '../../')}caasp-kvm/environment.json")
+  ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), "../../")}caasp-kvm/environment.json")
 end
 
 def environment(action: :read, body: nil)
   env = JSON.parse(File.read(environment_path))
-  abort('Please specify kubernetesExternalHost in environment.json') unless env['kubernetesExternalHost']
-  abort('Please specify at least 2 minions in environment.json') if env['minions'].count < 2
+  abort("Please specify kubernetesExternalHost in environment.json") unless env["kubernetesExternalHost"]
+  abort("Please specify at least 2 minions in environment.json") if env["minions"].count < 2
 
   case action
   when :update
     if body
-      File.open(environment_path, 'w') do |f|
+      File.open(environment_path, "w") do |f|
         f.puts(JSON.dump(body))
       end
     end
   end
   env
 rescue JSON::ParserError
-  raise('Invalid JSON format')
+  raise("Invalid JSON format")
 rescue StandardError
-  raise('Please specify ENVIRONMENT to point to a valid environment.json path')
+  raise("Please specify ENVIRONMENT to point to a valid environment.json path")
 end
 
 # returns a new env with a minion set as $status
 def set_minion_status(minion_id, status)
   env = JSON.parse(File.read(environment_path))
-  updated_minions = env['minions'].each do |m|
-    m['minionID'] == minion_id && m['status'] = status
+  updated_minions = env["minions"].each do |m|
+    m["minionID"] == minion_id && m["status"] = status
   end
-  env['minions'] = updated_minions
+  env["minions"] = updated_minions
   env
 end
 
 def admin_minion
-  environment['minions'].detect { |m| m['role'] == 'admin' }
+  environment["minions"].detect { |m| m["role"] == "admin" }
 end
 
 Capybara.register_driver :poltergeist do |app|
@@ -54,8 +54,8 @@ Capybara.register_driver :poltergeist do |app|
     timeout:           180,
     js_errors:         true,
     phantomjs_options: [
-      '--proxy-type=none',
-      '--load-images=yes'
+      "--proxy-type=none",
+      "--load-images=yes"
     ]
   }
   # NOTE: uncomment the line below to get more info on the current run.
@@ -73,7 +73,7 @@ Capybara.configure do |config|
   config.ignore_hidden_elements = true
   config.visible_text_only = true
   config.default_selector = :css
-  config.app_host = "https://#{environment['dashboardExternalHost']}"
+  config.app_host = "https://#{environment["dashboardExternalHost"]}"
 end
 
 RSpec.configure do |config|
@@ -111,7 +111,7 @@ RSpec.configure do |config|
   config.fail_fast = true
 
   # Set a fallback timeout around the tests
-  timeout = ENV.fetch('TEST_TIMEOUT', 7200).to_i
+  timeout = ENV.fetch("TEST_TIMEOUT", 7200).to_i
 
   config.around do |test|
     begin
