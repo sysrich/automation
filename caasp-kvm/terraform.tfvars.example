@@ -14,5 +14,5 @@
 #####################
 # A range that doesn't conflict with the SUSE network
 # and allows a similar naming.
-#caasp_net_network = "172.30.0.0/22"
-#caasp_net_mode = "route"
+#network = "172.30.0.0/22"
+#net_mode = "route"

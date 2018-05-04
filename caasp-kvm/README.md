@@ -210,8 +210,8 @@ First of all you have to pick a different subnet for the caasp network. This
 is done by creating a `terraform.tfvars` with the following line:
 
 ```hcl
-caasp_net_network = "route"
-caasp_net_network = "172.30.0.0/22"
+net_mode = "route"
+network = "172.30.0.0/22"
 ```
 
 You have to be really careful with the subnet you are going to use. The default
