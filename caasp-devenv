@@ -33,6 +33,7 @@ IMAGE=${CAASP_IMAGE:-channel://devel}
 VANILLA=${CAASP_VANILLA:-}
 DISABLE_MELTDOWN_SPECTRE=${CAASP_DISABLE_MELTDOWN_SPECTRE:-}
 PROXY=${CAASP_HTTP_PROXY:-}
+LOCATION=${CAASP_LOCATION:-}
 PARALLELISM=${CAASP_PARALLELISM:-1}
 ENABLE_TILLER=${CAASP_ENABLE_TILLER:-false}
 EXTRA_REPO=${CAASP_EXTRA_REPO:-}
@@ -96,6 +97,7 @@ Usage:
 
     -p|--parallelism            Set terraform parallelism (Default: CAASP_PARALLELISM)
     -P|--proxy                  Set HTTP Proxy (Default: CAASP_HTTP_PROXY)
+    -L|--location               Set location used for downloads (Default: CAASP_LOCATION or 'default')
 
   * Advanced Options
 
@@ -203,6 +205,10 @@ while [[ $# > 0 ]] ; do
       PROXY="$2"
       shift
       ;;
+    -L|--location)
+      LOCATION="$2"
+      shift
+      ;;
     --plan)
       ACTION=1
       RUN_PLAN=1
@@ -223,6 +229,7 @@ done
 CAASP_KVM_ARGS="-m $MASTERS -w $WORKERS --image $IMAGE"
 [ -n "$PARALLELISM" ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --parallelism=$PARALLELISM"
 [ -n "$PROXY"       ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --proxy $PROXY"
+[ -n "$LOCATION"    ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --location $LOCATION"
 [ -n "$VANILLA"     ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --vanilla"
 [ -n "$DISABLE_MELTDOWN_SPECTRE" ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --disable-meltdown-spectre-fixes"
 [ -n "$EXTRA_REPO"  ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --extra-repo $EXTRA_REPO"
