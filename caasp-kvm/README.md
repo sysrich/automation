@@ -70,18 +70,8 @@ git clone git@github.com:kubic-project/automation.git
 
 Initialize the default storage pool for your VMs. 
 
-default-pool.xml:
 ```
-<pool type='dir'>
-  <name>default</name>
-  <target>
-    <path>/path/to/libvirt/images</path>
-  </target>
-</pool>
-```
-
-```
-sudo virsh pool-create default-pool.xml
+sudo virsh pool-define-as --target /var/lib/libvirt/images/ --name default --type dir
 sudo virsh pool-autostart default
 sudo virsh pool-start default
 ```
