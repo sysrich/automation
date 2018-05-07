@@ -29,6 +29,7 @@ manifest = YAML.load_file(ARGV[0])
 
 # Extend init containers to also set up `test` database by reusing the production database set up
 # logic.
+manifest["spec"]["initContainers"] ||= Array.new
 manifest["spec"]["initContainers"] += [
   {
     "name" => "mariadb-user-secrets-test",
@@ -55,28 +56,36 @@ manifest["spec"]["initContainers"] += [
 
 # Extend velum containers to use the development image, mount the source code and also set
 # the development environment variable for the rails environment.
-manifest["spec"]["containers"].each do |container|
-  if container["image"] =~ /.*velum.*/
-    container["image"] = "sles12/velum:development"
-    container["volumeMounts"] << {
-      "mountPath" => "/srv/velum",
-      "name" => "velum-devel",
-    }
-    container["env"].each do |env|
-      env["value"] = "development" if env["name"] == "RAILS_ENV"
-    end
+def patch_containers(containers)
+  (containers || Array.new).each do |container|
+    if container["image"] =~ /.*velum.*/
+      container["image"] = "sles12/velum:development"
+      container["volumeMounts"] ||= Array.new
+      container["volumeMounts"] << {
+        "mountPath" => "/srv/velum",
+        "name" => "velum-devel"
+      }
+      container["env"] ||= Array.new
+      container["env"].each do |env|
+        env["value"] = "development" if env["name"] == "RAILS_ENV"
+      end
 
-    # Ensure the velum_production db is used, this is what the
-    # salt mysql returner is configured to use
-    container["env"] << {
-      "name" => "VELUM_DB_NAME",
-      "value" => "velum_production",
-    }
+      # Ensure the velum_production db is used, this is what the
+      # salt mysql returner is configured to use
+      container["env"] << {
+        "name" => "VELUM_DB_NAME",
+        "value" => "velum_production"
+      }
+    end
   end
 end
 
+patch_containers manifest["spec"]["initContainers"]
+patch_containers manifest["spec"]["containers"]
+
 # Add manifest volumes where Velum source code resides in order to mount it in the containers
 # for the development environment.
+manifest["spec"]["volumes"] ||= Array.new
 manifest["spec"]["volumes"] << {
   "name" => "velum-devel",
   "hostPath" => {"path" => "/var/lib/misc/velum-dev" },
