@@ -41,7 +41,10 @@ class ImageFinder(HTMLParser):
             raise SystemExit(1)
 
     def get_image(self):
-        return self.images.pop().strip(" ")
+        if len(self.images) > 0:
+            return self.images.pop().strip(" ")
+        else:
+            return None
 
     def handle_data(self, data):
         m = re.search(self.regexp, data)
@@ -242,9 +245,14 @@ def get_channel_url(args):
     r = requests.get(base_url, proxies=proxies)
     parser.feed(r.text)
 
+    image = parser.get_image()
+
+    if image is None:
+        print(" >> No matching images found")
+
     return "%(base)s/%(image)s" % {
         "base": base_url,
-        "image": parser.get_image()
+        "image": image
     }
 
 
