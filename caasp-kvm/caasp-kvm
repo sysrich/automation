@@ -231,7 +231,7 @@ done
 
 ################################################################
 
-if [[ $IMAGE =~ [Kk]ubic ]]; then
+if [[ $(basename $IMAGE) =~ [Kk]ubic ]]; then
   VELUM_IMAGE=channel://kubic
   DIST=kubic
 # check if internal network is reachable and fail early

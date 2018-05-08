@@ -31,7 +31,7 @@ kubic_velum_development_reference() {
 }
 
 # get distribution
-if [[ $IMAGE =~ kubic ]]; then
+if [[ $(basename $IMAGE) =~ [Kk]ubic ]]; then
   IMAGE_DIST=kubic
   RUBY_VERSION=ruby2.5
 else
