@@ -52,10 +52,10 @@ def parse_args
 end
 
 def ensure_guestfs_tools_installed
-  if !system("which virt-cat &> /dev/null")
+  if !system("virt-cat --help")
     puts "guestfs-tools not installed, trying to install it via sudo zypper"
     system("sudo zypper -n in guestfs-tools")
-    if !system("which virt-cat &> /dev/null")
+    if !system("virt-cat --help")
       puts "Wasn't able to install guestfs-tools by its own"
       exit 1
     end
