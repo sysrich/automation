@@ -51,6 +51,8 @@ DIST_PACKAGES="jq \
                terraform \
                ruby-devel \
                gcc \
+               lsb-release \
+               make \ 
                terraform-provider-libvirt \
                guestfs-tools \
                qemu-kvm \
