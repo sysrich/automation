@@ -1,8 +1,10 @@
-image_name = "CaaSP-1.0-Build30.25-GMC"
+image_name = "CaaSP-release-3.0-Build13.31"
 internal_net = "caasp-net"
-external_net = "qa-css_extern"
+external_net = "ext-net"
 admin_size = "m1.large"
 master_size = "m1.large"
-masters = 1
+masters = 3
 worker_size = "m1.large"
-workers = 2
+workers = 3
+dnsdomain = "testing.qa.caasp.suse.net"
+dnsentry = "1"
