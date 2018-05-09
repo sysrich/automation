@@ -234,6 +234,7 @@ done
 if [[ $(basename $IMAGE) =~ [Kk]ubic ]]; then
   VELUM_IMAGE=channel://kubic
   DIST=kubic
+  KUBIC_MANIFEST_FLAG="--kubic"
 # check if internal network is reachable and fail early
 elif ! ping -q -c1 download.suse.de 2>&1 >/dev/null; then
   cat <<EOF
@@ -310,7 +311,12 @@ build() {
     cp -r $CAASP_MANIFESTS_DIR/* "$injected/"
 
     log "Patching Container Manifests"
-      $DIR/tools/fix-kubelet-manifest -o $injected/manifests/public.yaml $injected/manifests/public.yaml
+    $DIR/tools/fix-kubelet-manifest ${KUBIC_MANIFEST_FLAG:-} -o $injected/manifests/public.yaml $injected/manifests/public.yaml
+
+    log "Patching activate.sh (again)"
+    if [ -n "${KUBIC_MANIFEST_FLAG:-}" ]; then
+      sed -i "s|sles12/pause:1.0.0|kubic/pause:0.1|g" $injected/activate.sh
+    fi
   else
     log "Skipping Velum environment"
   fi
