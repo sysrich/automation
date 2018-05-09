@@ -1,17 +1,14 @@
 require "spec_helper"
-require 'yaml'
+require "yaml"
 
 feature "Register user and configure cluster" do
-
-  before(:each) do
-    unless self.inspect.include? "User registers"
-      login
-    end
+  before do
+    login unless inspect.include? "User registers"
   end
 
   # Using append after in place of after, as recommended by
   # https://github.com/mattheworiordan/capybara-screenshot#common-problems
-  append_after(:each) do
+  append_after do
     Capybara.reset_sessions!
   end
 
@@ -26,5 +23,4 @@ feature "Register user and configure cluster" do
       configure
     end
   end
-
 end

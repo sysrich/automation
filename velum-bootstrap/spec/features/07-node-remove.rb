@@ -2,7 +2,6 @@ require "spec_helper"
 require "yaml"
 
 feature "Remove a Node" do
-
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
   let(:master_node_removable?) do
     environment["minions"].count { |element| element["role"] == "master" }.tap do |count|
@@ -21,13 +20,13 @@ feature "Remove a Node" do
     removable
   end
 
-  before(:each) do
+  before do
     login
   end
 
   # Using append after in place of after, as recommended by
   # https://github.com/mattheworiordan/capybara-screenshot#common-problems
-  append_after(:each) do
+  append_after do
     Capybara.reset_sessions!
   end
 
@@ -50,7 +49,7 @@ feature "Remove a Node" do
       # mark node as inactive in environment.json
       environment(
         action: :update,
-        body: set_minion_status(node_link["data-id"], "removed")
+        body:   set_minion_status(node_link["data-id"], "removed")
       )
       node_link.click
     end
@@ -81,7 +80,7 @@ feature "Remove a Node" do
     puts ">>> Checking if node removal orchestration succeeded"
     with_screenshot(name: :node_removal_orchestration_succeeded) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-check-circle-o", count: node_number-1, wait: 5)
+        expect(page).to have_css(".fa-check-circle-o", count: node_number - 1, wait: 5)
       end
       expect(page).not_to have_text("Removal Failed", wait: 5)
     end

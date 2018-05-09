@@ -1,18 +1,17 @@
 require "spec_helper"
-require 'yaml'
+require "yaml"
 
 feature "update Admin Node" do
-
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
   let(:hostnames) { environment["minions"].map { |m| m["fqdn"] if m["role"] != "admin" }.compact }
 
-  before(:each) do
+  before do
     login
   end
 
   # Using append after in place of after, as recommended by
   # https://github.com/mattheworiordan/capybara-screenshot#common-problems
-  append_after(:each) do
+  append_after do
     Capybara.reset_sessions!
   end
 
@@ -35,7 +34,7 @@ feature "update Admin Node" do
 
     puts ">>> Click to update all nodes"
     with_screenshot(name: :update_all_nodes_button_click) do
-      find('#update-all-nodes').click
+      find("#update-all-nodes").click
     end
     puts ">>> update all nodes clicked"
 
@@ -43,7 +42,7 @@ feature "update Admin Node" do
     sleep 10
 
     # Min of 7200 seconds, Max of 10800 seconds, ideal = nodes * 1200 seconds (20 minutes)
-    update_timeout = [[7200, node_number * 1200].max, 10800].min
+    update_timeout = [[7200, node_number * 1200].max, 10_800].min
     puts ">>> Wait until update is complete (Timeout: #{update_timeout})"
     with_screenshot(name: :update_complete) do
       within(".nodes-container") do

@@ -1,8 +1,8 @@
 source "https://rubygems.org"
 
-gem "rspec"
 gem "capybara"
 gem "poltergeist"
+gem "rspec"
 gem "rspec_junit_formatter"
 
 # make sure rack doesn't require ruby >= 2.2.2
@@ -11,3 +11,8 @@ gem "rack", "~> 1.6.5"
 
 gem "pry"
 gem "pry-nav"
+
+group :travis_ci do
+  gem "rubocop"
+  gem "rubocop-rspec"
+end

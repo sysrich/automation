@@ -1,19 +1,17 @@
 require "spec_helper"
-require 'uri'
-require 'yaml'
-require 'openssl'
-require 'net/http'
+require "uri"
+require "yaml"
+require "openssl"
+require "net/http"
 
 feature "Download Kubeconfig" do
-  before(:each) do
-    unless self.inspect.include? "User registers"
-      login
-    end
+  before do
+    login unless inspect.include? "User registers"
   end
 
   # Using append after in place of after, as recommended by
   # https://github.com/mattheworiordan/capybara-screenshot#common-problems
-  append_after(:each) do
+  append_after do
     Capybara.reset_sessions!
   end
 

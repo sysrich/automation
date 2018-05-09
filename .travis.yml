@@ -1,0 +1,12 @@
+language: ruby
+
+# currently execute rubocop only for velum-bootstrap
+before_install:
+- cd  velum-bootstrap 
+- gem update --remote bundler
+
+install:
+- bundle install --with travis_ci --retry=3
+
+script:
+- bundle exec rubocop -F spec/ -c .rubocop.yml 

@@ -1,13 +1,13 @@
 # A module containing helper methods to create a testing environment
 # for end to end tests.
 module Helpers
-  def with_screenshot(name:, &block)
+  def with_screenshot(name:)
     save_screenshot("screenshots/#{Time.now.to_i}_before_#{name}.png", full: true)
     yield
     save_screenshot("screenshots/#{Time.now.to_i}_after_#{name}.png", full: true)
   end
 
-  def with_status_ok(&block)
+  def with_status_ok
     yield
     expect(page.status_code).to eq(200)
   end

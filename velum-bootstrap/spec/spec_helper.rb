@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "json"
 require "capybara/rspec"
 require "capybara/poltergeist"
@@ -7,11 +8,11 @@ require "fileutils"
 FileUtils.mkdir_p(File.join(File.dirname(__FILE__), "../", "screenshots"))
 
 # Automatically require all files in spec/support directory
-Dir[File.join(File.dirname(File.dirname(__FILE__)), "spec", "support", "**", "*.rb")].
-  each { |f| require f }
+Dir[File.join(File.dirname(File.dirname(__FILE__)), "spec", "support", "**", "*.rb")]
+  .each { |f| require f }
 
 def environment_path
-  ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), '../../')}caasp-kvm/environment.json")
+  ENV.fetch("ENVIRONMENT", "#{File.join(File.dirname(__FILE__), "../../")}caasp-kvm/environment.json")
 end
 
 def environment(action: :read, body: nil)
@@ -21,15 +22,17 @@ def environment(action: :read, body: nil)
 
   case action
   when :update
-    File.open(environment_path, "w") do |f|
-      f.puts(JSON.dump(body))
-    end if body
+    if body
+      File.open(environment_path, "w") do |f|
+        f.puts(JSON.dump(body))
+      end
+    end
   end
-  return env
+  env
 rescue JSON::ParserError
-  fail("Invalid JSON format")
-rescue
-  fail("Please specify ENVIRONMENT to point to a valid environment.json path")
+  raise("Invalid JSON format")
+rescue StandardError
+  raise("Please specify ENVIRONMENT to point to a valid environment.json path")
 end
 
 # returns a new env with a minion set as $status
@@ -108,18 +111,18 @@ RSpec.configure do |config|
   config.fail_fast = true
 
   # Set a fallback timeout around the tests
-  timeout = ENV.fetch('TEST_TIMEOUT', 7200).to_i
+  timeout = ENV.fetch("TEST_TIMEOUT", 7200).to_i
 
-  config.around(:each) do |test|
+  config.around do |test|
     begin
-      Timeout::timeout(timeout) { test.run }
+      Timeout.timeout(timeout) { test.run }
     rescue Timeout::Error
       save_screenshot("screenshots/timeout-#{Time.now.to_i}.png", full: true)
-      fail
+      raise
     end
   end
 
-  config.after(:each) do |example|
+  config.after do |example|
     if example.exception
       save_screenshot("screenshots/error_state-#{Time.now.to_i}.png", full: true)
     end

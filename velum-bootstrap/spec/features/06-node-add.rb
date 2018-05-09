@@ -2,16 +2,15 @@ require "spec_helper"
 require "yaml"
 
 feature "Add a Node" do
-
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
 
-  before(:each) do
+  before do
     login
   end
 
   # Using append after in place of after, as recommended by
   # https://github.com/mattheworiordan/capybara-screenshot#common-problems
-  append_after(:each) do
+  append_after do
     Capybara.reset_sessions!
   end
 
@@ -65,10 +64,9 @@ feature "Add a Node" do
           new_nodes_count -= 1
           next
         end
-        if ["master", "worker"].include?(minion["role"])
-          within("tr", text: minion["minionId"] || minion["minionID"]) do
-            find(".#{minion["role"]}-btn").click
-          end
+        next unless %w[master worker].include?(minion["role"])
+        within("tr", text: minion["minionId"] || minion["minionID"]) do
+          find(".#{minion["role"]}-btn").click
         end
       end
     end

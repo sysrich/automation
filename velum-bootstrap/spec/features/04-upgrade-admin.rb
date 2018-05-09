@@ -1,18 +1,17 @@
 require "spec_helper"
-require 'yaml'
+require "yaml"
 
 feature "Upgrade Admin Node" do
-
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
   let(:hostnames) { environment["minions"].map { |m| m["fqdn"] if m["role"] != "admin" }.compact }
 
-  before(:each) do
+  before do
     login
   end
 
   # Using append after in place of after, as recommended by
   # https://github.com/mattheworiordan/capybara-screenshot#common-problems
-  append_after(:each) do
+  append_after do
     Capybara.reset_sessions!
   end
 
@@ -29,7 +28,7 @@ feature "Upgrade Admin Node" do
 
     puts ">>> Click to update admin node"
     with_screenshot(name: :update_admin_node_button_click) do
-      find('a.update-admin-btn').click
+      find("a.update-admin-btn").click
     end
     puts ">>> update admin node clicked"
 
@@ -41,7 +40,7 @@ feature "Upgrade Admin Node" do
 
     puts ">>> Click to reboot admin node"
     with_screenshot(name: :reboot_admin_node_button_click) do
-      find('button.reboot-update-btn').click
+      find("button.reboot-update-btn").click
     end
     puts ">>> reboot admin node clicked"
 

@@ -2,20 +2,17 @@ require "spec_helper"
 require "yaml"
 
 feature "Boostrap cluster" do
-
   let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
   let(:hostnames) { environment["minions"].map { |m| m["fqdn"] if m["role"] != "admin" }.compact }
   let(:minion_ids) { environment["minions"].map { |m| m["minionId"] if m["role"] != "admin" }.compact }
 
-  before(:each) do
-    unless self.inspect.include? "User registers"
-      login
-    end
+  before do
+    login unless inspect.include? "User registers"
   end
 
   # Using append after in place of after, as recommended by
   # https://github.com/mattheworiordan/capybara-screenshot#common-problems
-  append_after(:each) do
+  append_after do
     Capybara.reset_sessions!
   end
 
@@ -94,10 +91,9 @@ feature "Boostrap cluster" do
     puts ">>> Selecting minion roles"
     with_screenshot(name: :select_minion_roles) do
       environment["minions"].each do |minion|
-        if ["master", "worker"].include?(minion["role"])
-          within("tr", text: minion["minionId"] || minion["minionID"]) do
-            find(".#{minion["role"]}-btn").click
-          end
+        next unless %w[master worker].include?(minion["role"])
+        within("tr", text: minion["minionId"] || minion["minionID"]) do
+          find(".#{minion["role"]}-btn").click
         end
       end
     end
@@ -156,7 +152,7 @@ feature "Boostrap cluster" do
     minion_ids.each do |id|
       environment(
         action: :update,
-        body: set_minion_status(id, "bootstrapped")
+        body:   set_minion_status(id, "bootstrapped")
       )
     end
   end
