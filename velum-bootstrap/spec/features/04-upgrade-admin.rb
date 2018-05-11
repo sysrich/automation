@@ -49,7 +49,7 @@ feature "Upgrade Admin Node" do
     puts "<<< Waiting 30 seconds to allow Velum to shutdown"
 
     puts ">>> Wait for Velum to recover"
-    1.upto(600) do |n|
+    1.upto(1200) do |n|
       begin
         with_status_ok do
           visit "/"
