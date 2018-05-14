@@ -2,6 +2,7 @@
 
 import argparse
 import datetime
+import io
 import json
 import logging
 import os.path
@@ -53,8 +54,8 @@ def render_to_file(name, data, args):
     log.debug("Generating %s", path)
     chart.render_to_file(path)
 
-    # FIXME test
-    with open(path) as f:
+    # TODO add tests
+    with io.open(path, "r", encoding="utf-8") as f:
         svg = f.read()
     start = svg.index('<script type')
     end = svg.index('</script>') + 9
