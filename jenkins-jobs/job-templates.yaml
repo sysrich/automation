@@ -1,0 +1,20 @@
+# Job Templates
+- job-template:
+    name: '{name}.housekeeping'
+    project-type: multibranch
+    disabled: '{obj:disabled}'
+    periodic-folder-trigger: 30m
+    number-to-keep: 30
+    days-to-keep: 30
+    scriptPath: Jenkinsfile.housekeeping
+    scm:
+      - github:
+          repo: '{name}'
+          repo-owner: 'kubic-project'
+          credentials-id: 'github-token-caaspjenkins'
+          branch-discovery: no-pr
+          discover-pr-forks-strategy: current
+          discover-pr-forks-trust: contributors
+          discover-pr-origin: current
+          notification-context: continuous-integration/jenkins/housekeeping
+          filter-head-includes: master release-* PR-*
