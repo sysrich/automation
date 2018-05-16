@@ -17,6 +17,7 @@
       - '{name}.integration'
       - '{name}.housekeeping'
       - '{name}.flake8'
+      - '{name}.bandit'
 
 - project:
     name: velum
