@@ -15,6 +15,7 @@
     disabled: false
     jobs:
       - '{name}.housekeeping'
+      - '{name}.flake8'
 
 - project:
     name: velum
