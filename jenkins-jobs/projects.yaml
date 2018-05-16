@@ -1,60 +1,57 @@
+# Projects
 - project:
     name: automation
-    disabled: false
     jobs:
+      - '{name}.integration'
       - '{name}.housekeeping'
 
 - project:
     name: jenkins-library
-    disabled: false
     jobs:
+      - '{name}.integration'
       - '{name}.housekeeping'
 
 - project:
     name: salt
-    disabled: false
     jobs:
+      - '{name}.integration'
       - '{name}.housekeeping'
       - '{name}.flake8'
 
 - project:
     name: velum
-    disabled: false
     jobs:
+      - '{name}.integration'
       - '{name}.housekeeping'
 
 - project:
     name: caasp-container-manifests
-    disabled: false
     jobs:
+      - '{name}.integration'
       - '{name}.housekeeping'
 
 - project:
     name: supportutils-plugin-suse-caasp
-    disabled: false
     jobs:
       - '{name}.housekeeping'
 
 - project:
     name: container-feeder
-    disabled: false
     jobs:
       - '{name}.housekeeping'
 
 - project:
     name: caasp-cli
-    disabled: false
     jobs:
       - '{name}.housekeeping'
 
 - project:
     name: caasp-services
-    disabled: false
     jobs:
+      - '{name}.integration'
       - '{name}.housekeeping'
 
 - project:
     name: dex-branding
-    disabled: false
     jobs:
       - '{name}.housekeeping'
