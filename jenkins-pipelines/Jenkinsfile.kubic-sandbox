@@ -6,7 +6,7 @@ properties([
     disableConcurrentBuilds(),
     // no pipelineTriggers yet, manual trigger for now
     parameters([
-        string(name: 'IMAGE', defaultValue: 'http://download.suse.de/ibs/Devel:/CASP:/SandBox/images/SUSE-CaaS-Platform-3.0-for-KVM-and-Xen.x86_64.qcow2', description: 'SandBox build'),
+        string(name: 'IMAGE', defaultValue: 'http://download.suse.de/ibs/Devel:/CASP:/SandBox/images/SUSE-CaaS-Platform-4.0-for-KVM-and-Xen.x86_64.qcow2', description: 'SandBox build'),
         booleanParam(name: 'RUN_CONFORMANCE_TESTS', defaultValue: false, description: 'Run k8s conformance test suite')
     ])
 ])
