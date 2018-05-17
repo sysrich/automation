@@ -7,12 +7,14 @@ properties([
     // no pipelineTriggers yet, manual trigger for now
     parameters([
         string(name: 'IMAGE', defaultValue: 'http://download.suse.de/ibs/Devel:/CASP:/SandBox/images/SUSE-CaaS-Platform-4.0-for-KVM-and-Xen.x86_64.qcow2', description: 'SandBox build'),
-        booleanParam(name: 'RUN_CONFORMANCE_TESTS', defaultValue: false, description: 'Run k8s conformance test suite')
+        booleanParam(name: 'RUN_CONFORMANCE_TESTS', defaultValue: false, description: 'Run k8s conformance test suite'),
+        string(name: 'timeout', defaultValue: '120', description: 'Timeout to fetch image builds, as the job is on demand it can take longer to fetch the image')
     ])
 ])
 
 def kvmTypeOptions = kubicLib.CaaspKvmTypeOptions.new();
 kvmTypeOptions.image = env.IMAGE
+kvmTypeOptions.timeOut = env.timeout
 
 coreKubicProjectPeriodic(
     environmentTypeOptions: kvmTypeOptions
