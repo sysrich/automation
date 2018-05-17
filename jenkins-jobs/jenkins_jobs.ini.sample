@@ -1,5 +1,4 @@
 [job_builder]
-ignore_cache=True
 keep_descriptions=True
 allow_duplicates=False
 

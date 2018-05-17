@@ -24,7 +24,7 @@
     name: '{name}.housekeeping'
     project-type: multibranch
     disabled: '{obj:disabled}'
-    periodic-folder-trigger: 5m
+    periodic-folder-trigger: 30m
     number-to-keep: 30
     days-to-keep: 30
     scriptPath: Jenkinsfile.housekeeping
