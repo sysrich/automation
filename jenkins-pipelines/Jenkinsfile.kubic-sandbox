@@ -14,7 +14,7 @@ properties([
 
 def kvmTypeOptions = kubicLib.CaaspKvmTypeOptions.new();
 kvmTypeOptions.image = env.IMAGE
-kvmTypeOptions.timeOut = env.timeout
+kvmTypeOptions.timeout = env.timeout.toInteger()
 
 coreKubicProjectPeriodic(
     environmentTypeOptions: kvmTypeOptions
