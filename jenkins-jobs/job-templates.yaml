@@ -9,6 +9,9 @@
     scriptPath: Jenkinsfile
     scm:
       - github:
+          # Empty key == intentional to trick JJB into giving
+          # the SCM a consistent ID.
+          '': '{scm-id}'
           repo: '{name}'
           repo-owner: 'kubic-project'
           credentials-id: 'github-token-caaspjenkins'
@@ -30,6 +33,9 @@
     scriptPath: Jenkinsfile.housekeeping
     scm:
       - github:
+          # Empty key == intentional to trick JJB into giving
+          # the SCM a consistent ID.
+          '': '{scm-id}'
           repo: '{name}'
           repo-owner: 'kubic-project'
           credentials-id: 'github-token-caaspjenkins'
@@ -50,6 +56,9 @@
     scriptPath: Jenkinsfile.flake8
     scm:
       - github:
+          # Empty key == intentional to trick JJB into giving
+          # the SCM a consistent ID.
+          '': '{scm-id}'
           repo: '{name}'
           repo-owner: 'kubic-project'
           credentials-id: 'github-token-caaspjenkins'
