@@ -4,6 +4,9 @@
       "default": "http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/",
       "provo": "http://nodes.provo-prod.caasp.suse.net:32501/ibs/Devel:/CASP:/Head:/ControllerNode/"
     },
+    "sandbox": {
+      "default": "http://download.suse.de/ibs/Devel:/CASP:/SandBox/"
+    },
     "kubic": {
       "default": "http://download.opensuse.org/repositories/devel:/CaaSP:/images/"
     },
