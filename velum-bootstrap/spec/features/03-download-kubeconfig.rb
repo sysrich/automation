@@ -25,9 +25,9 @@ feature "Download Kubeconfig" do
     expect(page).to have_text("You currently have no nodes to be accepted for bootstrapping", wait: 240)
 
     puts ">>> User clicks to download kubeconfig"
-    expect(page).to have_text("kubectl config")
+    expect(page).to have_text("kubeconfig")
     with_screenshot(name: :download_kubeconfig) do
-      click_on "kubectl config"
+      click_on "kubeconfig"
     end
     puts "<<< User clicks to download kubeconfig"
 
