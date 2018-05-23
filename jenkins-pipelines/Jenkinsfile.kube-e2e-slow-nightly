@@ -19,7 +19,11 @@ coreKubicProjectPeriodic(
 ) {
     // empty preBootstrapBody
 } {
-    stage('Run K8S Conformance Tests') {
-        runK8sE2eTests(environment: environment)
+    stage('Run K8S E2E Slow Tests') {
+        runK8sE2eTests(
+            environment: environment,
+            e2eFocus: '\\[Slow\\]',
+            e2eSkip: 'Alpha|\\[(Conformance|Disruptive|Feature:[^\\]]+|Flaky|Serial)\\]'
+        )
     }
 }
