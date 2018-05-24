@@ -6,6 +6,9 @@ properties([
     disableConcurrentBuilds(),
     pipelineTriggers([cron('H H(3-5) * * *')]),
     parameters([
+        string(name: 'MASTER_COUNT', defaultValue: '3', description: 'Number of Master Nodes'),
+        string(name: 'WORKER_COUNT', defaultValue: '2', description: 'Number of Worker Nodes'),
+        booleanParam(name: 'ENVIRONMENT_DESTROY', defaultValue: true, description: 'Destroy env once done'),
         string(name: 'LATENCY', defaultValue: '50', description: 'Latency (ms)'),
         string(name: 'JITTER', defaultValue: '20', description: 'Jitter (ms)'),
         string(name: 'PACKET_LOSS', defaultValue: '1', description: 'Packet loss (percentage)'),
