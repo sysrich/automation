@@ -3,7 +3,7 @@
     name: '{name}.integration'
     project-type: multibranch
     disabled: '{obj:disabled}'
-    periodic-folder-trigger: 5m
+    periodic-folder-trigger: 1h
     number-to-keep: 30
     days-to-keep: 30
     scriptPath: Jenkinsfile
@@ -27,7 +27,7 @@
     name: '{name}.housekeeping'
     project-type: multibranch
     disabled: '{obj:disabled}'
-    periodic-folder-trigger: 30m
+    periodic-folder-trigger: 1h
     number-to-keep: 30
     days-to-keep: 30
     scriptPath: Jenkinsfile.housekeeping
@@ -50,7 +50,7 @@
     name: '{name}.flake8'
     project-type: multibranch
     disabled: '{obj:disabled}'
-    periodic-folder-trigger: 5m
+    periodic-folder-trigger: 1h
     number-to-keep: 30
     days-to-keep: 30
     scriptPath: Jenkinsfile.flake8
