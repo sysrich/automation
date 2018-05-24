@@ -38,8 +38,6 @@ PARALLELISM=${CAASP_PARALLELISM:-1}
 ENABLE_TILLER=${CAASP_ENABLE_TILLER:-false}
 EXTRA_REPO=${CAASP_EXTRA_REPO:-}
 
-# base distribution used for setting up dependencies, and the packages to install
-DIST_BASE="opensuse.org/repositories/Virtualization:/containers"
 EARLY_DIST_PACKAGES="lsb-release"
 DIST_PACKAGES="jq \
                python-tox \
@@ -252,10 +250,10 @@ setup() {
     sudo zypper --gpg-auto-import-keys ref SUSE_CA
   fi
 
-  if ! zypper lr -dU | grep --quiet "$DIST_BASE" ; then
-    log "Adding Virtualization:containers Zypper repo"
-    sudo zypper ar "http://download.$DIST_BASE/${dist}/Virtualization:containers.repo"
-    sudo zypper --gpg-auto-import-keys ref Virtualization_containers
+  if ! zypper lr -dU | grep --quiet "suse.de/ibs/Devel:/CASP:/CI" ; then
+    log "Adding Devel:CASP:CI Zypper repo"
+    sudo zypper ar "http://download.suse.de/ibs/Devel:/CASP:/CI/${dist}/Devel:CASP:CI.repo"
+    sudo zypper --gpg-auto-import-keys ref Devel_CASP_CI
   fi
 
   # || : is necessary, as Zypper exits non-zero for "no changes".
