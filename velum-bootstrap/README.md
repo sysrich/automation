@@ -16,6 +16,7 @@ This can be either a production environment installed from images, or a caasp-kv
       * Building a cluster
 
         -c|--configure                   Configure Velum
+                        --choose-crio    Choose cri-o when configuring Velum
         -b|--bootstrap                   Bootstrap (implies Download Kubeconfig)
         -k|--download-kubeconfig         Download Kubeconfig
         --enable-tiller                  Enable Helm Tiller

@@ -326,7 +326,7 @@ build() {
   [ -n "$EXTRA_REPO" ] && $DIR/../misc-tools/inject_repo.sh $EXTRA_REPO
 
   log "Waiting for Velum to start - this may take a while"
-  PYTHONUNBUFFERED=1 "$DIR/../misc-tools/wait-for-velum" https://$(jq -r '.dashboardExternalHost' "$ENVIRONMENT")
+  PYTHONUNBUFFERED=1 "$DIR/../misc-tools/wait-for-velum" --timeout 30 https://$(jq -r '.dashboardExternalHost' "$ENVIRONMENT")
 
   log "CaaS Platform Ready for bootstrap"
 }

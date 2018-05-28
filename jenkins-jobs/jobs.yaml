@@ -1,4 +1,10 @@
 # Jobs
+#
+# Note: the empty key followed by an UUID tricks JJB into giving
+# the SCM a consistent ID. Without it, JJB will start all jobs at
+# once for every branch and PR instead of running them at the right
+# time. Make sure the UUIDs don't get duplicated across the file.
+
 - job:
     name: 'caasp-nightly'
     project-type: multibranch
@@ -8,8 +14,6 @@
     scriptPath: jenkins-pipelines/Jenkinsfile.kubic-nightly
     scm:
       - github:
-          # Empty key == intentional to trick JJB into giving
-          # the SCM a consistent ID.
           '': 'a40a1e55-f6ee-4fd7-bab2-7e73fdf40422'
           repo: 'automation'
           repo-owner: 'kubic-project'
@@ -21,6 +25,26 @@
           suppress-automatic-scm-triggering: true
 
 - job:
+    name: 'caasp-nightly-cri-o'
+    project-type: multibranch
+    periodic-folder-trigger: 1h
+    number-to-keep: 30
+    days-to-keep: 30
+    scriptPath: jenkins-pipelines/Jenkinsfile.kubic-nightly-cri-o
+    scm:
+      - github:
+          '': '866a5b3f-2038-48d4-8789-39e8a28b922a'
+          repo: 'automation'
+          repo-owner: 'kubic-project'
+          credentials-id: 'github-token-caaspjenkins'
+          branch-discovery: no-pr
+          discover-pr-forks-strategy: false
+          discover-pr-origin: false
+          filter-head-regex: ^(master|release\-\d\.\d)$
+          suppress-automatic-scm-triggering: true
+
+
+- job:
     name: 'automation.jenkins-jobs'
     project-type: multibranch
     periodic-folder-trigger: 1h
@@ -29,8 +53,6 @@
     scriptPath: Jenkinsfile.jenkins-jobs
     scm:
       - github:
-          # Empty key == intentional to trick JJB into giving
-          # the SCM a consistent ID.
           '': '4a57f25e-325d-4a20-9443-28ea9bb56628'
           repo: 'automation'
           repo-owner: 'kubic-project'

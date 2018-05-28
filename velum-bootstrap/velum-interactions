@@ -16,6 +16,7 @@ RUN_UPDATE_MINIONS=false
 RUN_NODE_ADD=false
 RUN_NODE_REMOVE=false
 ENABLE_TILLER=false
+CHOOSE_CRIO=false
 
 ENVIRONMENT=${CAASP_ENVIRONMENT:-$DIR/../caasp-kvm/environment.json}
 
@@ -29,6 +30,7 @@ Usage:
   * Building a cluster
 
     -c|--configure                   Configure Velum
+                    --choose-crio    Choose cri-o when configuring Velum
     -b|--bootstrap                   Bootstrap (implies Download Kubeconfig)
     -k|--download-kubeconfig         Download Kubeconfig
     --enable-tiller                  Enable Helm Tiller
@@ -91,6 +93,9 @@ while [[ $# > 0 ]] ; do
       ;;
     --enable-tiller)
       ENABLE_TILLER=true
+      ;;
+    --choose-crio)
+      CHOOSE_CRIO=true
       ;;
     -a|--update-admin)
       RUN_UPDATE_ADMIN=true
@@ -171,7 +176,7 @@ interact() {
     args="$args spec/**/07-*"
   fi
 
-  VERBOSE=true ENABLE_TILLER=${ENABLE_TILLER} ENVIRONMENT=$ENVIRONMENT bundle exec rspec $args
+  VERBOSE=true ENABLE_TILLER=${ENABLE_TILLER} CHOOSE_CRIO=${CHOOSE_CRIO} ENVIRONMENT=$ENVIRONMENT bundle exec rspec $args
 
   if [ "$RUN_DOWNLOAD_KUBECONFIG" = true ]; then
     local out=$(cat $ENVIRONMENT)
