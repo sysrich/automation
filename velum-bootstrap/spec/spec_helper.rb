@@ -24,7 +24,7 @@ def environment(action: :read, body: nil)
   when :update
     if body
       File.open(environment_path, "w") do |f|
-        f.puts(JSON.dump(body))
+        f.puts(JSON.pretty_generate(body))
       end
     end
   end
