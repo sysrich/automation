@@ -2,7 +2,6 @@ require "spec_helper"
 require "yaml"
 
 feature "Remove a Node" do
-  let(:node_number) { environment["minions"].count { |element| element["role"] != "admin" } }
   let(:master_node_removable?) do
     environment["minions"].count { |element| element["role"] == "master" }.tap do |count|
       !count.zero? && count != 1
@@ -80,7 +79,7 @@ feature "Remove a Node" do
     puts ">>> Checking if node removal orchestration succeeded"
     with_screenshot(name: :node_removal_orchestration_succeeded) do
       within(".nodes-container") do
-        expect(page).to have_css(".fa-check-circle-o", count: node_number - 1, wait: 5)
+        expect(page).to have_css(".fa-check-circle-o", count: node_number, wait: 5)
       end
       expect(page).not_to have_text("Removal Failed", wait: 5)
     end
