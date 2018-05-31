@@ -28,7 +28,7 @@ lock('openstack-single-user') {
         nodeLabel: 'leap42.3&&m1.large||leap42.3',
         environmentType: 'openstack',
         environmentTypeOptions: openstackTypeOptions,
-        environmentDestroy: env.ENVIRONMENT_DESTROY,
+        environmentDestroy: env.ENVIRONMENT_DESTROY.toBoolean(),
         masterCount: env.MASTER_COUNT.toInteger(),
         workerCount: env.WORKER_COUNT.toInteger()
     ) {
