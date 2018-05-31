@@ -8,7 +8,8 @@ properties([
     parameters([
         string(name: 'IMAGE', defaultValue: 'http://download.suse.de/ibs/Devel:/CASP:/SandBox/images/SUSE-CaaS-Platform-4.0-for-KVM-and-Xen.x86_64.qcow2', description: 'SandBox build'),
         booleanParam(name: 'RUN_CONFORMANCE_TESTS', defaultValue: false, description: 'Run k8s conformance test suite'),
-        string(name: 'timeout', defaultValue: '120', description: 'Timeout to fetch image builds, as the job is on demand it can take longer to fetch the image')
+        string(name: 'timeout', defaultValue: '120', description: 'Timeout to fetch image builds, as the job is on demand it can take longer to fetch the image'),
+        booleanParam(name: 'ENVIRONMENT_DESTROY', defaultValue: true, description: 'Destroy env once done?')
     ])
 ])
 
@@ -17,7 +18,8 @@ kvmTypeOptions.image = env.IMAGE
 kvmTypeOptions.timeout = env.timeout.toInteger()
 
 coreKubicProjectPeriodic(
-    environmentTypeOptions: kvmTypeOptions
+    environmentTypeOptions: kvmTypeOptions,
+    environmentDestroy: env.ENVIRONMENT_DESTROY
 ) {
     // Run Transactional Update
     transactionalUpdate(
