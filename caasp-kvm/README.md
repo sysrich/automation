@@ -9,40 +9,42 @@ changes really will work in the final product.
 
 ## Requirements
 
-Follow this README in order from **Zypper setup** to **CLI syntax** to provision 
+Follow this README in order from **SUSE CA Certificate Setup** to **Bootstrap Cluster** to provision 
 a cluster starting from a fresh OS install. 
 
-# Zypper setup
+# SUSE CA Certificate Setup (CaaSP only)
 
-Add the containers repository for the correct version of Docker, among other things. 
-See Notes section.   
-```
-sudo zypper ar obs://Virtualization:containers/openSUSE_Leap_42.3 Virtualization:containers
-```
+**NOTE**: This does not apply to Kubic environments
 
-**NOTE**: Kubic users can skip the next step
-
-If you want to use CaaSP, you must also have SUSE's CA certificates installed, as documented on
+If you want to use CaaSP, you must have SUSE's CA certificates installed, as documented on
 http://ca.suse.de . Replace distribution 42.3 with your version if different.
 ```
 zypper ar --refresh http://download.suse.de/ibs/SUSE:/CA/openSUSE_Leap_42.3/SUSE:CA.repo
-zypper in -y ca-certificates-suse p11-kit-nss-trust
+zypper install ca-certificates-suse p11-kit-nss-trust
 ```
 The first time you install a package from a new repository zypper will ask you to accept or 
 reject the GPG key. Select 'a' for 'always'.
 
+# Clone automation repository
+```
+sudo zypper install git
+mkdir ~/github
+cd ~/github
+git clone git@github.com:kubic-project/automation.git
+```
 
 # Packages and services
-Run the following as root or via sudo:   
+Install needed packages via caasp-devenv script.
+This will additionally add the current user to needed service groups.
+
+**You will need to logout of your user session and log back in again for the group membership to take effect.**
 ```
-zypper in -y git jq docker python-requests python-tox python-devel python-openstackclient python-novaclient python-heatclient qemu-kvm libvirt-daemon-qemu terraform terraform-provider-libvirt
-systemctl enable libvirtd
-systemctl start libvirtd
-systemctl enable docker
-systemctl start docker
+cd ~/github/automation
+./caasp-devenv --setup
 ```
 
 # VPN access (CaaSP only)
+
 **NOTE**: This does not apply to Kubic environments
 
 Many of the required resources are hosted inside SUSE's private R&D network; in
@@ -50,21 +52,6 @@ order to access and connect to these resouces, you may need a SUSE R&D openvpn
 connection; see the
 [Micro Focus internal wiki](https://wiki.microfocus.net/index.php?title=SUSE-Development/OPS/Services/OpenVPN)
 for details.
-
-
-# User settings
-The user running `caasp-kvm` must be a member of the dependent service groups. 
-Log out and back in for changes to take effect. 
-
-
-# Project dependencies
-Clone these repositories:
-```
-git clone git@github.com:kubic-project/salt.git
-git clone git@github.com:kubic-project/velum.git
-git clone git@github.com:kubic-project/caasp-container-manifests.git
-git clone git@github.com:kubic-project/automation.git
-```
 
 # VM and storage setup
 
@@ -76,8 +63,21 @@ sudo virsh pool-autostart default
 sudo virsh pool-start default
 ```
 
-## CLI Syntax
+# Build Cluster
 
+```
+./caasp-devenv --build
+```
+
+# Bootstrap Cluster
+
+```
+./caasp-devenv --bootstrap
+```
+
+## CLI Syntax
+    ~/github/automation/caasp-kvm/caasp-kvm
+    
     Usage:
 
       * Building a cluster
