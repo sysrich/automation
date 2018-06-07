@@ -19,7 +19,7 @@ properties([
 ])
 
 coreKubicProjectPeriodic(
-    environmentDestroy: env.ENVIRONMENT_DESTROY,
+    environmentDestroy: env.ENVIRONMENT_DESTROY.toBoolean(),
     masterCount: env.MASTER_COUNT.toInteger(),
     workerCount: env.WORKER_COUNT.toInteger()
 ) {
