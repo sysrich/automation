@@ -23,6 +23,11 @@ large scale clusters for testing and validation.
 A tool to build a OpenStack based CaaSP cluster. Well suited to building
 large scale clusters for testing and validation.
 
+## CaaSP Bare Metal
+
+A tool to build a Bare Metal cluster. Acts as a client for the Bare Metal
+Manager service.
+
 ## Jenkins Pipelines
 
 A set of Jenkins pipelines which are not directly associated with a specific
@@ -40,3 +45,21 @@ A set of tests to validate a CaaSP cluster has been successfully deployed
 
 Some scripting to walk through the Velum UI to bootstrap a cluster, primarily
 used within CI.
+
+# Development
+
+Where possible, use Python, Ruby, Bash.
+
+Tools should be able to run on developer workstations and in CI runs.
+Prefer configurable paths.
+
+CI logs can be difficult to inspect: avoid output that look like
+errors if unnecessary. Structure the output with headers and footers if needed.
+
+Common CLI options:
+```sh
+ -h                help
+ -l --logfile      write logs to a file (used to capture logs in CI)
+ --outdir          output directory (used to capture artifacts in CI)
+ --env-json-path   environment.json file path
+```
