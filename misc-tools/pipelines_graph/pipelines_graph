@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+
+"""
+    Generate pipelines function call graph
+    Warning: this is not meant to be accurate.
+"""
+
+# The groovy syntax is not being parsed and tokenized:
+# the tool is simply matching strings
+
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from glob import glob
+from graphviz import Digraph
+from os.path import basename
+from os.path import join
+
+
+def parse_args():
+    ap = ArgumentParser(description=__doc__,
+        formatter_class=ArgumentDefaultsHelpFormatter)
+    ap.add_argument('jlpath', help='jenkins-library repo path')
+    ap.add_argument('arpath', help='automation repo path')
+    args = ap.parse_args()
+    return args
+
+
+def main():
+    args = parse_args()
+    g = Digraph('G', format='svg')
+    g.graph_attr['rankdir'] = 'LR'
+
+    jl_glob = glob(join(args.jlpath, "vars/*.groovy"))
+    fun_names = sorted(basename(fn)[0:-7] for fn in jl_glob)
+
+    def add_calls(fn, caller):
+        with open(fn) as f:
+            code = f.read()
+        for callee in fun_names:
+            if callee in code:
+                g.edge(caller, callee)
+
+    for fn in glob(join(args.arpath, "jenkins-pipelines/Jenkinsfile.*")):
+        caller = basename(fn)
+        add_calls(fn, caller)
+
+    for fn in jl_glob:
+        caller = basename(fn)[0:-7]
+        add_calls(fn, caller)
+
+    g.render('pipelines', view=True)
+
+if __name__ == '__main__':
+    main()
