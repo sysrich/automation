@@ -34,6 +34,12 @@
           scm-id: 0dc269af-d34e-4956-9266-6206cf683bb9
 
 - project:
+    name: velum-branding
+    jobs:
+      - '{name}.housekeeping':
+          scm-id: 383771d9-f1e5-499f-809b-8fb2882ba6a6
+
+- project:
     name: caasp-container-manifests
     jobs:
       - '{name}.integration':
