@@ -1,0 +1,61 @@
+def targetBranch = env.getEnvironment().get('CHANGE_TARGET', env.BRANCH_NAME)
+
+library "kubic-jenkins-library@${targetBranch}"
+
+// TODO: Don't hardcode salt repo name, find the right place
+// to lookup this information dynamically.
+githubCollaboratorCheck(
+    org: 'kubic-project',
+    repo: 'salt',
+    user: env.CHANGE_AUTHOR,
+    credentialsId: 'github-token')
+
+def label = "automation-jenkins-jobs-${UUID.randomUUID().toString()}"
+
+podTemplate(label: label, containers: [
+        containerTemplate(
+            name: 'tox',
+            image: 'registry.suse.de/devel/casp/ci/opensuse_leap_42.3_containers/jenkins-tox-container:latest',
+            alwaysPullImage: true,
+            ttyEnabled: true,
+            command: 'cat',
+            envVars: [
+                envVar(key: 'http_proxy', value: env.http_proxy),
+                envVar(key: 'https_proxy', value: env.http_proxy),
+            ],
+        ),
+]) {
+    node(label) {
+        stage('Retrieve Code') {
+            checkout scm
+        }
+
+        stage('Test') {
+            container('tox') {
+                dir('jenkins-jobs') {
+                    sh 'tox -e test'
+                }
+            }
+        }
+
+        stage('Test') {
+            container('tox') {
+                dir('jenkins-jobs') {
+                    sh 'tox -e test'
+                }
+            }
+        }
+
+        if (!binding.hasVariable('pullRequest')) {
+            stage('Update') {
+                container('tox') {
+                    dir('jenkins-jobs') {
+                        withCredentials([file(credentialsId: 'jenkins-job-builder-config', variable: 'JJB_CONFIG')]) {
+                            sh(script: "tox -e update -- --conf ${JJB_CONFIG}")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
