@@ -30,6 +30,8 @@ CAASP_VELUM_DIR=${CAASP_VELUM_DIR:-$DIR/../../velum}
 CAASP_NAME_PREFIX=${CAASP_NAME_PREFIX:-}
 CAASP_BRIDGE=${CAASP_BRIDGE:-}
 
+TFVARS_FILE=${CAASP_TFVARS_FILE:-}
+
 ADMIN_RAM=${CAASP_ADMIN_RAM:-4096}
 ADMIN_CPU=${CAASP_ADMIN_CPU:-4}
 MASTER_RAM=${CAASP_MASTER_RAM:-2048}
@@ -77,6 +79,7 @@ Usage:
   * Advanced Options
 
     --plan                      Run the CaaSP KVM Plan Step
+    --tfvars-file <STR>         Path to a specific .tfvars file to use (Default: .)
     --admin-ram <INT>           RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=$ADMIN_RAM)
     --admin-cpu <INT>           CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=$ADMIN_CPU)
     --master-ram <INT>          RAM to allocate to master node(s) (Default: CAASP_MASTER_RAM=$MASTER_RAM)
@@ -196,6 +199,10 @@ while [[ $# > 0 ]] ; do
       ACTION=1
       RUN_PLAN=1
       ;;
+    --tfvars-file)
+      TFVARS_FILE="$2"
+      shift
+      ;;
     --admin-ram)
       ADMIN_RAM="$2"
       shift
@@ -260,6 +267,11 @@ TF_ARGS="-parallelism=$PARALLELISM \
          -var master_vcpu=$MASTER_CPU \
          -var worker_memory=$WORKER_RAM \
          -var worker_vcpu=$WORKER_CPU"
+
+if [ ! -z "${TFVARS_FILE}" ] ; then
+  TF_ARGS="-var-file=$TFVARS_FILE \
+          ${TF_ARGS}"
+fi
 
 if [ -n "$CAASP_SALT_DIR" ] ; then
   CAASP_SALT_DIR="$(realpath $CAASP_SALT_DIR)"
