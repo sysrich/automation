@@ -26,7 +26,7 @@
     periodic-folder-trigger: 1h
     number-to-keep: 30
     days-to-keep: 30
-    scriptPath: Jenkinsfile.flake8
+    scriptPath: Jenkinsfile.jenkins-jobs
     scm:
       - github:
           # Empty key == intentional to trick JJB into giving
