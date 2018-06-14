@@ -38,15 +38,8 @@ podTemplate(label: label, containers: [
             }
         }
 
-        stage('Test') {
-            container('tox') {
-                dir('jenkins-jobs') {
-                    sh 'tox -e test'
-                }
-            }
-        }
-
-        if (!binding.hasVariable('pullRequest')) {
+        // If this is NOT a Pull Request build...
+        if (!env.CHANGE_ID) {
             stage('Update') {
                 container('tox') {
                     dir('jenkins-jobs') {
