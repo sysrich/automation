@@ -7,4 +7,4 @@ masters = 3
 worker_size = "m1.large"
 workers = 3
 dnsdomain = "testing.qa.caasp.suse.net"
-dnsentry = "1"
+dnsentry = "0"
