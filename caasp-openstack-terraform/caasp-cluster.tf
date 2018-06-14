@@ -12,6 +12,8 @@ variable "master_size" {}
 variable "masters" {}
 variable "worker_size" {}
 variable "workers" {}
+variable "dnsdomain" {}
+variable "dnsentry" {}
 
 provider "openstack" {
   domain_name = "${var.domain_name}"
@@ -22,10 +24,41 @@ provider "openstack" {
   insecure = "true"
 }
 
+resource "openstack_dns_zone_v2" "caasp" {
+  count = "${var.dnsentry ? 1 : 0}"
+  name = "${var.dnsdomain}."
+  email = "email@example.com"
+  description = "CAASP dns zone"
+  ttl = 60
+  type = "PRIMARY"
+}
+
+resource "openstack_dns_recordset_v2" "admin" {
+  count = "${var.dnsentry ? 1 : 0}"
+  zone_id = "${openstack_dns_zone_v2.caasp.id}"
+  name = "${format("%v.%v.", "${openstack_compute_instance_v2.admin.name}", "${var.dnsdomain}")}"
+  description = "admin node A recordset"
+  ttl = 5
+  type = "A"
+  records = ["${openstack_networking_floatingip_v2.admin_ext.address}"]
+  depends_on = ["openstack_compute_instance_v2.admin", "openstack_compute_floatingip_associate_v2.admin_ext_ip"]
+}
+
+resource "openstack_dns_recordset_v2" "master" {
+  count = "${var.dnsentry ? "${var.masters}" : 0}"
+  zone_id = "${openstack_dns_zone_v2.caasp.id}"
+  name = "${format("%v.%v.", "${element(openstack_compute_instance_v2.master.*.name, count.index)}", "${var.dnsdomain}")}"
+  description = "master nodes A recordset"
+  ttl = 5
+  type = "A"
+  records = ["${element(openstack_networking_floatingip_v2.master_ext.*.address, count.index)}"]
+  depends_on = ["openstack_compute_instance_v2.master", "openstack_compute_floatingip_associate_v2.master_ext_ip"]
+}
+
 data "template_file" "cloud-init" {
   template = "${file("cloud-init.cls")}"
 
-  vars {
+ vars {
     admin_address = "${openstack_compute_instance_v2.admin.access_ip_v4}"
   }
 }
@@ -320,8 +353,20 @@ resource "openstack_compute_floatingip_associate_v2" "worker_ext_ip" {
 }
 
 
-output "ip_admin" {
+output "ip_admin_external" {
   value = "${openstack_networking_floatingip_v2.admin_ext.address}"
+}
+
+output "ip_admin_internal" {
+  value = "${openstack_compute_instance_v2.admin.access_ip_v4}"
+}
+
+output "hostname_admin" {
+  value = "${openstack_dns_recordset_v2.admin.*.name}"
+}
+
+output "hostnames_masters" {
+  value = "${openstack_dns_recordset_v2.master.*.name}"
 }
 
 output "ip_masters" {
