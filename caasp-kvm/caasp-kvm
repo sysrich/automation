@@ -39,6 +39,7 @@ MASTER_CPU=${CAASP_MASTER_CPU:-2}
 WORKER_RAM=${CAASP_WORKER_RAM:-2048}
 WORKER_CPU=${CAASP_WORKER_CPU:-2}
 ADDITIONAL_VOLUME_COUNT=${CAASP_ADDITIONAL_VOLUME_COUNT:-0}
+ADDITIONAL_VOLUME_SIZE=${CAASP_ADDITIONAL_VOLUME_SIZE:-10}
 
 EXTRA_REPO=${CAASP_EXTRA_REPO:-}
 
@@ -89,6 +90,7 @@ Usage:
     --extra-repo <STR>          URL of a custom repository on the master(s)/worker(s) (Default: CAASP_EXTRA_REPO)
     --name-prefix <STR>         Name prefix for the terraform resources to make multiple clusters on one host possible (Default: "")
     --additional-volumes <INT>  Number of additional blank volumes to attach to worker(s) (Default: 0)
+    --additional-vol-size <INT> Size in Gigabytes of additional volumes (Default: 10)
 
   * Examples:
 
@@ -235,6 +237,10 @@ while [[ $# > 0 ]] ; do
       ADDITIONAL_VOLUME_COUNT="$2"
       shift
       ;;
+    --additional-vol-size)
+      ADDITIONAL_VOLUME_SIZE="$2"
+      shift
+      ;;
     -h|--help)
       usage
       ;;
@@ -266,7 +272,8 @@ TF_ARGS="-parallelism=$PARALLELISM \
          -var master_memory=$MASTER_RAM \
          -var master_vcpu=$MASTER_CPU \
          -var worker_memory=$WORKER_RAM \
-         -var worker_vcpu=$WORKER_CPU"
+         -var worker_vcpu=$WORKER_CPU \
+         -var additional_volume_size=$ADDITIONAL_VOLUME_SIZE"
 
 if [ ! -z "${TFVARS_FILE}" ] ; then
   TF_ARGS="-var-file=$TFVARS_FILE \
@@ -300,7 +307,7 @@ if [ -n "$CAASP_NAME_PREFIX" ] ; then
 fi
 
 if [ -n "${ADDITIONAL_VOLUME_COUNT}" ] ; then
-  log "Adding ${ADDITIONAL_VOLUME_COUNT} volumes to worker nodes"
+  log "Adding ${ADDITIONAL_VOLUME_COUNT} volumes of size ${ADDITIONAL_VOLUME_SIZE} GB to worker nodes"
 fi
 
 # Core methods
