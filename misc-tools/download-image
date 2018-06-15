@@ -119,7 +119,7 @@ def get_canonical_url(args, url):
     }
 
     image = requests.head(url, proxies=proxies)
-    
+
     if image.status_code == 302 or image.status_code == 301:
         return get_canonical_url(args, image.headers.get('Location'))
     elif image.status_code == 200:
@@ -127,27 +127,36 @@ def get_canonical_url(args, url):
     else:
         raise Exception("Cannot find image's real location: " + url)
 
+def find_sha256(text):
+    # Find the regex by looking for a length-64 hex word
+    sha_regex = re.compile(r'\b([0-9A-Fa-f]{64})\b')
+    sha_match = sha_regex.findall(text)
+    if len(sha_match) == 1:
+        return sha_match[0]
+    return None  # None will indicate that a sha256 match was not found or that too many were found
+
 def get_sha256(url, proxies):
     print(" >> Downloading Sha256 File")
     partition = url.rpartition('/')
     sha256file = requests.head(url + '.sha256', proxies=proxies)
-    
+
     if sha256file.status_code == 404:
         # try to find this file in /SHA256SUMS within the same directory
         for line in requests.get(partition[0] + "/SHA256SUMS", proxies=proxies).text.split('\n'):
             # find sha256 for this file
             columns = line.split(" ")
-            if columns[-1] == partition[2]:
-                if len(columns[0]) == 64:
-                    return columns[0]
+            if partition[2] in columns:
+                sha256 = get_sha256(line)
+                if sha256 is not None:
+                    return sha256
         raise Exception("Cannot find remote image SHA256 in %s" % partition[0] + "/SHA256SUMS")
     elif sha256file.status_code == 302 or sha256file.status_code == 301:
         location = sha256file.headers.get('Location')
         return get_sha256(location[:location.rfind('.sha256')], proxies=proxies)
     elif sha256file.status_code == 200:
         # this will work if the SHA256 is stored as a PGP SIGNED MESSAGE in the .sha256 file
-        sha256 = requests.get(url + '.sha256', proxies=proxies).text.split('\n')[3]
-        if len(sha256) == 64:
+        sha256 = find_sha256(requests.get(url + '.sha256', proxies=proxies).text)
+        if sha256 is not None:
             return sha256
         raise Exception("Cannot find remote image SHA256 in %s" % url + '.sha256')
     else:
