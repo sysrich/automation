@@ -137,7 +137,7 @@ resource "libvirt_volume" "img" {
 ##############
 <% if ENV['CAASP_BRIDGE'] == '' -%>
 resource "libvirt_network" "network" {
-    name      = "${var.name_prefix}net"
+    name      = "${var.name_prefix}caasp-dev-net"
     mode      = "${var.net_mode}"
     domain    = "${var.name_prefix}${var.domain_name}"
     addresses = ["${var.network}"]
