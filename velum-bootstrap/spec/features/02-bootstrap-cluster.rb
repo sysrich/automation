@@ -16,12 +16,16 @@ feature "Boostrap cluster" do
   end
 
   # User registration and cluster configuration has already been done in 01-setup-velum.rb
-  # After login we need to do the configure steps again to reach the minion discovery page
-
-  scenario "User configures the cluster" do
-    with_screenshot(name: :configure) do
-      configure
+  # After login we simply press Next to reach the minion discovery page
+  scenario "User reaches minion discovery page" do
+    with_screenshot(name: :view_setup_page) do
+      with_status_ok do
+        visit "/setup"
+      end
     end
+    puts ">>> Reaching discovery page"
+    click_on "Next"
+    puts "<<< Ready to start discovery"
   end
 
   scenario "User accepts all minions" do
