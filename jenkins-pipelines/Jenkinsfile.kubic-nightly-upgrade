@@ -30,8 +30,18 @@ coreKubicProjectPeriodic(
     )
 
     // Run through the upgrade orchestration
-    upgradeEnvironment(
-        environment: environment
+    upgradeEnvironmentStage1(
+       environment: environment
+    )
+
+    stage('Switch Branch') {
+       dir('automation') {
+          sh(script: "git checkout release-3.0")
+       }
+    }
+
+    upgradeEnvironmentStage2(
+       environment: environment
     )
 
     // Run the Core Project Tests again
