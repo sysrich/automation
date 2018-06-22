@@ -34,8 +34,19 @@ coreKubicProjectPeriodic(
     )
 
     // Run through the upgrade orchestration
-    upgradeEnvironment(
-        environment: environment
+    upgradeEnvironmentStage1(
+       environment: environment
+    )
+
+    // On master, we have no branch to switch to..
+    //stage('Switch Branch') {
+    //    dir('automation') {
+    //       sh(script: "git checkout master")
+    //    }
+    //}
+
+    upgradeEnvironmentStage2(
+       environment: environment
     )
 
     // Run the Core Project Tests again
