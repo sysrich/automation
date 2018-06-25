@@ -30,12 +30,16 @@ CAASP_VELUM_DIR=${CAASP_VELUM_DIR:-$DIR/../../velum}
 CAASP_NAME_PREFIX=${CAASP_NAME_PREFIX:-}
 CAASP_BRIDGE=${CAASP_BRIDGE:-}
 
+TFVARS_FILE=${CAASP_TFVARS_FILE:-}
+
 ADMIN_RAM=${CAASP_ADMIN_RAM:-4096}
 ADMIN_CPU=${CAASP_ADMIN_CPU:-4}
 MASTER_RAM=${CAASP_MASTER_RAM:-2048}
 MASTER_CPU=${CAASP_MASTER_CPU:-2}
 WORKER_RAM=${CAASP_WORKER_RAM:-2048}
 WORKER_CPU=${CAASP_WORKER_CPU:-2}
+ADDITIONAL_VOLUME_COUNT=${CAASP_ADDITIONAL_VOLUME_COUNT:-0}
+ADDITIONAL_VOLUME_SIZE=${CAASP_ADDITIONAL_VOLUME_SIZE:-10}
 
 EXTRA_REPO=${CAASP_EXTRA_REPO:-}
 
@@ -76,6 +80,7 @@ Usage:
   * Advanced Options
 
     --plan                      Run the CaaSP KVM Plan Step
+    --tfvars-file <STR>         Path to a specific .tfvars file to use (Default: .)
     --admin-ram <INT>           RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=$ADMIN_RAM)
     --admin-cpu <INT>           CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=$ADMIN_CPU)
     --master-ram <INT>          RAM to allocate to master node(s) (Default: CAASP_MASTER_RAM=$MASTER_RAM)
@@ -84,6 +89,8 @@ Usage:
     --worker-cpu <INT>          CPUs to allocate to worker node(s) (Default: CAASP_WORKER_CPU=$WORKER_CPU)
     --extra-repo <STR>          URL of a custom repository on the master(s)/worker(s) (Default: CAASP_EXTRA_REPO)
     --name-prefix <STR>         Name prefix for the terraform resources to make multiple clusters on one host possible (Default: "")
+    --additional-volumes <INT>  Number of additional blank volumes to attach to worker(s) (Default: 0)
+    --additional-vol-size <INT> Size in Gigabytes of additional volumes (Default: 10)
 
   * Examples:
 
@@ -194,6 +201,10 @@ while [[ $# > 0 ]] ; do
       ACTION=1
       RUN_PLAN=1
       ;;
+    --tfvars-file)
+      TFVARS_FILE="$2"
+      shift
+      ;;
     --admin-ram)
       ADMIN_RAM="$2"
       shift
@@ -220,6 +231,14 @@ while [[ $# > 0 ]] ; do
       ;;
     --extra-repo)
       EXTRA_REPO="$2"
+      shift
+      ;;
+    --additional-volumes)
+      ADDITIONAL_VOLUME_COUNT="$2"
+      shift
+      ;;
+    --additional-vol-size)
+      ADDITIONAL_VOLUME_SIZE="$2"
       shift
       ;;
     -h|--help)
@@ -253,7 +272,13 @@ TF_ARGS="-parallelism=$PARALLELISM \
          -var master_memory=$MASTER_RAM \
          -var master_vcpu=$MASTER_CPU \
          -var worker_memory=$WORKER_RAM \
-         -var worker_vcpu=$WORKER_CPU"
+         -var worker_vcpu=$WORKER_CPU \
+         -var additional_volume_size=$ADDITIONAL_VOLUME_SIZE"
+
+if [ ! -z "${TFVARS_FILE}" ] ; then
+  TF_ARGS="-var-file=$TFVARS_FILE \
+          ${TF_ARGS}"
+fi
 
 if [ -n "$CAASP_SALT_DIR" ] ; then
   CAASP_SALT_DIR="$(realpath $CAASP_SALT_DIR)"
@@ -281,10 +306,18 @@ if [ -n "$CAASP_NAME_PREFIX" ] ; then
   log "Using name prefix for terraform: $CAASP_NAME_PREFIX"
 fi
 
+if [ -n "${ADDITIONAL_VOLUME_COUNT}" ] ; then
+  log "Adding ${ADDITIONAL_VOLUME_COUNT} volumes of size ${ADDITIONAL_VOLUME_SIZE} GB to worker nodes"
+fi
+
 # Core methods
 render_cluster_tf() {
   log "Generating terraform manifest from erb template"
-  VANILLA=${VANILLA} CAASP_BRIDGE=${CAASP_BRIDGE} DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} erb -T - cluster.tf.erb > cluster.tf || error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
+  VANILLA=${VANILLA} CAASP_BRIDGE=${CAASP_BRIDGE} \
+    DISABLE_MELTDOWN_SPECTRE=${DISABLE_MELTDOWN_SPECTRE} \
+    ADDITIONAL_VOLUME_COUNT=${ADDITIONAL_VOLUME_COUNT} \
+      erb -T - cluster.tf.erb > cluster.tf || \
+        error "Failed to generate cluster.tf, check that erb (part of Ruby) is installed correctly"
 }
 
 build() {

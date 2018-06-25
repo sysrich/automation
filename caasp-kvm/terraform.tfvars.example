@@ -9,6 +9,10 @@
 # eg: a pool backed by a fast SSD
 #pool = "home_libvirtd"
 
+# A different pool can be specified for additional disks attached to workers
+# eg: a pool backed by a slow spinner
+#additional_volume_pool = "default"
+
 #####################
 # Cluster variables #
 #####################
