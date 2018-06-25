@@ -40,7 +40,7 @@
           branch-discovery: no-pr
           discover-pr-forks-strategy: false
           discover-pr-origin: false
-          filter-head-regex: ^(master|release\-\d\.\d)$
+          filter-head-regex: ^(release\-\d\.\d)$
           suppress-automatic-scm-triggering: true
 
 - job:
