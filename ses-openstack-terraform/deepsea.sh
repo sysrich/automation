@@ -53,9 +53,9 @@ deepsea stage run ceph.stage.0
 echo "Running deepsea stage 1"
 deepsea stage run ceph.stage.1
 
-A=`ls /srv/pillar/ceph/proposals/role-mon/stack/default/ceph/minions/`
-B=`ls /srv/pillar/ceph/proposals/profile-default/stack/default/ceph/minions`
-C=`echo "$A $B" $(hostname -f).yml  | tr ' ' '\n' | sort | uniq -u`
+A=`ls /srv/pillar/ceph/proposals/role-mon/cluster | sed -r "s/.sls//g;s/$(hostname -f)//g"`
+B=`ls /srv/pillar/ceph/proposals/profile-default/stack/default/ceph/minions | sed -r 's/.yml//g'`
+C=`diff --side-by-side --suppress-common-lines <(echo "$A") <(echo "$B") | tr -d '< '`
 policyf=/srv/pillar/ceph/proposals/policy.cfg
 
 cat <<EOF > $policyf
@@ -68,35 +68,28 @@ role-master/cluster/$(hostname -f).sls
 EOF
 
 for i in $(echo $C); do 
-    echo role-admin/cluster/$i | sed -e 's/yml/sls/' >> $policyf
+    echo role-admin/cluster/$i.sls >> $policyf
 done
 
 echo -e '\n# MON' >> $policyf
 
-for i in $(echo $C | sort | uniq -u); do 
-    echo role-mon/stack/default/ceph/minions/$i >> $policyf
-done
-
 for i in $(echo $C); do 
-    echo role-mon/cluster/$i | sed -e 's/yml/sls/' >> $policyf
+    echo role-mon/cluster/$i.sls >> $policyf
 done
 
 echo -e '\n# MGR' >> $policyf
 
 for i in $(echo $C); do 
-    echo role-mgr/cluster/$i | sed -e 's/yml/sls/' >> $policyf
+    echo role-mgr/cluster/$i.sls >> $policyf
 done
 
 echo -e '\n# MDS' >> $policyf
 
 for i in $(echo $C); do 
-    echo role-mds/cluster/$i | sed -e 's/yml/sls/' >> $policyf
+    echo role-mds/cluster/$i.sls >> $policyf
 done
 
 echo -e '\n# RGW\nrole-rgw/cluster/'$(hostname -f).sls >> $policyf
-
-stringarray=($C)
-echo -e '\n# OpenAttic\nrole-openattic/cluster/'$(echo ${stringarray[0]} | sed -e 's/yml/sls/') >> $policyf
 
 echo -e '
 # COMMON
@@ -115,3 +108,16 @@ deepsea stage run ceph.stage.3
 
 echo "Running deepsea stage 4"
 deepsea stage run ceph.stage.4
+
+echo "creating k8s osd pool"
+ceph osd pool create k8s 47 47
+
+echo "output base64 ecoding of admin user"
+ceph auth get-key client.admin | base64
+
+echo "change update policy back to default"
+cat <<EOF > /srv/pillar/ceph/stack/global.yml
+stage_prep_master: default
+stage_prep_minion: default
+EOF
+

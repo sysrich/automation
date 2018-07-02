@@ -363,7 +363,7 @@ resource "openstack_compute_floatingip_associate_v2" "mon_ext_ip" {
 
 resource "openstack_blockstorage_volume_v2" "osd-blk" {
   count = "${var.osds}"
-  size  = 2
+  size  = 40
   name  = "osd-blk${count.index}"
 }
 
