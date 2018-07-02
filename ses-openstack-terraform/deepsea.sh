@@ -91,9 +91,6 @@ done
 
 echo -e '\n# RGW\nrole-rgw/cluster/'$(hostname -f).sls >> $policyf
 
-stringarray=($C)
-echo -e '\n# OpenAttic\nrole-openattic/cluster/'$(echo ${stringarray[0]} | sed -e 's/yml/sls/') >> $policyf
-
 echo -e '
 # COMMON
 config/stack/default/global.yml 
@@ -112,9 +109,15 @@ deepsea stage run ceph.stage.3
 echo "Running deepsea stage 4"
 deepsea stage run ceph.stage.4
 
-#create k8s osd pool
+echo "creating k8s osd pool"
 ceph osd pool create k8s 47 47
 
-#output base64 ecoding of admin user
+echo "output base64 ecoding of admin user"
 ceph auth get-key client.admin | base64
+
+echo "change update policy back to default"
+cat <<EOF > /srv/pillar/ceph/stack/global.yml
+stage_prep_master: default
+stage_prep_minion: default
+EOF
 
