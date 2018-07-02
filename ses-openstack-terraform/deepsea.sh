@@ -110,7 +110,7 @@ echo "Running deepsea stage 4"
 deepsea stage run ceph.stage.4
 
 echo "creating k8s osd pool"
-ceph osd pool create k8s 47 47
+ceph osd pool create k8s 45 45
 
 echo "output base64 ecoding of admin user"
 ceph auth get-key client.admin | base64

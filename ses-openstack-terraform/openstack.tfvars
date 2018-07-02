@@ -6,8 +6,7 @@ master_size = "m1.large"
 mons = 3
 worker_size = "m1.large"
 osds = 5
-sles_base = "http://sles.base"
-sles_update = "http:/sles.update"
+regcode = "slesRegcode"
 ses_base = "http://ses.base"
 ses_update = "http://ses.update"
 
