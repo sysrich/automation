@@ -12,8 +12,7 @@ variable "master_size" {}
 variable "mons" {}
 variable "worker_size" {}
 variable "osds" {}
-variable "sles_base" {}
-variable "sles_update" {}
+variable "regcode" {}
 variable "ses_base" {}
 variable "ses_update" {}
 
@@ -30,8 +29,7 @@ data "template_file" "admin" {
   template = "${file("admin.tpl")}"
 
   vars {
-    sles_base   = "${var.sles_base}"
-    sles_update = "${var.sles_update}"
+    regcode     = "${var.regcode}"
     ses_base    = "${var.ses_base}"
     ses_update  = "${var.ses_update}"
   }
@@ -41,8 +39,7 @@ data "template_file" "mon" {
   template = "${file("mon.tpl")}"
 
   vars {
-    sles_base   = "${var.sles_base}"
-    sles_update = "${var.sles_update}"
+    regcode     = "${var.regcode}"
     ses_base    = "${var.ses_base}"
     ses_update  = "${var.ses_update}"
     saltmaster  = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
@@ -53,8 +50,7 @@ data "template_file" "osd" {
   template = "${file("osd.tpl")}"
 
   vars {
-    sles_base   = "${var.sles_base}"
-    sles_update = "${var.sles_update}"
+    regcode     = "${var.regcode}"
     ses_base    = "${var.ses_base}"
     ses_update  = "${var.ses_update}"
     saltmaster  = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
