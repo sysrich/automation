@@ -428,5 +428,5 @@ output "k8s_StorageClass_floating_ip" {
 }
 
 output "ceph secret" {
-  value = ["\napiVersion: v1\nkind: Secret\nmetadata:\n  name: ceph-secret-admin\n  namespace: default\ndata:\n  key: ${data.external.cephsecret.result.secret}\ntype: kubernetes.io/rbd"]
+  value = ["\napiVersion: v1\nkind: Secret\nmetadata:\n  name: ceph-secret-admin\n  namespace: default\ndata:\n  key: ${lookup(data.external.cephsecret.result, "secret")}\ntype: kubernetes.io/rbd"]
 }
