@@ -6,7 +6,6 @@ master_size = "m1.large"
 mons = 3
 worker_size = "m1.large"
 osds = 5
-regcode = "slesRegcode"
-ses_base = "http://ses.base"
-ses_update = "http://ses.update"
-
+regcode = "30452ce234918d23"
+ses_base = "http://download.suse.de/ibs/SUSE/Products/Storage/5/x86_64/product/"
+ses_update = "http://download.suse.de/ibs/SUSE/Updates/Storage/5/x86_64/update/"

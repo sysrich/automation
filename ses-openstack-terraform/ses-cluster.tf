@@ -64,7 +64,7 @@ resource "openstack_compute_keypair_v2" "keypair" {
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_base" {
-  name        = "ses-base"
+  name        = "ses-base-albonini"
   region      = "${var.region_name}"
   description = "Basic security group for ses"
 
@@ -91,7 +91,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_base" {
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_admin" {
-  name        = "ses-admin"
+  name        = "ses-admin-albonini"
   region      = "${var.region_name}"
   description = "ses security group for admin"
 
@@ -132,7 +132,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_admin" {
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_mon" {
-  name        = "ses-mon"
+  name        = "ses-mon-albonini"
   region      = "${var.region_name}"
   description = "ses security group for mons"
 
@@ -187,7 +187,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_mon" {
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_osd" {
-  name        = "ses-osd"
+  name        = "ses-osd-albonini"
   region      = "${var.region_name}"
   description = "ses security group for osds"
 
@@ -428,5 +428,5 @@ output "k8s_StorageClass_floating_ip" {
 }
 
 output "ceph secret" {
-  value = ["\napiVersion: v1\nkind: Secret\nmetadata:\n  name: ceph-secret-admin\n  namespace: default\ndata:\n  key: ${data.external.cephsecret.result.secret}\ntype: kubernetes.io/rbd"]
+  value = ["\napiVersion: v1\nkind: Secret\nmetadata:\n  name: ceph-secret-admin\n  namespace: default\ndata:\n  key: ${lookup(data.external.cephsecret.result, "secret")}\ntype: kubernetes.io/rbd"]
 }

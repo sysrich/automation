@@ -31,7 +31,7 @@ USAGE:
   * sles_update - sles update repo
   * containers_module_base - sles containers base module
   * containers_module_update - sles containers update module
-  * https - can be true or false (true triggers a https self signed certificate suse registry mirror, false triggers http suse registry mirror)
+  * https - can be 1 or 0 (1 triggers a https self signed certificate suse registry mirror, 0 triggers http suse registry mirror)
   * fqdn needed by the dns recordset resource
 
   3. Run suse-registry-mirror-openstack with following action:
