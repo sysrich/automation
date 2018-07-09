@@ -29,9 +29,9 @@ data "template_file" "admin" {
   template = "${file("admin.tpl")}"
 
   vars {
-    regcode     = "${var.regcode}"
-    ses_base    = "${var.ses_base}"
-    ses_update  = "${var.ses_update}"
+    regcode    = "${var.regcode}"
+    ses_base   = "${var.ses_base}"
+    ses_update = "${var.ses_update}"
   }
 }
 
@@ -39,10 +39,10 @@ data "template_file" "mon" {
   template = "${file("mon.tpl")}"
 
   vars {
-    regcode     = "${var.regcode}"
-    ses_base    = "${var.ses_base}"
-    ses_update  = "${var.ses_update}"
-    saltmaster  = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
+    regcode    = "${var.regcode}"
+    ses_base   = "${var.ses_base}"
+    ses_update = "${var.ses_update}"
+    saltmaster = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
   }
 }
 
@@ -50,10 +50,10 @@ data "template_file" "osd" {
   template = "${file("osd.tpl")}"
 
   vars {
-    regcode     = "${var.regcode}"
-    ses_base    = "${var.ses_base}"
-    ses_update  = "${var.ses_update}"
-    saltmaster  = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
+    regcode    = "${var.regcode}"
+    ses_base   = "${var.ses_base}"
+    ses_update = "${var.ses_update}"
+    saltmaster = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
   }
 }
 
@@ -312,6 +312,11 @@ resource "null_resource" "deepsea" {
   ]
 }
 
+data "external" "cephsecret" {
+  program    = ["bash", "cephsecret.sh", "${openstack_networking_floatingip_v2.mon_ext.0.address}"]
+  depends_on = ["null_resource.deepsea"]
+}
+
 resource "openstack_networking_floatingip_v2" "admin_ext" {
   pool = "${var.external_net}"
 }
@@ -412,4 +417,16 @@ output "external_ip_mons" {
 
 output "internal_ip_osds" {
   value = ["${openstack_compute_instance_v2.osd.*.access_ip_v4}"]
+}
+
+output "k8s_StorageClass_internal_ip" {
+  value = ["\nkind: StorageClass\napiVersion: storage.k8s.io/v1\nmetadata:\n  name: persistent\nprovisioner: kubernetes.io/rbd\nparameters:\n  monitors: ${openstack_compute_instance_v2.mon.0.access_ip_v4}:6789,${openstack_compute_instance_v2.mon.1.access_ip_v4}:6789,${openstack_compute_instance_v2.mon.2.access_ip_v4}:6789\n  adminId: admin\n  adminSecretName: ceph-secret-admin\n  adminSecretNamespace: default\n  pool: k8s\n  userId: admin\n  userSecretName: ceph-secret-admin"]
+}
+
+output "k8s_StorageClass_floating_ip" {
+  value = ["\nkind: StorageClass\napiVersion: storage.k8s.io/v1\nmetadata:\n  name: persistent\nprovisioner: kubernetes.io/rbd\nparameters:\n  monitors: ${openstack_networking_floatingip_v2.mon_ext.0.address}:6789,${openstack_networking_floatingip_v2.mon_ext.1.address}:6789,${openstack_networking_floatingip_v2.mon_ext.2.address}:6789\n  adminId: admin\n  adminSecretName: ceph-secret-admin\n  adminSecretNamespace: default\n  pool: k8s\n  userId: admin\n  userSecretName: ceph-secret-admin"]
+}
+
+output "ceph secret" {
+  value = ["\napiVersion: v1\nkind: Secret\nmetadata:\n  name: ceph-secret-admin\n  namespace: default\ndata:\n  key: ${lookup(data.external.cephsecret.result, "secret")}\ntype: kubernetes.io/rbd"]
 }
