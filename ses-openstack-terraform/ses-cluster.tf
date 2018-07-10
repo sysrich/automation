@@ -15,6 +15,7 @@ variable "osds" {}
 variable "regcode" {}
 variable "ses_base" {}
 variable "ses_update" {}
+variable "identifier" {}
 
 provider "openstack" {
   domain_name = "${var.domain_name}"
@@ -58,13 +59,13 @@ data "template_file" "osd" {
 }
 
 resource "openstack_compute_keypair_v2" "keypair" {
-  name       = "ses-ssh"
+  name       = "ses-ssh-${var.identifier}"
   region     = "${var.region_name}"
   public_key = "${file("ssh/id_ses.pub")}"
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_base" {
-  name        = "ses-base"
+  name        = "ses-base-${var.identifier}"
   region      = "${var.region_name}"
   description = "Basic security group for ses"
 
@@ -91,7 +92,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_base" {
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_admin" {
-  name        = "ses-admin"
+  name        = "ses-admin-${var.identifier}"
   region      = "${var.region_name}"
   description = "ses security group for admin"
 
@@ -132,7 +133,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_admin" {
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_mon" {
-  name        = "ses-mon"
+  name        = "ses-mon-${var.identifier}"
   region      = "${var.region_name}"
   description = "ses security group for mons"
 
@@ -187,7 +188,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_mon" {
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_osd" {
-  name        = "ses-osd"
+  name        = "ses-osd-${var.identifier}"
   region      = "${var.region_name}"
   description = "ses security group for osds"
 
@@ -272,7 +273,7 @@ resource "openstack_compute_instance_v2" "admin" {
   }
 
   flavor_name = "${var.admin_size}"
-  key_pair    = "ses-ssh"
+  key_pair    = "ses-ssh-${var.identifier}"
 
   network {
     name = "${var.internal_net}"
@@ -337,7 +338,7 @@ resource "openstack_compute_instance_v2" "mon" {
   }
 
   flavor_name = "${var.master_size}"
-  key_pair    = "ses-ssh"
+  key_pair    = "ses-ssh-${var.identifier}"
 
   network {
     name = "${var.internal_net}"
@@ -385,7 +386,7 @@ resource "openstack_compute_instance_v2" "osd" {
   }
 
   flavor_name = "${var.worker_size}"
-  key_pair    = "ses-ssh"
+  key_pair    = "ses-ssh-${var.identifier}"
 
   network {
     name = "${var.internal_net}"
