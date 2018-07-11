@@ -9,4 +9,4 @@ osds = 5
 regcode = "slesRegcode"
 ses_base = "http://ses.base"
 ses_update = "http://ses.update"
-
+identifier = "test"

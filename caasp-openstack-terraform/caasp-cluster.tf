@@ -14,63 +14,64 @@ variable "worker_size" {}
 variable "workers" {}
 variable "dnsdomain" {}
 variable "dnsentry" {}
+variable "identifier" {}
 
 provider "openstack" {
   domain_name = "${var.domain_name}"
   tenant_name = "${var.project_name}"
-  user_name = "${var.user_name}"
-  password = "${var.password}"
-  auth_url = "${var.auth_url}"
-  insecure = "true"
+  user_name   = "${var.user_name}"
+  password    = "${var.password}"
+  auth_url    = "${var.auth_url}"
+  insecure    = "true"
 }
 
 resource "openstack_dns_zone_v2" "caasp" {
-  count = "${var.dnsentry ? 1 : 0}"
-  name = "${var.dnsdomain}."
-  email = "email@example.com"
+  count       = "${var.dnsentry ? 1 : 0}"
+  name        = "${var.dnsdomain}."
+  email       = "email@example.com"
   description = "CAASP dns zone"
-  ttl = 60
-  type = "PRIMARY"
+  ttl         = 60
+  type        = "PRIMARY"
 }
 
 resource "openstack_dns_recordset_v2" "admin" {
-  count = "${var.dnsentry ? 1 : 0}"
-  zone_id = "${openstack_dns_zone_v2.caasp.id}"
-  name = "${format("%v.%v.", "${openstack_compute_instance_v2.admin.name}", "${var.dnsdomain}")}"
+  count       = "${var.dnsentry ? 1 : 0}"
+  zone_id     = "${openstack_dns_zone_v2.caasp.id}"
+  name        = "${format("%v.%v.", "${openstack_compute_instance_v2.admin.name}", "${var.dnsdomain}")}"
   description = "admin node A recordset"
-  ttl = 5
-  type = "A"
-  records = ["${openstack_networking_floatingip_v2.admin_ext.address}"]
-  depends_on = ["openstack_compute_instance_v2.admin", "openstack_compute_floatingip_associate_v2.admin_ext_ip"]
+  ttl         = 5
+  type        = "A"
+  records     = ["${openstack_networking_floatingip_v2.admin_ext.address}"]
+  depends_on  = ["openstack_compute_instance_v2.admin", "openstack_compute_floatingip_associate_v2.admin_ext_ip"]
 }
 
 resource "openstack_dns_recordset_v2" "master" {
-  count = "${var.dnsentry ? "${var.masters}" : 0}"
-  zone_id = "${openstack_dns_zone_v2.caasp.id}"
-  name = "${format("%v.%v.", "${element(openstack_compute_instance_v2.master.*.name, count.index)}", "${var.dnsdomain}")}"
+  count       = "${var.dnsentry ? "${var.masters}" : 0}"
+  zone_id     = "${openstack_dns_zone_v2.caasp.id}"
+  name        = "${format("%v.%v.", "${element(openstack_compute_instance_v2.master.*.name, count.index)}", "${var.dnsdomain}")}"
   description = "master nodes A recordset"
-  ttl = 5
-  type = "A"
-  records = ["${element(openstack_networking_floatingip_v2.master_ext.*.address, count.index)}"]
-  depends_on = ["openstack_compute_instance_v2.master", "openstack_compute_floatingip_associate_v2.master_ext_ip"]
+  ttl         = 5
+  type        = "A"
+  records     = ["${element(openstack_networking_floatingip_v2.master_ext.*.address, count.index)}"]
+  depends_on  = ["openstack_compute_instance_v2.master", "openstack_compute_floatingip_associate_v2.master_ext_ip"]
 }
 
 data "template_file" "cloud-init" {
   template = "${file("cloud-init.cls")}"
 
- vars {
+  vars {
     admin_address = "${openstack_compute_instance_v2.admin.access_ip_v4}"
   }
 }
 
 resource "openstack_compute_keypair_v2" "keypair" {
-  name       = "caasp-ssh"
+  name       = "caasp-ssh-${var.identifier}"
   region     = "${var.region_name}"
   public_key = "${file("ssh/id_caasp.pub")}"
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_base" {
-  name        = "caasp-base"
+  name        = "caasp-base-${var.identifier}"
   region      = "${var.region_name}"
   description = "Basic security group for CaaSP"
 
@@ -104,7 +105,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_base" {
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_admin" {
-  name        = "caasp-admin"
+  name        = "caasp-admin-${var.identifier}"
   region      = "${var.region_name}"
   description = "CaaSP security group for admin"
 
@@ -138,7 +139,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_admin" {
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_master" {
-  name        = "caasp-master"
+  name        = "caasp-master-${var.identifier}"
   region      = "${var.region_name}"
   description = "CaaSP security group for masters"
 
@@ -179,7 +180,7 @@ resource "openstack_compute_secgroup_v2" "secgroup_master" {
 }
 
 resource "openstack_compute_secgroup_v2" "secgroup_worker" {
-  name        = "caasp-worker"
+  name        = "caasp-worker-${var.identifier}"
   region      = "${var.region_name}"
   description = "CaaSP security group for workers"
 
@@ -257,7 +258,7 @@ resource "openstack_compute_instance_v2" "admin" {
   }
 
   flavor_name = "${var.admin_size}"
-  key_pair    = "caasp-ssh"
+  key_pair    = "caasp-ssh-${var.identifier}"
 
   network {
     name = "${var.internal_net}"
@@ -265,7 +266,7 @@ resource "openstack_compute_instance_v2" "admin" {
 
   security_groups = [
     "${openstack_compute_secgroup_v2.secgroup_base.name}",
-    "${openstack_compute_secgroup_v2.secgroup_admin.name}"
+    "${openstack_compute_secgroup_v2.secgroup_admin.name}",
   ]
 
   user_data = "${file("cloud-init.adm")}"
@@ -291,7 +292,7 @@ resource "openstack_compute_instance_v2" "master" {
   }
 
   flavor_name = "${var.master_size}"
-  key_pair    = "caasp-ssh"
+  key_pair    = "caasp-ssh-${var.identifier}"
 
   network {
     name = "${var.internal_net}"
@@ -299,7 +300,7 @@ resource "openstack_compute_instance_v2" "master" {
 
   security_groups = [
     "${openstack_compute_secgroup_v2.secgroup_base.name}",
-    "${openstack_compute_secgroup_v2.secgroup_master.name}"
+    "${openstack_compute_secgroup_v2.secgroup_master.name}",
   ]
 
   user_data = "${data.template_file.cloud-init.rendered}"
@@ -327,7 +328,7 @@ resource "openstack_compute_instance_v2" "worker" {
   }
 
   flavor_name = "${var.worker_size}"
-  key_pair    = "caasp-ssh"
+  key_pair    = "caasp-ssh-${var.identifier}"
 
   network {
     name = "${var.internal_net}"
@@ -335,7 +336,7 @@ resource "openstack_compute_instance_v2" "worker" {
 
   security_groups = [
     "${openstack_compute_secgroup_v2.secgroup_base.name}",
-    "${openstack_compute_secgroup_v2.secgroup_worker.name}"
+    "${openstack_compute_secgroup_v2.secgroup_worker.name}",
   ]
 
   user_data = "${data.template_file.cloud-init.rendered}"
@@ -351,7 +352,6 @@ resource "openstack_compute_floatingip_associate_v2" "worker_ext_ip" {
   floating_ip = "${element(openstack_networking_floatingip_v2.worker_ext.*.address, count.index)}"
   instance_id = "${element(openstack_compute_instance_v2.worker.*.id, count.index)}"
 }
-
 
 output "ip_admin_external" {
   value = "${openstack_networking_floatingip_v2.admin_ext.address}"
