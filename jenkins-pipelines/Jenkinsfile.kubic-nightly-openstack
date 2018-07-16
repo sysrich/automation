@@ -35,9 +35,13 @@ lock('openstack-single-user') {
         // empty preBootstrapBody
     } {
         // Run through the upgrade orchestration
-        upgradeEnvironment(
+        upgradeEnvironmentStage1(
             environment: environment,
             fakeUpdatesAvailable: true
+        )
+
+        upgradeEnvironmentStage2(
+            environment: environment
         )
 
         // Run the Core Project Tests again
