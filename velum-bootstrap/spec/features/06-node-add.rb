@@ -63,7 +63,7 @@ feature "Add a Node" do
           next
         end
         next unless %w[master worker].include?(minion["role"])
-        within("tr", text: minion["minionId"] || minion["minionID"]) do
+        within("tr", text: minion["minionID"]) do
           find(".#{minion["role"]}-btn").click
         end
       end
