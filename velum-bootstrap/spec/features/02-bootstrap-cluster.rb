@@ -3,7 +3,7 @@ require "yaml"
 
 feature "Boostrap cluster" do
   let(:hostnames) { environment["minions"].map { |m| m["fqdn"] if m["role"] != "admin" }.compact }
-  let(:minion_ids) { environment["minions"].map { |m| m["minionID"] if m["role"] != "admin" }.compact }
+  let(:minion_ids) { environment["minions"].map { |m| m["minionID"] }.compact }
 
   before do
     login unless inspect.include? "User registers"
