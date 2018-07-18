@@ -14,10 +14,10 @@
             "privateIpv4" : "172.24.0.5"
          },
          "fqdn" : "test2-admin-xpi3oesblxxc.k8s.local",
-         "minionId" : "67af839105f24307bb2bf55d603c55f0"
+         "minionID" : "67af839105f24307bb2bf55d603c55f0"
       },
       {
-         "minionId" : "ac93ab2058914fad88d87702f8efc863",
+         "minionID" : "ac93ab2058914fad88d87702f8efc863",
          "addresses" : {
             "publicIpv4" : "10.84.72.173",
             "privateIpv4" : "172.24.0.6"
@@ -27,7 +27,7 @@
          "index" : "1"
       },
       {
-         "minionId" : "618fb2611cfe41239be7cbdab853793c",
+         "minionID" : "618fb2611cfe41239be7cbdab853793c",
          "index" : "2",
          "role" : "worker",
          "proxyCommand" : "ssh root@10.84.72.172 -W %h:%p",
@@ -37,7 +37,7 @@
          }
       },
       {
-         "minionId" : "3746ed898269450d8966543734da6554",
+         "minionID" : "3746ed898269450d8966543734da6554",
          "proxyCommand" : "ssh root@10.84.72.172 -W %h:%p",
          "addresses" : {
             "privateIpv4" : "172.24.0.8"
