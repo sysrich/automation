@@ -7,6 +7,18 @@
   "kubeConfig": {
     "admin": "/home/kiall/SUSE/caasp/automation/velum-bootstrap/kubeconfig"
   },
+  "features": {
+    "cri": {
+      "implementation": "docker"
+    },
+    "tiller": {
+      "enabled": true
+    },
+    "proxy": {
+      "enabled": "systemwide",
+      "http_proxy": "http://foo.bar:3128/"
+    }
+  },
   "minions": [
     {
       "minionID": "1c543671abe24d21a728b0fbed03c05a",
