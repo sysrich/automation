@@ -1,50 +1,81 @@
 {
-   "dashboardHost" : "172.24.0.5",
-   "dashboardExternalHost" : "10.84.72.172",
-   "kubernetesHost" : "172.24.0.6",
-   "kubernetesExternalHost" : "10.84.72.173",
-   "sshUser" : "root",
-   "sshKey" : "/home/user/SUSE/caasp/automation/misc-files/id_shared",
-   "minions" : [
-      {
-         "index" : "0",
-         "role" : "admin",
-         "addresses" : {
-            "publicIpv4" : "10.84.72.172",
-            "privateIpv4" : "172.24.0.5"
-         },
-         "fqdn" : "test2-admin-xpi3oesblxxc.k8s.local",
-         "minionID" : "67af839105f24307bb2bf55d603c55f0"
-      },
-      {
-         "minionID" : "ac93ab2058914fad88d87702f8efc863",
-         "addresses" : {
-            "publicIpv4" : "10.84.72.173",
-            "privateIpv4" : "172.24.0.6"
-         },
-         "fqdn" : "test2-master-7lydnr7r4sum.k8s.local",
-         "role" : "master",
-         "index" : "1"
-      },
-      {
-         "minionID" : "618fb2611cfe41239be7cbdab853793c",
-         "index" : "2",
-         "role" : "worker",
-         "proxyCommand" : "ssh root@10.84.72.172 -W %h:%p",
-         "fqdn" : "test2-worker-eorkpgetfvr6-oxup2sra6zrr-azgmmxgbnbz4.k8s.local",
-         "addresses" : {
-            "privateIpv4" : "172.24.0.7"
-         }
-      },
-      {
-         "minionID" : "3746ed898269450d8966543734da6554",
-         "proxyCommand" : "ssh root@10.84.72.172 -W %h:%p",
-         "addresses" : {
-            "privateIpv4" : "172.24.0.8"
-         },
-         "fqdn" : "test2-worker-eorkpgetfvr6-4rzhx3nww5fv-glz5hrejhktm.k8s.local",
-         "role" : "worker",
-         "index" : "3"
+  "kubernetesExternalHost": "kube-api-x1.devenv.caasp.suse.net",
+  "dashboardHost": "10.17.1.0",
+  "dashboardExternalHost": "admin.devenv.caasp.suse.net",
+  "sshUser": "root",
+  "sshKey": "/home/kiall/SUSE/caasp/automation/caasp-kvm/tools/../../misc-files/id_shared",
+  "kubeConfig": {
+    "admin": "/home/kiall/SUSE/caasp/automation/velum-bootstrap/kubeconfig"
+  },
+  "minions": [
+    {
+      "minionID": "1c543671abe24d21a728b0fbed03c05a",
+      "role": "admin",
+      "index": "0",
+      "fqdn": "admin.devenv.caasp.suse.net",
+      "status": "unused",
+      "addresses": {
+        "publicIpv4": "10.17.1.0",
+        "privateIpv4": "10.17.1.0"
       }
-   ]
+    },
+    {
+      "minionID": "796baf52196d48658c83aaa8ad9bdbbe",
+      "role": "master",
+      "index": "0",
+      "fqdn": "master-0.devenv.caasp.suse.net",
+      "status": "unused",
+      "addresses": {
+        "privateIpv4": "10.17.2.0",
+        "publicIpv4": "10.17.2.0"
+      }
+    },
+    {
+      "minionID": "06f0fbc79d9447d6882b661f8428f8e5",
+      "role": "master",
+      "index": "1",
+      "fqdn": "master-1.devenv.caasp.suse.net",
+      "status": "unused",
+      "addresses": {
+        "publicIpv4": "10.17.2.1",
+        "privateIpv4": "10.17.2.1"
+      }
+    },
+    {
+      "minionID": "aff79cc65d3949fcb1f9bbd308549871",
+      "role": "master",
+      "index": "2",
+      "fqdn": "master-2.devenv.caasp.suse.net",
+      "status": "unused",
+      "addresses": {
+        "publicIpv4": "10.17.2.0",
+        "privateIpv4": "10.17.2.0"
+      },
+      "proxyCommand" : "ssh root@10.17.1.0 -W %h:%p"
+    },
+    {
+      "minionID": "902494f45b6c49999217ab516f9543ab",
+      "role": "worker",
+      "index": "0",
+      "fqdn": "worker-0.devenv.caasp.suse.net",
+      "status": "unused",
+      "addresses": {
+        "publicIpv4": "10.17.3.0",
+        "privateIpv4": "10.17.3.0"
+      },
+      "proxyCommand" : "ssh root@10.17.1.0 -W %h:%p"
+    },
+    {
+      "minionID": "9582ba08886f40c3a24afbb0c0043195",
+      "role": "worker",
+      "index": "1",
+      "fqdn": "worker-1.devenv.caasp.suse.net",
+      "status": "unused",
+      "addresses": {
+        "privateIpv4": "10.17.3.1",
+        "publicIpv4": "10.17.3.1"
+      },
+      "proxyCommand" : "ssh root@10.17.1.0 -W %h:%p"
+    }
+  ]
 }
