@@ -48,7 +48,7 @@ end
 # returns a new env with a feature set as $value
 def set_feature(feature, value)
   env = JSON.parse(File.read(environment_path))
-  env["feature"][feature] = value
+  env.fetch("features", {})[feature] = value
   env
 end
 

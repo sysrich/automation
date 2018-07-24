@@ -41,7 +41,7 @@ feature "Register user and configure cluster" do
 
       environment(
         action: :update,
-        body:   set_feature("tiller" => {"enabled" => enable_tiller})
+        body:   set_feature("tiller", {"enabled" => enable_tiller})
       )
 
       # choose cri-o engine by pressing button
@@ -56,7 +56,7 @@ feature "Register user and configure cluster" do
 
       environment(
         action: :update,
-        body:   set_feature("cri" => {"implementation" => cri_implementation})
+        body:   set_feature("cri", {"implementation" => cri_implementation})
       )
 
       click_on "Next"
