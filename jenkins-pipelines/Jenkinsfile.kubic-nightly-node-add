@@ -12,7 +12,8 @@ kvmTypeOptions.vanilla = true
 kvmTypeOptions.disableMeltdownSpectreFixes = false
 
 coreKubicProjectPeriodic(
-    environmentTypeOptions: kvmTypeOptions
+    environmentTypeOptions: kvmTypeOptions,
+    workerCount: 1
 ) {
     // empty preBootstrapBody
 } {
@@ -22,7 +23,7 @@ coreKubicProjectPeriodic(
             environment: environment,
             typeOptions: environmentTypeOptions,
             masterCount: 3,
-            workerCount: 3
+            workerCount: 2
         )
 
         // Register it via velum
