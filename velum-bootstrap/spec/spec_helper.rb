@@ -45,6 +45,13 @@ def set_minion_status(minion_id, status)
   env
 end
 
+# returns a new env with a feature set as $value
+def set_feature(feature, value)
+  env = JSON.parse(File.read(environment_path))
+  env.fetch("features", {})[feature] = value
+  env
+end
+
 def admin_minion
   environment["minions"].detect { |m| m["role"] == "admin" }
 end
