@@ -21,6 +21,8 @@ def environment(action: :read, body: nil)
   abort("Please specify at least 2 minions in environment.json") if env["minions"].count < 2
 
   case action
+  when :read
+    env
   when :update
     if body
       File.open(environment_path, "w") do |f|

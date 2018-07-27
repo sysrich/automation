@@ -52,5 +52,12 @@ feature "Add Remote Registry" do
       click_button "Apply changes"
     end
     puts "<<< User clicks to apply changes"
+
+    # Add remote registry information to the environment file
+    env = environment(action: :read)
+    registries = env.fetch("remoteRegistries", [])
+    env["remoteRegistries"] = registries << {"name" => remote_registry_name,
+                                             "url" => remote_registry_url}
+    environment(action: :update, body: env)
   end
 end
