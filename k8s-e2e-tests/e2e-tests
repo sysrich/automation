@@ -50,11 +50,12 @@ while [[ $# > 0 ]] ; do
 done
 
 run_tests() {
-    rm -f sonobuoy-sonobuoy-conformance.yaml && wget https://raw.githubusercontent.com/cncf/k8s-conformance/master/sonobuoy-conformance.yaml
-    # Increase timeout. The default timeout is not enought when running in our test cluster
-    sed -e "s/\"timeoutseconds\": 5400/\"timeoutseconds\": 10800/g" -i sonobuoy-conformance.yaml
+    go get -u -v github.com/heptio/sonobuoy
+    sonobuoy gen > sonobuoy-conformance.yaml
     KUBECONFIG=$KUBECONFIG kubectl apply -f sonobuoy-conformance.yaml
-    while ! KUBECONFIG=$KUBECONFIG kubectl logs -n sonobuoy sonobuoy | grep "sonobuoy is now blocking"; do
+    # wait a bit to let the test start
+    sleep 10
+    while KUBECONFIG=$KUBECONFIG sonobuoy status | grep "Sonobuoy is still running"; do
         sleep 1
     done
 
@@ -62,10 +63,11 @@ run_tests() {
     mkdir -p $ARTIFACTS_PATH
 
     # Copy results from the container
-    KUBECONFIG=$KUBECONFIG kubectl cp sonobuoy/sonobuoy:tmp/sonobuoy $ARTIFACTS_PATH
-    find $ARTIFACTS_PATH -name '*.tar.gz' | xargs -I{} tar -xf {} -C $ARTIFACTS_PATH
-    find $ARTIFACTS_PATH -name '*.tar.gz' | xargs rm
-    find $ARTIFACTS_PATH -name e2e.log | xargs tail -n4 | grep SUCCESS || abort "conformance tests failed"
+    KUBECONFIG=$KUBECONFIG kubectl cp heptio-sonobuoy/sonobuoy:tmp/sonobuoy $ARTIFACTS_PATH
+    KUBECONFIG=$KUBECONFIG sonobuoy logs > $ARTIFACTS_PATH/e2e.log
+    if KUBECONFIG=$KUBECONFIG sonobuoy status | grep "Sonobuoy has failed"; then
+        abort "conformance tests failed"
+    fi
 }
 
 # checks
