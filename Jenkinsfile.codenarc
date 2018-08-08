@@ -1,0 +1,44 @@
+def targetBranch = env.getEnvironment().get('CHANGE_TARGET', env.BRANCH_NAME)
+
+library "kubic-jenkins-library@${targetBranch}"
+
+// TODO: Don't hardcode salt repo name, find the right place
+// to lookup this information dynamically.
+githubCollaboratorCheck(
+    org: 'kubic-project',
+    repo: 'automation',
+    user: env.CHANGE_AUTHOR,
+    credentialsId: 'github-token')
+
+def label = "salt-automation-${UUID.randomUUID().toString()}"
+
+podTemplate(label: label, containers: [
+        containerTemplate(
+            name: 'codenarc',
+            image: 'registry.suse.de/devel/casp/ci/opensuse_leap_42.3_containers/jenkins-codenarc-container:latest',
+            alwaysPullImage: true,
+            ttyEnabled: true,
+            command: 'cat',
+            envVars: [
+                envVar(key: 'http_proxy', value: env.http_proxy),
+                envVar(key: 'https_proxy', value: env.http_proxy),
+            ],
+        ),
+]) {
+    node(label) {
+        stage('Retrieve Code') {
+            checkout scm
+        }
+
+        stage('Style Checks') {
+            container('codenarc') {
+                try {
+                    sh 'java -classpath /groovy-all-2.4.6.jar:/CodeNarc-1.1.jar:/slf4j-api-1.7.25.jar:/slf4j-simple-1.7.25.jar org.codenarc.CodeNarc -report=html -report=xml -basedir=jenkins-pipelines'
+                } finally {
+                    archiveArtifacts(artifacts: "CodeNarcReport.html", fingerprint: true)
+                    junit "CodeNarcXmlReport.xml"
+                }
+            }
+        }
+    }
+}

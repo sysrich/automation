@@ -4,3 +4,5 @@ caasp-kvm/environment.json
 velum-bootstrap/rspec.xml
 velum-bootstrap/.bundler
 caasp-hyperv/oscdimg.exe
+CodeNarcReport.html
+CodeNarcXmlReport.xml
