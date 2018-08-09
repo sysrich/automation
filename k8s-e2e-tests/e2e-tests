@@ -50,7 +50,9 @@ while [[ $# > 0 ]] ; do
 done
 
 run_tests() {
-    go get -u -v github.com/heptio/sonobuoy
+    if ! which sonobuoy; then
+        abort "sonobuoy needs to be installed"
+    fi
     sonobuoy gen > sonobuoy-conformance.yaml
     KUBECONFIG=$KUBECONFIG kubectl apply -f sonobuoy-conformance.yaml
     # wait a bit to let the test start
