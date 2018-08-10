@@ -18,6 +18,9 @@ DOCKER_REGEX = '%(docker_image)s.*x86_64-.*\.tar\.xz$'
 OPENSTACK_REGEX = '.*OpenStack-Cloud.*x86_64-.*\.qcow2$'
 ISO_REGEX = '.*-DVD-x86_64-.*-Media1\.iso$'
 
+# Link to the package version tracker to allow exploring image contents
+PACKAGE_VERSION_TRACKER_IMAGE_URL_TPL = 'http://nodes.provo-prod.caasp.suse.net:30526/image/{}'
+
 
 class ImageFinder(HTMLParser):
 
@@ -66,12 +69,22 @@ def use_remote_file(args):
     download_file(args)
     link_file(get_actual_path(args), get_expected_path(args))
 
+def print_package_version_tracker_link(url):
+    """Link to the package version tracker to allow exploring image contents"""
+    image_fn = url.rsplit('/', 1)[-1]
+    url = PACKAGE_VERSION_TRACKER_IMAGE_URL_TPL.format(image_fn)
+    print(" >> To explore the image contents follow:")
+    print(" >>   {}".format(url))
+    print(" >>")
+    pass
+
 def use_channel_file(args):
     remote_url = get_channel_url(args)
     remote_canonical_url = get_canonical_url(args, remote_url)
     expected_path = urlparse.urlparse(args.url).netloc
     download_file(args, remote_canonical_url)
     link_file(get_actual_path(args, remote_canonical_url), get_expected_path(args, urlparse.urlparse(args.url).netloc))
+    print_package_version_tracker_link(remote_canonical_url)
 
 ## Util functions
 
