@@ -24,4 +24,9 @@ pushd $DIR/.. > /dev/null
 rm -f cluster.tf terraform.tfstate*
 popd  > /dev/null
 
+echo "--> Cleanup old KVM images"
+pushd $DIR/../../downloads > /dev/null
+ls -vr *.qcow2 | awk -F- '$1 == name{system ("rm -f \""$0"\"")}{name=$1}' 
+popd  > /dev/null
+
 echo "Creanup Done"
