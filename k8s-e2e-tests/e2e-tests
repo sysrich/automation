@@ -50,7 +50,7 @@ while [[ $# > 0 ]] ; do
 done
 
 run_tests() {
-    if ! which sonobuoy; then
+    if ! command -v sonobuoy > /dev/null; then
         abort "sonobuoy needs to be installed"
     fi
     sonobuoy gen > sonobuoy-conformance.yaml
