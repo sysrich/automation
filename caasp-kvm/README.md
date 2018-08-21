@@ -82,11 +82,15 @@ sudo virsh pool-start default
 
       * Building a cluster
 
-        -b|--build             Run the CaaSP KVM Build Step
-        -m|--masters <INT>     Number of masters to build (Default: CAASP_NUM_MASTERS=1)
-        -w|--workers <INT>     Number of workers to build (Default: CAASP_NUM_WORKERS=2)
-        -i|--image <STR>       Image to use (Default: CAASP_IMAGE=channel://devel)
-        --vanilla              Do not inject devenv code, use vanilla caasp (Default: false)
+        -b|--build                       Run the CaaSP KVM Build Step
+        -m|--masters <INT>               Number of masters to build (Default: CAASP_NUM_MASTERS=1)
+        -w|--workers <INT>               Number of workers to build (Default: CAASP_NUM_WORKERS=2)
+        -u|--update-deployment           Update Terraform deployment (Default: false)
+        -i|--image <STR>                 Image to use (Default: CAASP_IMAGE=channel://devel)
+        --velum-image <STR>              Velum Image to use (Default: CAASP_VELUM_IMAGE=channel://devel)
+        --vanilla                        Do not inject devenv code, use vanilla caasp (Default: false)
+        --disable-meltdown-spectre-fixes Disable meltdown and spectre fixes (Default: false)
+        --bridge <STR>                   Bridge network interface to use (Default: none / create a network)
 
       * Destroying a cluster
 
@@ -100,20 +104,24 @@ sudo virsh pool-start default
 
       * Local git checkouts
 
-         --salt-dir <DIR>           the Salt repo checkout (Default: CAASP_SALT_DIR)
-         --manifests-dir <DIR>      the manifests repo checkout (Default: CAASP_MANIFESTS_DIR)
-         --velum-dir <DIR>          the Velum repo checkout (Default: CAASP_VELUM_DIR)
+        --salt-dir <DIR>           the Salt repo checkout (Default: CAASP_SALT_DIR)
+        --manifests-dir <DIR>      the manifests repo checkout (Default: CAASP_MANIFESTS_DIR)
+        --velum-dir <DIR>          the Velum repo checkout (Default: CAASP_VELUM_DIR)
 
       * Advanced Options
 
-        --plan                 Run the CaaSP KVM Plan Step
-        --admin-ram <INT>      RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=4096)
-        --admin-cpu <INT>      CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=4)
-        --master-ram <INT>     RAM to allocate to master node(s) (Default: CAASP_MASTER_RAM=2048)
-        --worker-ram <INT>     CPUs to allocate to master node(s) (Default: CAASP_MASTER_CPU=2)
-        --master-cpu <INT>     RAM to allocate to worker node(s) (Default: CAASP_WORKER_RAM=2048)
-        --worker-cpu <INT>     CPUs to allocate to worker node(s) (Default: CAASP_WORKER_CPU=2)
-        --extra-repo <STR>     URL of a custom repository on the master(s)/worker(s) (Default: CAASP_EXTRA_REPO)
+        --plan                      Run the CaaSP KVM Plan Step
+        --tfvars-file <STR>         Path to a specific .tfvars file to use (Default: .)
+        --admin-ram <INT>           RAM to allocate to admin node (Default: CAASP_ADMIN_RAM=4096)
+        --admin-cpu <INT>           CPUs to allocate to admin node (Default: CAASP_ADMIN_CPU=4)
+        --master-ram <INT>          RAM to allocate to master node(s) (Default: CAASP_MASTER_RAM=2048)
+        --worker-ram <INT>          CPUs to allocate to master node(s) (Default: CAASP_MASTER_CPU=2)
+        --master-cpu <INT>          RAM to allocate to worker node(s) (Default: CAASP_WORKER_RAM=2048)
+        --worker-cpu <INT>          CPUs to allocate to worker node(s) (Default: CAASP_WORKER_CPU=2)
+        --extra-repo <STR>          URL of a custom repository on the master(s)/worker(s) (Default: CAASP_EXTRA_REPO)
+        --name-prefix <STR>         Name prefix for the terraform resources to make multiple clusters on one host possible (Default: "")
+        --additional-volumes <INT>  Number of additional blank volumes to attach to worker(s) (Default: 0)
+        --additional-vol-size <INT> Size in Gigabytes of additional volumes (Default: 10)
 
       * Examples:
 
@@ -132,6 +140,10 @@ sudo virsh pool-start default
       Build a 1 master, 2 worker cluster and add a custom repository on the master(s)/worker(s)
 
       ./caasp-kvm --build -m 1 -w 2 --extra-repo https://download.opensuse.org/repositories/devel:/CaaSP:/Head:/ControllerNode:/TestUpdates
+
+      Add a worker node to a running cluster
+
+      ./caasp-kvm --update-deployment -m 1 -w 3
 
       Destroy a cluster
 
