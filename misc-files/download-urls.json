@@ -2,7 +2,7 @@
   "baseurl": {
     "devel": {
       "default": "http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/",
-      "provo": "http://nodes.provo-prod.caasp.suse.net:32501/ibs/Devel:/CASP:/Head:/ControllerNode/"
+      "provo": "http://mirror.caasp.suse.net/ibs/Devel:/CASP:/Head:/ControllerNode/"
     },
     "sandbox": {
       "default": "http://download.suse.de/ibs/Devel:/CASP:/SandBox/"
