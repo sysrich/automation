@@ -418,8 +418,8 @@ def deploy_admin_node(args):
     power_up_time = datetime.now()
     i.power_on()
 
+    log.info("Waiting for DHCP ACK for %s" % eth0_macaddr)
     while True:
-        log.info("Waiting for DHCP ACK for %s" % eth0_macaddr)
         ipaddr = parse_dhcp_logs(power_up_time, eth0_macaddr)
         if ipaddr is not None:
             log.info("Found ipaddr {}".format(ipaddr))
@@ -494,8 +494,10 @@ def parse_dhcp_logs(from_date, macaddr):
 
 def wait_dhcp_acks(from_date, servers, max_failing_nodes):
     available_hosts = set()
+    log.info("Waiting for DHCP ACK for the following servers:")
+    for servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr in servers:
+        log.info("  {} {} {}".format(servername, ilo_ipaddr, eth0_macaddr))
     while True:
-        log.info("Waiting for DHCP ACK")
         entries = tsclient.fetch_dhcp_logs(from_date)
         for servername, serial, desc, ilo_ipaddr, ilo_iface_macaddr, eth0_macaddr in servers:
             try:
@@ -505,11 +507,17 @@ def wait_dhcp_acks(from_date, servers, max_failing_nodes):
             h = (servername, serial, eth0_macaddr, ipaddr)
             if h in available_hosts:
                 continue
-            log.info("Found host {} having ipaddr {}".format(servername, ipaddr))
+            log.info("Found host {} {} {} having IP address {}".format(servername, ilo_ipaddr, eth0_macaddr, ipaddr))
             available_hosts.add(h)
 
         if len(available_hosts) >= len(servers) - max_failing_nodes:
             break
+
+        if len(servers) - len(available_hosts) < 3:
+            srv = set(s[0] for s in servers)
+            ava = set(s[0] for s in available_hosts)
+            missing = srv - ava
+            log.debug("Still missing: {}".format(" ".join(sorted(missing))))
 
         sleep(30)
 
@@ -634,16 +642,17 @@ def generate_environment_json(admin_host_ipaddr, available_hosts,
     for servername, serial, macaddr, ipaddr in available_hosts:
         log.info("Attempting to fetch {} {} machine ID".format(servername, ipaddr))
         while True:
+            msg = ""
             try:
                 machine_id = tsclient.fetch_machine_id(admin_host_ipaddr, ipaddr)
                 available_hosts2.append((servername, serial, macaddr, ipaddr,
                     machine_id))
                 break
             except APIError as e:
-                # 'port 22: No route to host'
-                # 'port 22: Connection refused'
-                if 'Connection timed out' not in str(e):
-                    log.info("The host is not ready yet: %s" % str(e))
+                # log out message only when it changes
+                if str(e) != msg:
+                    msg = str(e)
+                    log.info("The host is not ready yet: {}".format(msg))
                 sleep(10)
 
     log.info("Fetching done")
