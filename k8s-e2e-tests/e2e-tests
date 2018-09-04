@@ -49,15 +49,23 @@ while [[ $# > 0 ]] ; do
   shift
 done
 
+test_config() {
+    cat << EOF > sonobuoy.json
+{
+    "plugins": [ { "name": "e2e" } ]
+}
+EOF
+}
+
 run_tests() {
     if ! command -v sonobuoy > /dev/null; then
         abort "sonobuoy needs to be installed"
     fi
-    sonobuoy gen > sonobuoy-conformance.yaml
-    KUBECONFIG=$KUBECONFIG kubectl apply -f sonobuoy-conformance.yaml
+    test_config
+    sonobuoy run --kubeconfig $KUBECONFIG --config sonobuoy.json
     # wait a bit to let the test start
     sleep 10
-    while KUBECONFIG=$KUBECONFIG sonobuoy status | grep "Sonobuoy is still running"; do
+    while sonobuoy status --kubeconfig $KUBECONFIG | grep "Sonobuoy is still running"; do
         sleep 1
     done
 
@@ -65,9 +73,8 @@ run_tests() {
     mkdir -p $ARTIFACTS_PATH
 
     # Copy results from the container
-    KUBECONFIG=$KUBECONFIG kubectl cp heptio-sonobuoy/sonobuoy:tmp/sonobuoy $ARTIFACTS_PATH
-    KUBECONFIG=$KUBECONFIG sonobuoy logs > $ARTIFACTS_PATH/e2e.log
-    if KUBECONFIG=$KUBECONFIG sonobuoy status | grep "Sonobuoy has failed"; then
+    sonobuoy retrieve --kubeconfig $KUBECONFIG $ARTIFACTS_PATH
+    if sonobuoy status --kubeconfig $KUBECONFIG | grep "Sonobuoy has failed"; then
         abort "conformance tests failed"
     fi
 }
