@@ -64,9 +64,9 @@ run_tests() {
     test_config
     sonobuoy run --kubeconfig $KUBECONFIG --config sonobuoy.json
     # wait a bit to let the test start
-    sleep 10
+    sleep 120
     while sonobuoy status --kubeconfig $KUBECONFIG | grep "Sonobuoy is still running"; do
-        sleep 1
+        sleep 30
     done
 
     # Create the artifacts path
