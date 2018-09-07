@@ -144,8 +144,15 @@ The [Terraform](https://github.com/hashicorp/terraform) and the
 providers must be installed.
 
 We maintain packages for both of them inside of the
-[Virtualization:containers](https://build.opensuse.org/project/show/Virtualization:containers)
+[systemsmanagement:terraform](https://build.opensuse.org/project/show/systemsmanagement:terraform)
 project on OBS.
+
+You can add this repository to your machine by executing the following command:
+
+```
+sudo zypper ar -f obs://systemsmanagement:terraform terraform
+sudo zypper -n in terraform-provider-libvirt
+```
 
 ## Using a cluster with custom rpm packages from a repository
 
