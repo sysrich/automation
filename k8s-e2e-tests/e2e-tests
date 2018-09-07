@@ -59,23 +59,32 @@ EOF
 
 run_tests() {
     if ! command -v sonobuoy > /dev/null; then
-        abort "sonobuoy needs to be installed"
+        abort "Package sonobuoy needs to be installed"
     fi
     test_config
     sonobuoy run --kubeconfig $KUBECONFIG --config sonobuoy.json
     # wait a bit to let the test start
-    sleep 120
-    while sonobuoy status --kubeconfig $KUBECONFIG | grep "Sonobuoy is still running"; do
-        sleep 30
+    n=6
+    while test $n -gt 0 && sonobuoy status --kubeconfig $KUBECONFIG 2>&1 | grep 'pod has status \\"Pending\\"'
+    do
+        sleep 20
+        n=$(($n - 1))
     done
 
-    # Create the artifacts path
-    mkdir -p $ARTIFACTS_PATH
+    # wait until tests will finish
+    n=60
+    while test $n -gt 0 && sonobuoy status --kubeconfig $KUBECONFIG 2>&1 | grep "Sonobuoy is still running"; do
+        sleep 60
+        n=$(($n - 1))
+    done
 
-    # Copy results from the container
-    sonobuoy retrieve --kubeconfig $KUBECONFIG $ARTIFACTS_PATH
-    if sonobuoy status --kubeconfig $KUBECONFIG | grep "Sonobuoy has failed"; then
-        abort "conformance tests failed"
+    if sonobuoy status --kubeconfig $KUBECONFIG 2>&1 | grep "Sonobuoy has completed"; then
+      # Create the artifacts path
+      mkdir -p $ARTIFACTS_PATH
+      # Copy results from the container
+      sonobuoy retrieve --kubeconfig $KUBECONFIG $ARTIFACTS_PATH
+    else
+      abort "Kubernetes conformance tests failed"
     fi
 }
 
