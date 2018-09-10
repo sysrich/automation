@@ -83,6 +83,8 @@ run_tests() {
       mkdir -p $ARTIFACTS_PATH
       # Copy results from the container
       sonobuoy retrieve --kubeconfig $KUBECONFIG $ARTIFACTS_PATH
+      # Extract conformance tests tarball results
+      tar -xzf ${ARTIFACTS_PATH}/*_sonobuoy_*.tar.gz -C ${ARTIFACTS_PATH}/
     else
       abort "Kubernetes conformance tests failed"
     fi
