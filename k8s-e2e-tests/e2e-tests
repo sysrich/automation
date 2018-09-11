@@ -74,7 +74,7 @@ run_tests() {
     # wait until tests will finish
     n=60
     while test $n -gt 0 && sonobuoy status --kubeconfig $KUBECONFIG 2>&1 | grep "Sonobuoy is still running"; do
-        sleep 60
+        sleep 120
         n=$(($n - 1))
     done
 
