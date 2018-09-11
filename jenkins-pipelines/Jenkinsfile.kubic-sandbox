@@ -44,7 +44,7 @@ coreKubicProjectPeriodic(
 
     if (env.RUN_CONFORMANCE_TESTS.toBoolean()) {
         stage('Run K8S Conformance Tests') {
-            runTestK8sConformance(environment: environment)
+            runK8sE2eTests(environment: environment)
         }
     }
 }

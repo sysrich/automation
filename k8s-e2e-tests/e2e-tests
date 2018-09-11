@@ -4,6 +4,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 ARTIFACTS_PATH=$DIR/results
 KUBECONFIG=
+SONOBUOY_RUN_ARGS=()
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -13,7 +14,8 @@ Usage:
     -k|--kubeconfig <FILE>   kubeconfig file
 
 Other:
-
+    --e2e-focus              set the e2e tests to focus on
+    --e2e-skip               set the e2e tests to skip
     --artifacts <DIR>        directory where junit XML files are stored
     --log <FILE>             log file
 
@@ -35,6 +37,15 @@ while [[ $# > 0 ]] ; do
     -k|--kubeconfig)
       KUBECONFIG="$(realpath $2)"
       check_file $KUBECONFIG
+      SONOBUOY_RUN_ARGS+=(--kubeconfig $KUBECONFIG)
+      shift
+      ;;
+    --e2e-focus)
+      SONOBUOY_RUN_ARGS+=(--e2e-focus "'$2'")
+      shift
+      ;;
+    --e2e-skip)
+      SONOBUOY_RUN_ARGS+=(--e2e-skip "'$2'")
       shift
       ;;
     --artifacts)
@@ -55,14 +66,19 @@ test_config() {
     "plugins": [ { "name": "e2e" } ]
 }
 EOF
+
+    SONOBUOY_RUN_ARGS+=(--config sonobuoy.json)
 }
 
 run_tests() {
     if ! command -v sonobuoy > /dev/null; then
         abort "Package sonobuoy needs to be installed"
     fi
+
     test_config
-    sonobuoy run --kubeconfig $KUBECONFIG --config sonobuoy.json
+
+    echo "${SONOBUOY_RUN_ARGS[@]}" | xargs -t sonobuoy run
+
     # wait a bit to let the test start
     n=6
     while test $n -gt 0 && sonobuoy status --kubeconfig $KUBECONFIG 2>&1 | grep 'pod has status \\"Pending\\"'
