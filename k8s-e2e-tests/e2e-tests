@@ -5,6 +5,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ARTIFACTS_PATH=$DIR/results
 KUBECONFIG=
 SONOBUOY_RUN_ARGS=()
+E2E_WAIT_TIME=${E2E_WAIT_TIME:-120} # How long to wait for the test to finish in minutes
 
 USAGE=$(cat <<USAGE
 Usage:
@@ -17,7 +18,6 @@ Other:
     --e2e-focus              set the e2e tests to focus on
     --e2e-skip               set the e2e tests to skip
     --artifacts <DIR>        directory where junit XML files are stored
-    --log <FILE>             log file
 
 USAGE
 )
@@ -88,21 +88,27 @@ run_tests() {
     done
 
     # wait until tests will finish
-    n=60
-    while test $n -gt 0 && sonobuoy status --kubeconfig $KUBECONFIG 2>&1 | grep "Sonobuoy is still running"; do
-        sleep 120
+    n=$E2E_WAIT_TIME
+    while test $n -gt 0; do
+        # Check the status every two minutes
+        if ! (($n % 2)) && ! sonobuoy status --kubeconfig $KUBECONFIG 2>&1 | grep "Sonobuoy is still running"; then
+            break
+        fi
+        sleep 60
         n=$(($n - 1))
     done
 
     if sonobuoy status --kubeconfig $KUBECONFIG 2>&1 | grep "Sonobuoy has completed"; then
-      # Create the artifacts path
-      mkdir -p $ARTIFACTS_PATH
-      # Copy results from the container
-      sonobuoy retrieve --kubeconfig $KUBECONFIG $ARTIFACTS_PATH
-      # Extract conformance tests tarball results
-      tar -xzf ${ARTIFACTS_PATH}/*_sonobuoy_*.tar.gz -C ${ARTIFACTS_PATH}/
+        # Create the artifacts path
+        mkdir -p $ARTIFACTS_PATH
+        # Copy results from the container
+        sonobuoy retrieve --kubeconfig $KUBECONFIG $ARTIFACTS_PATH
+        # Extract conformance tests tarball results
+        tar -xzf ${ARTIFACTS_PATH}/*_sonobuoy_*.tar.gz -C ${ARTIFACTS_PATH}/
+    elif sonobuoy status --kubeconfig $KUBECONFIG 2>&1 | grep "Sonobuoy is still running"; then
+        abort "Kubernetes e2e tests ran out of time"
     else
-      abort "Kubernetes conformance tests failed"
+        abort "Kubernetes e2e tests failed"
     fi
 }
 
