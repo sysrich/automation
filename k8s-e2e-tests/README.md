@@ -28,7 +28,7 @@ cd automation/k8s-e2e-tests
 
 4. Run tests with the following command
 ```
-./e2e-tests -k <path_to_kubeconfig> --log /tmp/e2e-tests.log
+./e2e-tests -k <path_to_kubeconfig>
 ```
 
 5. Wait until tests end, results will be stored in the provided path

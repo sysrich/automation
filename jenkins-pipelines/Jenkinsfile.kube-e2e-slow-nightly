@@ -6,7 +6,8 @@ properties([
     disableConcurrentBuilds(),
     pipelineTriggers([cron('H H(3-5) * * *')]),
     parameters([
-        booleanParam(name: 'ENVIRONMENT_DESTROY', defaultValue: true, description: 'Destroy env once done?')
+        booleanParam(name: 'ENVIRONMENT_DESTROY', defaultValue: true, description: 'Destroy env once done?'),
+        string(defaultValue: '195', description: 'How long to wait for the tests to finish in minutes', name: 'E2E_WAIT_TIME', trim: true)
     ]),
 ])
 
