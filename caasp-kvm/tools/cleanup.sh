@@ -29,4 +29,9 @@ pushd $DIR/../../downloads > /dev/null
 ls -vr *.qcow2 | awk -F- '$1 == name{system ("rm -f \""$0"\"")}{name=$1}' 
 popd  > /dev/null
 
+echo "--> Cleanup screenshots"
+pushd $DIR/../../velum-bootstrap > /dev/null
+rm -rf screenshots 
+popd  > /dev/null
+
 echo "Creanup Done"
