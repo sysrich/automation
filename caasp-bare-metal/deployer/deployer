@@ -1,9 +1,4 @@
 #!/bin/bash
-
-type python3 >/dev/null 2>&1 || sudo zypper install --no-confirm python3
-
-if [ ! -d ~/py3venv ]; then
-  python3 -m venv ~/py3venv
-  ~/py3venv/bin/pip3 install PyYAML prometheus_client urllib3 robobrowser
-fi
+set -u
+../misc-tools/setup-python PyYAML prometheus_client urllib3 robobrowser
 ~/py3venv/bin/python3 ./deploy_testbed.py $@
