@@ -50,12 +50,6 @@ feature "Boostrap cluster" do
       click_button("accept-all")
     end
 
-    puts ">>> Waiting 120 seconds as a workaround"
-    # ugly workaround for https://bugzilla.suse.com/show_bug.cgi?id=1050450
-    # FIXME: drop it when bug is fixed
-    sleep 120
-    puts "<<< Waiting 120 seconds as a workaround"
-
     with_status_ok do
       visit "/setup/discovery"
     end
@@ -64,7 +58,7 @@ feature "Boostrap cluster" do
     accept_timeout = [[240, node_number * 30].max, 600].min
     puts ">>> Wait until Minion keys are accepted by salt (Timeout: #{accept_timeout})"
     with_screenshot(name: :accepted_keys) do
-      expect(page).to have_css("input[name='roles[worker][]']", count: node_number, wait: accept_timeout)
+      expect(page).to have_css(".master-btn", count: node_number, wait: accept_timeout)
     end
     puts "<<< Minion keys accepted in Velum"
 
