@@ -11,4 +11,4 @@ if ! zypper lr -dU | grep -q "opensuse.org/repositories/network:/cluster"; then
   sudo zypper in --no-confirm pssh
 fi
 
-~/py3venv/bin/python3 $(dirname $0)/parallelssh/tool.py $@
+${WORKSPACE:-~}/py3venv/bin/python3 $(dirname $0)/parallelssh/tool.py $@
