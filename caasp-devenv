@@ -40,6 +40,7 @@ EXTRA_REPO=${CAASP_EXTRA_REPO:-}
 
 # base distribution used for setting up dependencies, and the packages to install
 DIST_BASE="opensuse.org/repositories/Virtualization:/containers"
+EARLY_DIST_PACKAGES="lsb-release"
 DIST_PACKAGES="jq \
                python-tox \
                python-devel \
@@ -239,6 +240,8 @@ export ENVIRONMENT="$DIR/caasp-kvm/environment.json"
 # Core methods
 setup() {
   log "Installing CaaSP Development Environment Requiemnts"
+  sudo zypper in --no-confirm --auto-agree-with-licenses $EARLY_DIST_PACKAGES
+
   local dist=$(lsb-release -sd | tr -d '"' | tr " " "_")
 
   if ! zypper lr -dU | grep --quiet "suse.de/ibs/SUSE:/CA" ; then
@@ -253,8 +256,7 @@ setup() {
     sudo zypper --gpg-auto-import-keys ref Virtualization_containers
   fi
 
-  # || : is necessary, as Zypper exits non-zero for "no changes".
-  sudo zypper in --no-confirm $DIST_PACKAGES || :
+  sudo zypper in --no-confirm --auto-agree-with-licenses $DIST_PACKAGES
 
   # Enable and start services, if disabled
   sudo systemctl enable --now docker
