@@ -1,4 +1,5 @@
-def kubicLib = library("kubic-jenkins-library@${env.BRANCH_NAME}").com.suse.kubic
+def targetBranch = env.getEnvironment().get('CHANGE_TARGET', env.BRANCH_NAME)
+def kubicLib = library("kubic-jenkins-library@${targetBranch}").com.suse.kubic
 
 // Configure the build properties
 properties([
