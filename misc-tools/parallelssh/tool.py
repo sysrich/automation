@@ -10,6 +10,7 @@ import logging
 import os
 import subprocess
 import sys
+import time
 import urllib.request
 
 log = logging.getLogger(__name__)
@@ -108,17 +109,24 @@ def run_ssh_interactive(sshuser, sshkey, target_ipaddrs, cmd, timeout, stop):
         cmd = cmd.replace('"', '')
         cmd = cmd.split('pssh')[1]
         cmd = "pkill -f '.*pssh{}'".format(cmd)
-        try:
-            retcode = subprocess.call(cmd, shell=True)
-            if retcode:
-                log.info("Executed: %s", cmd)
-                log.info("There is no running process!")
-            else:
-                log.info("Process stopped")
-            sys.exit()
+        log.info("Executing: %s", cmd)
+        max_retries = 10
+        sleeptime = 1
+        for cnt in range(max_retries):
+            try:
+                retcode = subprocess.call(cmd, shell=True)
+                if retcode:
+                    log.info("Attempt %d: No running process. Sleeping %ds", cnt, sleeptime)
+                    time.sleep(sleeptime)
+                else:
+                    log.info("Process stopped")
+                    sys.exit()
 
-        except OSError as e:
-            log.info("Execution failed: %s", e)
+            except OSError as e:
+                log.info("Execution failed: %s", e)
+                sys.exit(1)
+
+        log.info("No running process was found after %s attempts!", max_retries)
         sys.exit(1)
 
     log.debug("Running %s", cmd)
