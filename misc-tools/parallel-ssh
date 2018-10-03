@@ -1,13 +1,10 @@
 #!/bin/bash
-set -u
+
+set -euo pipefail
+
 $(dirname $0)/setup-python
 
-#dist=$(lsb-release -sd | tr -d '"' | tr " " "_")
-dist=SLE_12_SP3
-if ! zypper lr -dU | grep -q "opensuse.org/repositories/network:/cluster"; then
-  set -eo pipefail
-  sudo zypper ar "http://download.opensuse.org/repositories/network:/cluster/${dist}/network:cluster.repo"
-  sudo zypper --gpg-auto-import-keys ref network_cluster
+if [ ! -e /usr/bin/pssh ]; then
   sudo zypper in --no-confirm pssh
 fi
 
