@@ -12,6 +12,19 @@ VELUM_DEVEL_IMAGE="$DIR/../resources/docker-images/velum-development.tar"
 # Registry URLs JSON
 REGISTRY_URLS_JSON=$(realpath $DIR/../../misc-files/registry-urls.json)
 
+##################################################################
+
+# Utility methods
+log()        { (>&2 echo ">>> [build-velum-image] $@") ; }
+warn()       { log "WARNING: $@" ; }
+error()      { log "ERROR: $@" ; exit 1 ; }
+
+do_commit() {
+  docker logs -f "$1"
+  docker commit "$1" $IMAGE_DIST/velum:development_wip
+  docker rm "$1"
+}
+
 # Helper function to get the velum-development reference
 # most logic is to dynamically get to the newest tag
 # can be dropped when registry.opensuse.org has a "latest" tag
@@ -23,8 +36,14 @@ kubic_velum_development_reference() {
 
   TAGS_URL="https://$BASE_URL/v2/$RELATIVE_PATH/$IMAGE_DIST/velum-development/tags/list"
 
-  TAGS=$(curl -s $TAGS_URL | jq -r '.tags')
+  TAGS=$(curl -s -D response $TAGS_URL | jq -r '.tags')
 
+  if [[ ! -f response || $(grep '200 OK' response -c) == 0 ]]; then
+    error "cannot get response"
+  fi
+  
+  rm response;
+  
   # And getting the first tag
   FIRST_TAG=$(echo $TAGS | jq -r '.[0]')
   echo $BASE_URL/$RELATIVE_PATH/$IMAGE_DIST/velum-development:${FIRST_TAG}
@@ -47,18 +66,6 @@ else
   IMAGE_REFERENCE=$IMAGE
 fi
 
-##################################################################
-
-# Utility methods
-log()        { (>&2 echo ">>> [build-velum-image] $@") ; }
-warn()       { log "WARNING: $@" ; }
-error()      { log "ERROR: $@" ; exit 1 ; }
-
-do_commit() {
-  docker logs -f "$1"
-  docker commit "$1" $IMAGE_DIST/velum:development_wip
-  docker rm "$1"
-}
 
 # docker load of the velum-development image tarball
 load_velum_development_image() {
