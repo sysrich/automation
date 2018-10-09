@@ -13,6 +13,7 @@ import urlparse
 from HTMLParser import HTMLParser
 
 KVM_REGEX = '.*KVM.*x86_64-.*\.qcow2$'
+KVM_SLE15_REGEX = '.*CaaSP-Stack.*kvm.*\.qcow2$'
 KVM_KUBIC_REGEX = '.*x86_64-.*Stack-hardware-x86_64.*\.qcow2$'
 DOCKER_REGEX = '%(docker_image)s.*x86_64-.*\.tar\.xz$'
 OPENSTACK_REGEX = '.*OpenStack-Cloud.*x86_64-.*\.qcow2$'
@@ -33,6 +34,8 @@ class ImageFinder(HTMLParser):
         elif args.type == "kvm":
             if args.url == "channel://kubic":
                 self.regexp = KVM_KUBIC_REGEX
+            elif args.url == "channel://devel_15":
+                self.regexp = KVM_SLE15_REGEX
             else:
                 self.regexp = KVM_REGEX
         elif args.type == "openstack":
@@ -253,6 +256,8 @@ def get_channel_url(args):
         base_url += 'images_container_base'
     elif args.type in ["kvm", "openstack"]:
         base_url += 'images'
+        if args.url == "channel://devel_15":
+            base_url += '-sle15'
     elif args.type == "iso":
         base_url += 'images/iso'
     else:
