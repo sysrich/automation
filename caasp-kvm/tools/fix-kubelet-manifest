@@ -20,6 +20,14 @@ opts_parser = OptionParser.new do |opts|
     opts.on("-k", "--kubic", "Patch image names from sles to kubic") do |k|
       options[:kubic] = k
     end
+
+    opts.on("--sle15", "Patch image sources to registry") do |f|
+      options[:sle15] = f
+    end
+
+    opts.on("--noinit", "Do not perform initContainer patching") do |n| 
+      options[:noinit] = n
+    end
 end
 opts_parser.parse!
 
@@ -29,34 +37,45 @@ if ARGV.size != 1
   exit 1
 end
 
+image_versions = {
+  'mariadb' => '10.0',
+  'haproxy' => '1.6.0',
+  'salt-master' => '2018.3.0',
+  'salt-minion' => '2018.3.0',
+  'salt-api' => '2018.3.0',
+  'openldap' => '10.0'
+}
+
 manifest = YAML.load_file(ARGV[0])
 
-# Extend init containers to also set up `test` database by reusing the production database set up
-# logic.
-manifest["spec"]["initContainers"] ||= Array.new
-manifest["spec"]["initContainers"] += [
-  {
-    "name" => "mariadb-user-secrets-test",
-    "image" => "sles12/mariadb:__TAG__",
-    "command" => ["/setup-mysql.sh"],
-    "env" => [{ "name" => "ENV", "value" => "test" }],
-    "volumeMounts" => [
-      {
-        "mountPath" => "/infra-secrets",
-        "name" => "infra-secrets"
-      },
-      {
-        "mountPath" => "/var/run/mysql",
-        "name" => "mariadb-unix-socket"
-      },
-      {
-        "mountPath" => "/setup-mysql.sh",
-        "name" => "setup-mysql",
-        "readOnly" => true
-      }
-    ]
-  }
-]
+unless options[:noinit]
+  # Extend init containers to also set up `test` database by reusing the production database set up
+  # logic.
+  manifest["spec"]["initContainers"] ||= Array.new
+  manifest["spec"]["initContainers"] += [
+    {
+      "name" => "mariadb-user-secrets-test",
+      "image" => "sles12/mariadb:__TAG__",
+      "command" => ["/setup-mysql.sh"],
+      "env" => [{ "name" => "ENV", "value" => "test" }],
+      "volumeMounts" => [
+        {
+          "mountPath" => "/infra-secrets",
+          "name" => "infra-secrets"
+        },
+        {
+          "mountPath" => "/var/run/mysql",
+          "name" => "mariadb-unix-socket"
+        },
+        {
+          "mountPath" => "/setup-mysql.sh",
+          "name" => "setup-mysql",
+          "readOnly" => true
+        }
+      ]
+    }
+  ]
+end
 
 # Extend velum containers to use the development image, mount the source code and also set
 # the development environment variable for the rails environment.
@@ -85,6 +104,7 @@ def patch_containers(containers)
 end
 
 patch_containers manifest["spec"]["initContainers"]
+
 patch_containers manifest["spec"]["containers"]
 
 # Add manifest volumes where Velum source code resides in order to mount it in the containers
@@ -99,6 +119,13 @@ manifest["spec"]["volumes"] << {
 # so again replace sles12 image path with kubic
 if options[:kubic]
   manifest = YAML.load(YAML.dump(manifest).gsub!("sles12", "kubic"))
+end
+
+if options[:sle15]
+  manifest = YAML.safe_load(YAML.dump(manifest).gsub(/sles12\/(.*):__TAG__/, 'registry.suse.de/devel/casp/3.0/controllernode/images_container_base/sles12/\1:__TAG__'))
+  image_versions.each do |k, v|
+    manifest = YAML.safe_load(YAML.dump(manifest).gsub("#{k}:__TAG__", "#{k}:#{v}"))
+  end
 end
 
 if options[:out]

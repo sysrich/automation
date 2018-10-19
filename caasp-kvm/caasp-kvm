@@ -255,6 +255,8 @@ if [[ $(basename $IMAGE) =~ [Kk]ubic ]]; then
   DIST=kubic
   KUBIC_MANIFEST_FLAG="--kubic"
 # check if internal network is reachable and fail early
+elif [[ $(basename $IMAGE) =~ [Dd]evel_15 ]]; then
+  SLE15_MANIFEST_FLAG="--sle15"
 elif [[ -n "$RUN_BUILD" ]] && ! ping -q -c1 download.suse.de 2>&1 >/dev/null; then
   cat <<EOF
 Internal network not reachable!
@@ -344,7 +346,15 @@ build() {
     cp -r $CAASP_MANIFESTS_DIR/* "$injected/"
 
     log "Patching Container Manifests"
-    $DIR/tools/fix-kubelet-manifest ${KUBIC_MANIFEST_FLAG:-} -o $injected/manifests/public.yaml $injected/manifests/public.yaml
+    $DIR/tools/fix-kubelet-manifest ${SLE15_MANIFEST_FLAG:-} ${KUBIC_MANIFEST_FLAG:-} -o $injected/manifests/public.yaml $injected/manifests/public.yaml
+
+    if [ -n "${SLE15_MANIFEST_FLAG:-}" ]; then
+        log "Patching additional manifests and activate.sh to use registry images"
+        $DIR/tools/fix-kubelet-manifest ${SLE15_MANIFEST_FLAG:-} --noinit -o $injected/manifests/private.yaml $injected/manifests/private.yaml
+        $DIR/tools/fix-kubelet-manifest ${SLE15_MANIFEST_FLAG:-} --noinit -o $injected/manifests/haproxy.yaml $injected/manifests/haproxy.yaml
+        sed -i "s|sles12/pause:1.0.0|registry.suse.de/devel/casp/3.0/controllernode/images_container_base/sles12/pause:1.0.0|g" $injected/activate.sh
+        sed -i "s|use_registry: false|use_registry: true|g" $injected/config/registry/registry-config.yaml
+    fi
 
     log "Patching activate.sh (again)"
     if [ -n "${KUBIC_MANIFEST_FLAG:-}" ]; then
