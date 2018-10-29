@@ -255,7 +255,7 @@ if [[ $(basename $IMAGE) =~ [Kk]ubic ]]; then
   DIST=kubic
   KUBIC_MANIFEST_FLAG="--kubic"
 # check if internal network is reachable and fail early
-elif ! ping -q -c1 download.suse.de 2>&1 >/dev/null; then
+elif [[ -n "$RUN_BUILD" ]] && ! ping -q -c1 download.suse.de 2>&1 >/dev/null; then
   cat <<EOF
 Internal network not reachable!
   use $0 --image channel://kubic
