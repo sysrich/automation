@@ -15,8 +15,13 @@ echo "--> Cleanup Volumes"
 pools="$(sudo virsh pool-list --all | sed 1,2d | awk '{print $1}')"
 for pool in $pools; do
 sudo virsh vol-list --pool "$pool" | \
-  (grep -E "(admin(_cloud_init)?|(master|worker)(_cloud_init)?_[0-9]+)|additional-worker-volume" || :) | \
-  awk '{print $1}' | xargs --no-run-if-empty -n1 -I{} sh -c "sudo virsh vol-delete --pool '$pool' {}"
+  (grep -E -e "admin(_cloud_init)?" \
+           -e "(master|worker)(_cloud_init)?_[0-9]+" \
+           -e "additional-worker-volume" \
+           -e "SUSE-CaaS-Platform-.*KVM.*Build[0-9]+\.[0-9]+" \
+  || :) | \
+  awk '{print $1}' \
+  | xargs --no-run-if-empty -n1 -I{} sudo virsh vol-delete --pool "$pool" '{}'
 done
 
 echo "--> Cleanup Terraform states from caasp-kvm"
