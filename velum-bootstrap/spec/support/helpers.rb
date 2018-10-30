@@ -26,19 +26,6 @@ module Helpers
     puts "<<< User logged in"
   end
 
-  def register
-    puts ">>> Registering user"
-    with_status_ok do
-      visit "/users/sign_up"
-    end
-
-    fill_in "user_email", with: "test@test.com"
-    fill_in "user_password", with: "password"
-    fill_in "user_password_confirmation", with: "password"
-    click_on "Create Admin"
-    puts "<<< User registered"
-  end
-
   def default_interface
     `awk '$2 == 00000000 { print $1 }' /proc/net/route`.strip
   end
