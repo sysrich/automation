@@ -27,7 +27,7 @@ USAGE
 )
 
 # Utility methods
-log()        { (>&2 echo ">>> [caasp-kvm] $@") ; }
+log()        { (>&2 echo ">>> [libvirt-tool] $@") ; }
 warn()       { log "WARNING: $@" ; }
 error()      { log "ERROR: $@" ; exit 1 ; }
 check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
