@@ -20,7 +20,7 @@ Snapshots:
 
 Suspend/resume:
 
-    susupend    Suspend the VMs
+    suspend    Suspend the VMs
     resume      Resume the VMs
 
 USAGE
