@@ -14,7 +14,15 @@ feature "Register user and configure cluster" do
 
   scenario "User registers" do
     with_screenshot(name: :register) do
-      register
+      puts ">>> Registering user"
+      with_status_ok do
+        visit "/users/sign_up"
+      end
+      fill_in "user_email", with: "test@test.com"
+      fill_in "user_password", with: "password"
+      fill_in "user_password_confirmation", with: "password"
+      click_on "Create Admin"
+      puts "<<< User registered"
     end
   end
 
@@ -61,6 +69,15 @@ feature "Register user and configure cluster" do
 
       click_on "Next"
       puts "<<< Velum set up"
+    end
+  end
+
+  scenario "User proceeds past AutoYaST page" do
+    with_screenshot(name: :skip_autoyast) do
+      puts ">>> Skipping past the AutoYaST page"
+      visit "/setup/worker-bootstrap"
+      click_on "Next"
+      puts "<<< Skipped past the AutoYaST page"
     end
   end
 end
