@@ -8,13 +8,7 @@ server ntp2.suse.de
 server ntp3.suse.de
 EOF
 
-a=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1 | awk '{gsub ( "[.]","-" ) ; print "host-"$0 }')
-
-cat <<EOF > /etc/hostname
-$a
-EOF
-
-hostnamectl set-hostname $a
+host=$(hostname)
 
 /usr/bin/systemctl stop SuSEfirewall2.service
 /usr/bin/systemctl enable --now ntpd.service
@@ -24,7 +18,7 @@ systemctl enable salt-master.service
 systemctl start salt-master.service
 
 cat <<EOF > /etc/salt/minion.d/master.conf
-master: $a
+master: $host
 EOF
 
 systemctl enable salt-minion.service
@@ -38,14 +32,12 @@ stage_prep_minion: default-no-update-no-reboot
 EOF
 
 cat <<EOF > /srv/pillar/ceph/master_minion.sls
-master_minion: $a.openstacklocal
+master_minion: $host.openstack.local
 EOF
 
 cat <<EOF > /srv/pillar/ceph/deepsea_minions.sls
 deepsea_minions: '*'    
 EOF
-
-salt '*' saltutil.sync_all
 
 echo "Running deepsea stage 0"
 deepsea stage run ceph.stage.0
@@ -53,52 +45,29 @@ deepsea stage run ceph.stage.0
 echo "Running deepsea stage 1"
 deepsea stage run ceph.stage.1
 
-A=`ls /srv/pillar/ceph/proposals/role-mon/cluster | sed -r "s/.sls//g;s/$(hostname -f)//g"`
-B=`ls /srv/pillar/ceph/proposals/profile-default/stack/default/ceph/minions | sed -r 's/.yml//g'`
-C=`diff --side-by-side --suppress-common-lines <(echo "$A") <(echo "$B") | tr -d '< '`
 policyf=/srv/pillar/ceph/proposals/policy.cfg
 
 cat <<EOF > $policyf
 ## Cluster Assignment
 cluster-ceph/cluster/*.sls
-
 ## Roles
+# MASTER
+role-master/cluster/ses-admin*.sls
 # ADMIN
-role-master/cluster/$(hostname -f).sls
-EOF
-
-for i in $(echo $C); do 
-    echo role-admin/cluster/$i.sls >> $policyf
-done
-
-echo -e '\n# MON' >> $policyf
-
-for i in $(echo $C); do 
-    echo role-mon/cluster/$i.sls >> $policyf
-done
-
-echo -e '\n# MGR' >> $policyf
-
-for i in $(echo $C); do 
-    echo role-mgr/cluster/$i.sls >> $policyf
-done
-
-echo -e '\n# MDS' >> $policyf
-
-for i in $(echo $C); do 
-    echo role-mds/cluster/$i.sls >> $policyf
-done
-
-echo -e '\n# RGW\nrole-rgw/cluster/'$(hostname -f).sls >> $policyf
-
-echo -e '
+role-admin/cluster/ses-admin*.sls
+# MON
+role-mon/cluster/ses-mon*.sls
+# MGR
+role-mgr/cluster/ses-mon*.sls
+# MDS
+role-mds/cluster/ses-mon*.sls
 # COMMON
 config/stack/default/global.yml 
 config/stack/default/ceph/cluster.yml 
-
 ## Profiles
-profile-default/cluster/*.sls 
-profile-default/stack/default/ceph/minions/*.yml' >>  $policyf
+profile-default/cluster/ses-osd*.sls 
+profile-default/stack/default/ceph/minions/ses-osd*.yml
+EOF
 
 echo "Running deepsea stage 2"
 deepsea stage run ceph.stage.2

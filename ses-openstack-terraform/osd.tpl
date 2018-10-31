@@ -18,14 +18,6 @@ server ntp2.suse.de
 server ntp3.suse.de
 EOF
 
-a=$(ip addr show eth0 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1 | awk '{gsub ( "[.]","-" ) ; print "host-"$0 }')
-
-cat <<EOF > /etc/hostname
-$a
-EOF
-
-hostnamectl set-hostname $a
-
 /usr/bin/systemctl stop SuSEfirewall2.service
 /usr/bin/systemctl enable --now ntpd.service
 
