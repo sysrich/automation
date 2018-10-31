@@ -43,7 +43,7 @@ data "template_file" "mon" {
     regcode    = "${var.regcode}"
     ses_base   = "${var.ses_base}"
     ses_update = "${var.ses_update}"
-    saltmaster = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
+    saltmaster = "${openstack_compute_instance_v2.admin.name}"
   }
 }
 
@@ -54,7 +54,7 @@ data "template_file" "osd" {
     regcode    = "${var.regcode}"
     ses_base   = "${var.ses_base}"
     ses_update = "${var.ses_update}"
-    saltmaster = "host-${replace(openstack_compute_instance_v2.admin.access_ip_v4,".","-")}"
+    saltmaster = "${openstack_compute_instance_v2.admin.name}"
   }
 }
 
@@ -422,10 +422,6 @@ output "internal_ip_osds" {
 
 output "k8s_StorageClass_internal_ip" {
   value = ["\nkind: StorageClass\napiVersion: storage.k8s.io/v1\nmetadata:\n  name: persistent\nprovisioner: kubernetes.io/rbd\nparameters:\n  monitors: ${openstack_compute_instance_v2.mon.0.access_ip_v4}:6789,${openstack_compute_instance_v2.mon.1.access_ip_v4}:6789,${openstack_compute_instance_v2.mon.2.access_ip_v4}:6789\n  adminId: admin\n  adminSecretName: ceph-secret-admin\n  adminSecretNamespace: default\n  pool: k8s\n  userId: admin\n  userSecretName: ceph-secret-admin"]
-}
-
-output "k8s_StorageClass_floating_ip" {
-  value = ["\nkind: StorageClass\napiVersion: storage.k8s.io/v1\nmetadata:\n  name: persistent\nprovisioner: kubernetes.io/rbd\nparameters:\n  monitors: ${openstack_networking_floatingip_v2.mon_ext.0.address}:6789,${openstack_networking_floatingip_v2.mon_ext.1.address}:6789,${openstack_networking_floatingip_v2.mon_ext.2.address}:6789\n  adminId: admin\n  adminSecretName: ceph-secret-admin\n  adminSecretNamespace: default\n  pool: k8s\n  userId: admin\n  userSecretName: ceph-secret-admin"]
 }
 
 output "ceph secret" {
