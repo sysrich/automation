@@ -2,7 +2,7 @@
 
 The goal is to provide a simple setup of three Kubic VMs.
 
-No fancy configuration is possible right now.
+You can extend the main.tf example provided in the `kubic-kvm` dir.
 
 ## Prerequisites
 
@@ -12,13 +12,6 @@ You're going to need at least:
 
 Running `caasp-devenv` should install the packages, otherwise loook on upstream projects. 
 
-## Download the image
-
-run
-```bash
-../misc-tools/download-image --type kvm https://download.opensuse.org/repositories/devel:/kubic:/images:/experimental/images_devel_kubic/openSUSE-Tumbleweed-Kubic.x86_64-15.0-kubeadm-docker-hardware-x86_64-Build5.10.qcow2
-```    
-In order to download the VM image.
 # Usage
 
 Run 
