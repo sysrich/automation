@@ -314,7 +314,7 @@ resource "null_resource" "deepsea" {
 }
 
 data "external" "cephsecret" {
-  program    = ["bash", "cephsecret.sh", "${openstack_networking_floatingip_v2.mon_ext.0.address}"]
+  program    = ["bash", "cephsecret.sh", "${openstack_networking_floatingip_v2.admin_ext.address}"]
   depends_on = ["null_resource.deepsea"]
 }
 
