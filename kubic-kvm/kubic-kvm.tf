@@ -7,14 +7,14 @@ variable "count_vms" {
   default     = 3
 }
 
-resource "libvirt_volume" "os_image" {
-  name   = "os_image"
+resource "libvirt_volume" "kubic_image" {
+  name   = "kubic_image"
   source = "https://download.opensuse.org/repositories/devel:/kubic:/images:/experimental/images_devel_kubic/openSUSE-Tumbleweed-Kubic.x86_64-15.0-kubeadm-cri-o-OpenStack-Cloud-Build11.13.qcow2"
 }
 
 resource "libvirt_volume" "os_volume" {
   name           = "os_volume-${count.index}"
-  base_volume_id = "${libvirt_volume.os_image.id}"
+  base_volume_id = "${libvirt_volume.kubic_image.id}"
   count          = "${var.count_vms}"
 }
 
