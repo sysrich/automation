@@ -2,15 +2,20 @@ provider "libvirt" {
   uri = "qemu:///system"
 }
 
+variable "count_vms" {
+  description = "number of virtual-machine of same type that will be created"
+  default     = 3
+}
+
 resource "libvirt_volume" "os_image" {
   name   = "os_image"
-  source = "https://download.opensuse.org/repositories/devel:/kubic:/images:/experimental/images_devel_kubic/openSUSE-Tumbleweed-Kubic.x86_64-15.0-kubeadm-docker-OpenStack-Cloud-Build11.8.qcow2"
+  source = "https://download.opensuse.org/repositories/devel:/kubic:/images:/experimental/images_devel_kubic/openSUSE-Tumbleweed-Kubic.x86_64-15.0-kubeadm-cri-o-OpenStack-Cloud-Build11.13.qcow2"
 }
 
 resource "libvirt_volume" "os_volume" {
   name           = "os_volume-${count.index}"
   base_volume_id = "${libvirt_volume.os_image.id}"
-  count          = 3
+  count          = "${var.count_vms}"
 }
 
 resource "libvirt_volume" "data_volume" {
@@ -18,14 +23,23 @@ resource "libvirt_volume" "data_volume" {
 
   // 5 * 1024 * 1024 * 1024
   size  = 5368709120
-  count = 3
+  count = "${var.count_vms}"
+}
+
+data "template_file" "cloud_init_disk_user_data" {
+  count    = "${var.count_vms}"
+  template = "${file("commoninit.cfg")}"
+
+  vars {
+    hostname = "kubic-${count.index}"
+  }
 }
 
 resource "libvirt_cloudinit_disk" "commoninit" {
   name      = "commoninit-${count.index}.iso"
   pool      = "default"
-  user_data = "${file("commoninit.cfg")}"
-  count     = 3
+  user_data = "${element(data.template_file.cloud_init_disk_user_data.*.rendered, count.index)}"
+  count     = "${var.count_vms}"
 }
 
 resource "libvirt_domain" "kubic-domain" {
@@ -51,7 +65,7 @@ resource "libvirt_domain" "kubic-domain" {
   }
 
   cloudinit = "${element(libvirt_cloudinit_disk.commoninit.*.id, count.index)}"
-  count     = 3
+  count     = "${var.count_vms}"
 }
 
 output "ips" {
