@@ -87,7 +87,7 @@ build_fresh_image() {
   # Reuse the gems already vendored into the devel image if possible.
   # This will pull only the development gems and the ones changed on master.
   # This greatly reduces the creation time of the image
-  ##local PROXY_FLAGS=""
+  local PROXY_FLAGS=""
   ##if [ -n "$PROXY" ]; then
   ##  PROXY_FLAGS="-e http_proxy=$PROXY -e https_proxy=$PROXY -e HTTP_PROXY=$PROXY -e HTTPS_PROXY=$PROXY"
   ##fi
