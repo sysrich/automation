@@ -1,6 +1,8 @@
 library "kubic-jenkins-library@${env.BRANCH_NAME}"
 
 // Workers rotation
+// This pipeline puts Jenkin workers offline and later on removes them at regular intervals.
+// As Jenkins can spawn new workers as needed, this keep the running workers "fresh"
 
 import com.cloudbees.groovy.cps.NonCPS
 import hudson.model.*
