@@ -1,5 +1,7 @@
 library "kubic-jenkins-library@${env.BRANCH_NAME}"
 
+// This pipeline runs daily end-to-end tests by deploying an ISO on Bare Metal
+
 // Configure the build properties
 properties([
     buildDiscarder(logRotator(numToKeepStr: '31', daysToKeepStr: '31')),

@@ -1,5 +1,8 @@
 def kubicLib = library("kubic-jenkins-library@${env.BRANCH_NAME}").com.suse.kubic
 
+// This pipeline run end-to-end tests daily on an environment that simulates a real network
+// including packet loss, latency with jitter etc
+
 // Configure the build properties
 properties([
     buildDiscarder(logRotator(numToKeepStr: '31', daysToKeepStr: '31')),

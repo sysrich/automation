@@ -1,5 +1,7 @@
 def kubicLib = library("kubic-jenkins-library@${env.BRANCH_NAME}").com.suse.kubic
 
+// This pipeline run end-to-end tests daily against cri-o instead of the default (Docker)
+
 // Configure the build properties
 properties([
     buildDiscarder(logRotator(numToKeepStr: '31', daysToKeepStr: '31')),
