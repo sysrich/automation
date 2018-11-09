@@ -424,6 +424,6 @@ output "k8s_StorageClass_internal_ip" {
   value = ["\nkind: StorageClass\napiVersion: storage.k8s.io/v1\nmetadata:\n  name: persistent\nprovisioner: kubernetes.io/rbd\nparameters:\n  monitors: ${openstack_compute_instance_v2.mon.0.access_ip_v4}:6789,${openstack_compute_instance_v2.mon.1.access_ip_v4}:6789,${openstack_compute_instance_v2.mon.2.access_ip_v4}:6789\n  adminId: admin\n  adminSecretName: ceph-secret-admin\n  adminSecretNamespace: default\n  pool: k8s\n  userId: admin\n  userSecretName: ceph-secret-admin"]
 }
 
-output "ceph secret" {
+output "ceph_secret" {
   value = ["\napiVersion: v1\nkind: Secret\nmetadata:\n  name: ceph-secret-admin\n  namespace: default\ndata:\n  key: ${lookup(data.external.cephsecret.result, "secret")}\ntype: kubernetes.io/rbd"]
 }
