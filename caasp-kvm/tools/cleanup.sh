@@ -26,17 +26,49 @@ done
 
 echo "--> Cleanup Terraform states from caasp-kvm"
 pushd $DIR/.. > /dev/null
-rm -f cluster.tf terraform.tfstate*
+rm -vf cluster.tf terraform.tfstate*
 popd  > /dev/null
 
-echo "--> Cleanup old KVM images"
+# keep files pointed at by kvm-* symlinks, and the newest of each release
+echo "--> Cleanup old KVM image downloads"
 pushd $DIR/../../downloads > /dev/null
-ls -vr *.qcow2 | awk -F- '$1 == name{system ("rm -f \""$0"\"")}{name=$1}' 
+shopt -s extglob
+typeset -A newest=()
+typeset -A keepers=()
+for F in kvm-+([[:alnum:]]); do
+  if [[ -L "$F" ]]; then
+    T="$(readlink -fs "$F")"
+    [[ -f "$T" ]] && keepers[$(basename $T)]=1 
+  fi
+done
+for F in *.qcow2; do
+  # only process files (which aren't symlinks to files)
+  [[ -f "$F" && ! -L "$F" ]] || continue
+  # filename looks like one of:
+  #  SUSE-CaaS-Platform-3.0-for-KVM-and-Xen.x86_64-3.0.0-Build14.30.qcow2.tmp
+  #  openSUSE-Tumbleweed-Kubic.x86_64-15.0-CaaSP-Stack-hardware-x86_64-Build8.178.qcow2
+  prefix=${F%%-+(.|[[:digit:]])-*} # get prefix by deleting after first "-3.0"
+  release=${F#"$prefix-"}          # delete that prefix and the hyphen
+  release=${release%%-*}           # delete everything from the first hyphen on
+  if [[ -z "${newest[$release]:-}" ]]; then
+    # no previous newest
+    newest[$release]="$F"
+  elif [[ "$F" -nt "${newest[$release]}" ]]; then
+    # $F is newer than the prev newest; rm that one unless it was a keeper
+    [[ -z "${keepers[$(basename "${newest[$release]}")]:-}" ]] \
+      && rm -v "${newest[$release]}"
+    newest[$release]=$F
+  else
+    [[ -z "${keepers[$(basename "$F")]:-}" ]] \
+      && rm -v "$F"
+  fi
+done
+shopt -u extglob
 popd  > /dev/null
 
 echo "--> Cleanup screenshots"
 pushd $DIR/../../velum-bootstrap > /dev/null
-rm -rf screenshots 
+rm -vrf screenshots 
 popd  > /dev/null
 
 echo "Creanup Done"
