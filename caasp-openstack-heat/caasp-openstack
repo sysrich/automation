@@ -103,6 +103,10 @@ while [[ $# -gt 0 ]] ; do
       echo "$USAGE"
       exit 0
       ;;
+    *)
+      log "Invalid option: $1"
+      usage
+      ;;
   esac
   shift
 done

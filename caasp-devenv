@@ -220,6 +220,10 @@ while [[ $# > 0 ]] ; do
     -h|--help)
       usage
       ;;
+    *)
+      log "Invalid option: $1"
+      usage
+      ;;
   esac
   shift
 done
