@@ -241,7 +241,7 @@ resource "libvirt_domain" "admin" {
   provisioner "remote-exec" {
     inline = [
       "while [[ ! -f /var/run/docker.pid ]]; do echo waiting for docker to start; sleep 1; done",
-      "docker load -i /var/lib/misc/devel-docker-images/*.tar",
+      "for image in /var/lib/misc/devel-docker-images/*.tar ; do echo Loading $(basename $image) ; docker load -i $image ; done",
     ]
   }
 <% end -%>
