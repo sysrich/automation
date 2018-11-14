@@ -16,7 +16,7 @@ pools="$(sudo virsh pool-list --all | sed 1,2d | awk '{print $1}')"
 for pool in $pools; do
 sudo virsh vol-list --pool "$pool" | \
   (grep -E -e "admin(_cloud_init)?" \
-           -e "(master|worker)(_cloud_init)?_[0-9]+" \
+           -e "(master|worker)(_cloud_init)?_(disk)?[0-9]+" \
            -e "additional-worker-volume" \
            -e "SUSE-CaaS-Platform-.*KVM.*Build[0-9]+\.[0-9]+" \
   || :) | \
