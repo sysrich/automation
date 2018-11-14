@@ -231,7 +231,7 @@ done
 ##############################################################
 
 CAASP_KVM_ARGS="-m $MASTERS -w $WORKERS --image $IMAGE"
-[ -n "$PARALLELISM" ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --parallelism=$PARALLELISM"
+[ -n "$PARALLELISM" ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --parallelism $PARALLELISM"
 [ -n "$PROXY"       ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --proxy $PROXY"
 [ -n "$LOCATION"    ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --location $LOCATION"
 [ -n "$VANILLA"     ] && CAASP_KVM_ARGS="$CAASP_KVM_ARGS --vanilla"
