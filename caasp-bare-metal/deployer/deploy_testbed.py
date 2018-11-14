@@ -696,11 +696,14 @@ def handle_iso(args):
         else:
             baseurl = j["baseurl"][args.channel]["default"]
     iso_list_url = os.path.join(baseurl, 'images/iso')
-    # FIXME
-    iso_list_url = "http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/images-sle15/iso"
 
     # regexp - general enough for all Build<NNN> Media1 ISOs
     iso_pattern = 'SUSE\\-CaaS\\-Platform\\-\\d+.\\d+\\-DVD\\-x86_64\\-Build(\\d+)\\.?\\d*\\-Media1\\.iso$'
+
+    # FIXME: this uses a different base url (the images-sle15 component) and a more restrictive pattern
+    # To be moved to a dedicated "channel"
+    iso_list_url = "http://download.suse.de/ibs/Devel:/CASP:/Head:/ControllerNode/images-sle15/iso"
+    iso_pattern = 'SUSE\\-CaaS\\-Platform\\-\\d+.\\d+\\-DVD\\-x86_64\\-Build(\\d+)\\.\\d+\\-Media1\\.iso$'
 
     if args.start_iso_fetching or args.wait_iso_fetching:
         # The BMM will start fetching a new ISO, if available
