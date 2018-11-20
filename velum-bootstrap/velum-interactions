@@ -76,7 +76,7 @@ check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
 # Test methods
 is_ci()
 {
-    if [ -e /boot/grub2/grub.cfg ] && grep 'jenkins-worker' /boot/grub2/grub.cfg > /dev/null; then
+    if [ -f /boot/grub2/grub.cfg ] && sudo grep -q 'jenkins-worker' /boot/grub2/grub.cfg; then
         echo "This image is generated for Jenkins CI purposes."
         return
     fi
