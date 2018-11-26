@@ -14,7 +14,7 @@ properties([
     ])
 ])
 
-node('leap42.3') {
+node('leap15.0') {
     timeout(240){
         stage('Preparation') {
             cleanWs()
