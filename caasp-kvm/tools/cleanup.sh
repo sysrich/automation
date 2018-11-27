@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Cleanup KVM: delete VMs, networks, volumes and terraform states
+# TODO: ensure this script is idempotent and can be run at the beginning of CI runs
+
 set -euo pipefail
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 
