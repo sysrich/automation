@@ -57,6 +57,7 @@ role-master/cluster/ses-admin*.sls
 role-admin/cluster/ses-admin*.sls
 # MON
 role-mon/cluster/ses-mon*.sls
+role-admin/cluster/ses-mon*.sls
 # MGR
 role-mgr/cluster/ses-mon*.sls
 # MDS
