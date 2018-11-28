@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Cleaning up KVM: delete VMs, networks, volumes and terraform states
+# Cleanup KVM: delete VMs, networks, volumes and terraform states
 # This script is idempotent and can be run at the beginning of CI runs
 
 set -euo pipefail
