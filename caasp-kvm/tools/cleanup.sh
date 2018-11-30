@@ -1,39 +1,45 @@
 #!/bin/bash
 
 # Cleanup KVM: delete VMs, networks, volumes and terraform states
-# TODO: ensure this script is idempotent and can be run at the beginning of CI runs
+# This script is idempotent and can be run at the beginning of CI runs
 
 set -euo pipefail
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 
-echo "--> Cleanup VMs"
+echo "Starting cleanup script"
+
+echo "--> Cleaning up VMs"
+sudo virsh list --all | (grep -E "(admin|(master|worker)_[0-9]+)" || :)
 sudo virsh list --all | (grep -E "(admin|(master|worker)_[0-9]+)" || :) | awk '{print $2}' | \
   xargs --no-run-if-empty -n1 -I{} sh -c 'sudo virsh destroy {}; sudo virsh undefine {}'
 
-echo "--> Cleanup Networks"
+echo "--> Cleaning up Networks"
+sudo virsh net-list --all | (grep "caasp-dev-net" || :)
 sudo virsh net-list --all | (grep "caasp-dev-net" || :) | awk '{print $1}' | \
   xargs --no-run-if-empty -n1 -I{} sh -c 'sudo virsh net-destroy {}; sudo virsh net-undefine {}'
 
-echo "--> Cleanup Volumes"
+echo "--> Cleaning up Volumes"
 pools="$(sudo virsh pool-list --all | sed 1,2d | awk '{print $1}')"
+echo "    Pools: $pools"
 for pool in $pools; do
 sudo virsh vol-list --pool "$pool" | \
   (grep -E -e "admin(_cloud_init)?" \
            -e "(master|worker)(_cloud_init)?_(disk)?[0-9]+" \
            -e "additional-worker-volume" \
+           -e "kvm-devel" \
            -e "SUSE-CaaS-Platform-.*KVM.*Build[0-9]+\.[0-9]+" \
   || :) | \
   awk '{print $1}' \
   | xargs --no-run-if-empty -n1 -I{} sudo virsh vol-delete --pool "$pool" '{}'
 done
 
-echo "--> Cleanup Terraform states from caasp-kvm"
+echo "--> Cleaning up Terraform states from caasp-kvm"
 pushd $DIR/.. > /dev/null
 rm -vf cluster.tf terraform.tfstate*
 popd  > /dev/null
 
 # keep files pointed at by kvm-* symlinks, and the newest of each release
-echo "--> Cleanup old KVM image downloads"
+echo "--> Cleaning up old KVM image downloads"
 pushd $DIR/../../downloads > /dev/null
 shopt -s extglob
 typeset -A newest=()
@@ -69,9 +75,9 @@ done
 shopt -u extglob
 popd  > /dev/null
 
-echo "--> Cleanup screenshots"
+echo "--> Cleaning up screenshots"
 pushd $DIR/../../velum-bootstrap > /dev/null
-rm -vrf screenshots 
+rm -vrf screenshots
 popd  > /dev/null
 
-echo "Creanup Done"
+echo "Cleanup done"
