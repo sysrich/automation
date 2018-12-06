@@ -25,7 +25,8 @@ USAGE:
   2. Edit openstack.tfvars file and provide following options
 
   * image_name - CaaSP OpenStack Image Name
-  * network_name - OpenStack Private Network
+  * internal_net - OpenStack Private Network Name
+  * external_net - OpenStack Public Network Name
   * admin_size - CaaSP Admin OpenStack Flavour
   * master_size - CaaSP Master OpenStack Flavour
   * worker_size - CaaSP Worker OpenStack Flavour
