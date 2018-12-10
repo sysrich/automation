@@ -16,6 +16,7 @@ properties([
 
 def kvmTypeOptions = kubicLib.CaaspKvmTypeOptions.new();
 kvmTypeOptions.vanilla = true
+kvmTypeOptions.disableMeltdownSpectreFixes = false
 
 coreKubicProjectPeriodic(
     environmentTypeOptions: kvmTypeOptions,
