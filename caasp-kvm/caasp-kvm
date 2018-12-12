@@ -400,6 +400,9 @@ destroy() {
   terraform init && \
     terraform destroy -force $TF_ARGS && \
     rm -f "$ENVIRONMENT"
+  # Sometimes terraform destroy leaves the admin VM behind, in shut off state,
+  # after a failed startup/build. Temporary workaround.
+  virsh undefine admin || true
 }
 
 [ -n "$ACTION" ] || usage
