@@ -66,6 +66,25 @@ warn()       { log "WARNING: $@" ; }
 error()      { log "ERROR: $@" ; exit 1 ; }
 check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
 
+# Test methods
+is_ci()
+{
+    if [ -e /boot/grub2/grub.cfg ] && grep 'jenkins-worker' /boot/grub2/grub.cfg > /dev/null; then
+        echo "This image is generated for Jenkins CI purposes."
+        return
+    fi
+    false
+}
+
+# Velum interaction packages
+which ruby || error "Ruby is not installed"
+ruby_version=$(ruby --version | cut -d ' ' -f2 | cut -d '.' -f1-2)
+INTERACTION_PACKAGES="ruby${ruby_version}-rubygem-bundler \
+                      ruby${ruby_version}-devel \
+                      phantomjs \
+                      libxml2-devel \
+                      libxslt-devel"
+
 # parse options
 while [[ $# > 0 ]] ; do
   case $1 in
@@ -126,10 +145,16 @@ done
 
 # Core methods
 setup() {
-  log "Installing Velum Interaction Requiemnts"
+  log "Installing Velum Interaction Requirements"
 
-  # || : is necessary, as Zypper exits non-zero for "no changes".
-  sudo zypper in --no-confirm ruby2.1-rubygem-bundler ruby2.1-devel phantomjs libxml2-devel libxslt-devel || :
+  if is_ci; then
+    if zypper lr > /dev/null; then
+        error "No repositories should be present into the CI environment!"
+    fi
+    rpm -q $INTERACTION_PACKAGES || error "Some packages are not pre-installed into the CI environment."
+  else
+    sudo zypper in --no-confirm --auto-agree-with-licenses $INTERACTION_PACKAGES
+  fi
 
   bundle install --path .bundler
 }
