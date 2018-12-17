@@ -259,10 +259,10 @@ setup() {
     sudo zypper --gpg-auto-import-keys ref Devel_CASP_CI
   fi
 
-  if ! zypper lr -dU | grep --quiet "opensuse.org/repositories/systemsmanagement:/terraform:/unstable" ; then
-    log "Adding systemsmanagement:terraform:unstable Zypper repo"
-    sudo zypper ar -f "http://download.opensuse.org/repositories/systemsmanagement:/terraform:/unstable/${dist}/systemsmanagement:terraform:unstable.repo"
-    sudo zypper --gpg-auto-import-keys ref systemsmanagement_terraform_unstable
+  if ! zypper lr -dU | grep --quiet "opensuse.org/repositories/systemsmanagement:/terraform/" ; then
+    log "Adding systemsmanagement:terraform zypper repo"
+    sudo zypper ar -f "http://download.opensuse.org/repositories/systemsmanagement:/terraform/${dist}/systemsmanagement:terraform.repo"
+    sudo zypper --gpg-auto-import-keys ref systemsmanagement_terraform
   fi
 
   sudo zypper in --no-confirm --auto-agree-with-licenses $DIST_PACKAGES
