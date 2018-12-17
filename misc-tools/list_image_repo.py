@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Use in CI to list the images in a download repository on OBS
 # so we can use the output file to detect a new image available
 # and trigger a build.
@@ -31,10 +31,10 @@ def parse_args():
     cli_argparser.add_argument("--result-file", "-o", required=False,
                                default="files_repo.json", action="store",
                                help="output file to store the results")
-    cli_argparser.add_argument("--download-checksum", "-dc", required=False,
+    cli_argparser.add_argument("--download-checksum", "-d", required=False,
                                action="store_true",
                                help="download sha256 checksum files")
-    cli_argparser.add_argument("--checksum-dir", "-d", required=False,
+    cli_argparser.add_argument("--checksum-dir", "-c", required=False,
                                default="./", action="store",
                                help="output directory to store the sha256 checksum files")
     cli_argparser.add_argument("--insecure", required=False,
@@ -78,30 +78,18 @@ def filter_results(regex, file_list, ignore_case):
     return matched_files
 
 
-def create_json(url, platforms, file_list):
+def create_json(url, platforms_regex, file_list):
     """ Create a json with files available per platform """
     json_output = {}
     json_output["url"] = url
 
-    for p in platforms:
-        json_output[p] = []
-
     for f in file_list:
-        if re.search("hyperv", f, re.IGNORECASE):
-            json_output["hyperv"].append(f)
-
-        if re.search("kvm", f, re.IGNORECASE):
-            json_output["kvm"].append(f)
-
-        if re.search("openstack", f, re.IGNORECASE):
-            json_output["openstack"].append(f)
-
-        if re.search("vmware", f, re.IGNORECASE):
-            json_output["vmware"].append(f)
-
-        if re.search("xen", f, re.IGNORECASE):
-            if not re.search("kvm", f, re.IGNORECASE):
-                json_output["xen"].append(f)
+        platform = re.search(platforms_regex, f, re.IGNORECASE)
+        if platform is not None:
+            # Create key
+            if platform.group(0).lower() not in json_output:
+                json_output[platform.group(0).lower()] = []
+            json_output[platform.group(0).lower()].append(f)
 
     return json.dumps(json_output, indent=2, sort_keys=True)
 
@@ -124,11 +112,8 @@ def main():
     insecure = args.insecure
     url = args.url
 
-    if url[-1] is not "/":
-        url = "{0}/".format(url)
-
-    if checksum_dir[-1] is not "/":
-        checksum_dir = "{0}/".format(checksum_dir)
+    if not url.endswith("/"):
+        url = url + "/"
 
     print("INFO: Searching {0}".format(url))
     html_page = http_get(url, insecure)
@@ -136,8 +121,8 @@ def main():
     results = filter_results("^SUSE|^SLE", results, ignore_case=True)
     sha256files = filter_results(".*sha256$", results, ignore_case=False)
 
-    platforms = ["hyperv", "kvm", "openstack", "vmware", "xen"]
-    json_output = create_json(url, platforms, results)
+    platforms_regex = "kvm|hyperv|openstack|vmware|(?<!kvm-and-)xen"
+    json_output = create_json(url, platforms_regex, results)
 
     print("INFO: Available files:")
     print(json_output)
@@ -149,11 +134,11 @@ def main():
             os.makedirs(checksum_dir)
 
         for f in sha256files:
-            link = "{0}{1}".format(url, f)
+            link = url + f
             print("INFO: {0}:".format(f))
             sha256 = http_get(link, insecure)
             print(sha256, end="")
-            write_file("{0}{1}".format(checksum_dir, f), sha256)
+            write_file(os.path.join(checksum_dir, f), sha256)
 
     print("INFO: Done")
 
