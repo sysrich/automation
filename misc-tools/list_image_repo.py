@@ -4,6 +4,7 @@
 # and trigger a build.
 
 import argparse
+from collections import defaultdict
 from html.parser import HTMLParser
 import json
 import os
@@ -80,15 +81,12 @@ def filter_results(regex, file_list, ignore_case):
 
 def create_json(url, platforms_regex, file_list):
     """ Create a json with files available per platform """
-    json_output = {}
+    json_output = defaultdict(list)
     json_output["url"] = url
 
     for f in file_list:
         platform = re.search(platforms_regex, f, re.IGNORECASE)
         if platform is not None:
-            # Create key
-            if platform.group(0).lower() not in json_output:
-                json_output[platform.group(0).lower()] = []
             json_output[platform.group(0).lower()].append(f)
 
     return json.dumps(json_output, indent=2, sort_keys=True)
