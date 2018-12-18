@@ -210,7 +210,11 @@ scale_pod_in_steps() {
       new_num=$NUM_REPLICAS
     fi
     echo "Setting replicas to $new_num"
-    kubectl scale --replicas=$new_num --kubeconfig="$KUBECONFIG_FN" deployment/$NAME
+    for retries in $(seq 1 10); do
+      kubectl scale --replicas=$new_num --kubeconfig="$KUBECONFIG_FN" deployment/$NAME && break
+      echo "[$retries / 10] kubectl scale failed. Retrying in 10 seconds..."
+      sleep 10
+    done
     [[ "$WAIT" = true ]] && wait_until_available_num $new_num $SCALESTEP_TIMEOUT
     current_num=$new_num
   done
