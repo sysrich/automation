@@ -170,6 +170,11 @@ resource "libvirt_domain" "admin" {
   }
 <% end -%>
 
+  # used to add disk -> cache="unsafe"
+  xml {
+    xslt = "${file("disk_caching.xsl")}"
+  }
+
   disk {
     volume_id = "${libvirt_volume.admin.id}"
   }
@@ -301,6 +306,11 @@ resource "libvirt_domain" "master" {
   }
 <% end -%>
 
+  # used to add disk -> cache="unsafe"
+  xml {
+    xslt = "${file("disk_caching.xsl")}"
+  }
+
   disk {
     volume_id = "${element(libvirt_volume.master.*.id, count.index)}"
   }
@@ -393,6 +403,11 @@ resource "libvirt_domain" "worker" {
   <% end -%>
   }
 <% end -%>
+
+  # used to add disk -> cache="unsafe"
+  xml {
+    xslt = "${file("disk_caching.xsl")}"
+  }
 
   disk {
     volume_id = "${element(libvirt_volume.worker.*.id, count.index)}"
