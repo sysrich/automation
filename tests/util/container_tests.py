@@ -62,16 +62,14 @@ class ContainerTests:
         if os.path.basename(self._results_path) == 'results':
             extract_path = os.path.dirname(self._results_path)
 
-        for test in self._tests:
+        while self._tests:
+            test = self._tests.pop(0)
             results = test.container.get_archive('/results')
-
             for item in results[0]:
                 tar = tarfile.TarFile(fileobj=io.BytesIO(item))
                 tar.extractall(path=extract_path)
 
             test.container.remove(v=True, force=True)
-
-        self._tests.clear()
 
     def __enter__(self):
         self.start_time = datetime.datetime.now().isoformat()
