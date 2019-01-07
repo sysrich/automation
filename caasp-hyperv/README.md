@@ -1,7 +1,7 @@
 # SUSE Container As A Service Platform on Hyper-V
 
 The script **caasp-hyperv.ps1** is used to manage the deployment of a CaaSP cluster
-on Hyper-V based on the **VHD** images. By default, it reads a configuration 
+on Hyper-V based on the **VHD**|**VHDX** images. By default, it reads a configuration
 file **caasp-hyperv.vars** in the script directory and generate an hvstate file
 in json **caasp-hyperv-$stackName.hvstate** plus a copy in **caasp-hyperv.hvstate**.
 
@@ -26,17 +26,12 @@ The command line arguments takes precedence on config file options.
 
 Memory must always be expressed in **mega-bytes**.
 
-The action **fetchimage** will first download the compressed image in XZ format (vhdfixed.xz)
-and extracted in VHD format (.vhd).
+If image is in .vhdfixed.xz, the action **fetchimage** will first download the compressed image
+in XZ formatand extracted in VHD format (.vhd)
 
-By default, when using **fetchimage** the scripts will get the sha256 file from 
-$caaspImageSourceUrl.sha256 e.g:
+If image is in .vhd|.vhdx, the action **fetchimage** will just download the image.
 
->
-http://image-repository/SUSE-CaaS-Platform.vhdfixed.xz.sha256
-
-
-Using -Force on deploy|destroy does not require the hvstate file. 
+Using -Force on deploy|destroy does not require the hvstate file.
 
 See [caasp-hyperv.hvstate.example](caasp-hyperv.hvstate.example) for an example
 of a generated state file.
@@ -44,7 +39,7 @@ of a generated state file.
 A VLAN will not be set on the network cards, if no VLAN ID is provided.
 
 The virtual machines hard disk are created in **differencing** from the fixed
-image in VHD format (see fetchimage description).
+image in VHD|VHDX format (see fetchimage description).
 
 
 
@@ -60,18 +55,16 @@ caasp-hyperv.ps1 listimages
 
 ### fetchimage
 
-* Fetch an image on the nodes an verify the checksum
+* Fetch an image on the nodes
 
 ```console
 caasp-hyperv.ps1 fetchimage -caaspImageSourceUrl `
-  http://image-repository/SUSE-CaaS-Platform-2.0-for-MS-HyperV.x86_64-2.0.0-GM.vhdfixed.xz
+  http://image-repository/SUSE-CaaS-Platform-3.0-for-MS-HyperV.x86_64-3.0.0-GM.vhdfixed.xz
 ```
 
-* Fetch an image on the nodes an do not verify the checksum
-
 ```console
 caasp-hyperv.ps1 fetchimage -caaspImageSourceUrl `
-  http://image-repository/SUSE-CaaS-Platform-2.0-for-MS-HyperV.x86_64-2.0.0-GM.vhdfixed.xz -nochecksum
+  http://image-repository/SUSE-CaaS-Platform-4.0-for-MS-HyperV.x86_64-4.0.0-GM.vhdx
 ```
 
 ### deleteimage
@@ -79,7 +72,7 @@ caasp-hyperv.ps1 fetchimage -caaspImageSourceUrl `
 * Delete an image on each hyper-v hosts
 
 ```console
-caasp-hyperv.ps1 deleteimage SUSE-CaaS-Platform-2.0-for-MS-HyperV.x86_64-2.0.0-GM
+caasp-hyperv.ps1 deleteimage -caaspImage SUSE-CaaS-Platform-3.0-for-MS-HyperV.x86_64-3.0.0-GM.vhd
 ```
 
 ### plan
@@ -88,7 +81,7 @@ caasp-hyperv.ps1 deleteimage SUSE-CaaS-Platform-2.0-for-MS-HyperV.x86_64-2.0.0-G
 
 ```console
 caasp-hyperv.ps1 plan -stackName suse `
-                      -caaspImage SUSE-CaaS-Platform-2.0-for-MS-HyperV.x86_64-2.0.0-GM `
+                      -caaspImage SUSE-CaaS-Platform-3.0-for-MS-HyperV.x86_64-3.0.0-GM.vhd `
                       -adminRam 16384mb `
                       -adminCpu 4 `
                       -masters 3 `
@@ -104,14 +97,14 @@ caasp-hyperv.ps1 plan -stackName suse `
 
 ```console
 caasp-hyperv.ps1 deploy -stackName suse `
-                        -caaspImage SUSE-CaaS-Platform-2.0-for-MS-HyperV.x86_64-2.0.0-GM
+                        -caaspImage SUSE-CaaS-Platform-3.0-for-MS-HyperV.x86_64-3.0.0-GM.vhd
 ```
 
 * Deploy a cluster with a specific configuration
 
 ```console
 caasp-hyperv.ps1 deploy -stackName suse `
-                        -caaspImage SUSE-CaaS-Platform-2.0-for-MS-HyperV.x86_64-2.0.0-GM `
+                        -caaspImage SUSE-CaaS-Platform-3.0-for-MS-HyperV.x86_64-3.0.0-GM.vhd `
                         -adminRam 16384mb `
                         -adminCpu 4 `
                         -masters 3 `
@@ -173,14 +166,14 @@ caasp-hyperv.ps1 destroy -stackName suse `
   Description: Name of the stack to deploy, used to prevent cluster interfering deployments
   Actions: plan,deploy,destroy
   Expect: string
-    
+
 .PARAMETER caaspImageSourceUrl
-  Description: CaaSP image to download on hyperv hosts, the format image is vhdfixed.xz
+  Description: CaaSP image to download on hyperv hosts, the format image is vhdfixed.xz,vhd,vhdx
   Actions: fetchimage
   Expect: string
 
 .PARAMETER caaspImage  
-  Description: CaaSP image to deploy, can be different from the one in source-url
+  Description: CaaSP image to deploy, the format is IMAGE.vhd|vhdx, can be different from the one in source-url
   Actions: deleteimage,plan,deploy,destroy
   Expect: string
 
@@ -193,11 +186,6 @@ caasp-hyperv.ps1 destroy -stackName suse `
   Description: Location where the virtual hard disks will be stored
   Actions: deleteimage,plan,deploy,destroy
   Expect: string
-
-.PARAMETER vmVlanId
-  Description: Set a VLAN on the virtual machines network adapter cards
-  Actions: deploy
-  Expect: integer
 
 .PARAMETER vmVlanId
   Description: Set a VLAN on the virtual machines network adapter cards
@@ -234,7 +222,7 @@ caasp-hyperv.ps1 destroy -stackName suse `
   Description: Number masters to deploy
   Actions: plan,deploy,destroy
   Expect: string
-        
+
 .PARAMETER masterNodePrefix
   Description: Base name of the master nodes
   Actions: plan,deploy,destroy
@@ -244,7 +232,7 @@ caasp-hyperv.ps1 destroy -stackName suse `
   Description: Memory of the master nodes, MUST be configured in mega-bytes
   Actions: plan,deploy
   Expect: string
-    
+
 .PARAMETER masterCpu
   Description: Virtual CPUs of the master nodes
   Actions: plan,deploy
@@ -254,7 +242,7 @@ caasp-hyperv.ps1 destroy -stackName suse `
   Description: Number workers to deploy
   Actions: plan,deploy,destroy
   Expect: string
-    
+
 .PARAMETER workerNodePrefix
   Description: Base name of the worker nodes
   Actions: plan,deploy,destroy
@@ -264,7 +252,7 @@ caasp-hyperv.ps1 destroy -stackName suse `
   Description: Memory of the worker nodes, MUST be configured in mega-bytes
   Actions: plan,deploy
   Expect: string
-      
+
 .PARAMETER workerCpu
   Description: Virtual CPUs of the worker nodes
   Actions: plan,deploy
@@ -276,12 +264,6 @@ caasp-hyperv.ps1 destroy -stackName suse `
   Actions: all
   Expect: string
   Default: .\caasp-hyperv.vars
-  
-.PARAMETER nochecksum
-  Description: Define if the checksum file must be downloaded to verify the image.
-  Actions: fetchimage
-  Expect: None
-  Default: false
 
 .PARAMETER Force
   Description: If set with 'deploy', existing VMs will be destroyed and redeployed.
@@ -307,22 +289,24 @@ caasp-hyperv.ps1 destroy -stackName suse `
   
   Retrieve image on nodes
     .\caasp-hyperv.ps1 fetchimage -caaspImageSourceUrl http://url/image.vhdfixed.xz
+    .\caasp-hyperv.ps1 fetchimage -caaspImageSourceUrl http://url/image.vhd
+    .\caasp-hyperv.ps1 fetchimage -caaspImageSourceUrl http://url/image.vhdx
   
   Deploy a new cluster
-    .\caasp-hyperv.ps1 deploy -stackName suse -masters 3 -workers 15
+    .\caasp-hyperv.ps1 deploy -stackName suse -caaspImage SUSE-CaaS-Platform.vhd -masters 3 -workers 15
   
   Redeploy the cluster without confirmation
-    .\caasp-hyperv.ps1 deploy -stackName suse -masters 3 -workers 15 -Force
-    
+    .\caasp-hyperv.ps1 deploy -stackName suse -caaspImage SUSE-CaaS-Platform.vhd -masters 3 -workers 15 -Force
+
   Destroy the cluster with confirmation
-    .\caasp-hyperv.ps1 destroy -stackName suse -masters 3 -workers 15
+    .\caasp-hyperv.ps1 destroy -stackName suse -caaspImage SUSE-CaaS-Platform.vhd -masters 3 -workers 15
   
   Destroy the cluster without confirmation
     .\caasp-hyperv.ps1 destroy -stackName suse -masters 3 -workers 15 -Force
 
   Get all deployment status for suse stack
     .\caasp-hyperv.ps1 status -stackName suse
-            
+
   Get all deployment status
     .\caasp-hyperv.ps1 status
 #>
