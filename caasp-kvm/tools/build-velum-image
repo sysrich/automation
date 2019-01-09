@@ -83,7 +83,7 @@ build_fresh_image() {
                     bash -c "
                       cd /srv/velum-latest && \
                       mkdir -p /var/lib/velum && \
-                      gem install --no-ri --no-rdoc bundler -n /usr/bin && \
+                      gem install --no-ri --no-rdoc bundler -v 1.17.3 -n /usr/bin && \
                       bundle.${RUBY_VERSION} config --local frozen 0 && \
                       bundle.${RUBY_VERSION} config --local build.nokogiri --use-system-libraries && \
                       bundle.${RUBY_VERSION} install --deployment --binstubs=/usr/local/bin --path=/var/lib/velum && \
