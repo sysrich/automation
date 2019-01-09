@@ -19,12 +19,12 @@
   Expect: string
     
 .PARAMETER caaspImageSourceUrl
-  Description: CaaSP image to download on hyperv hosts, the format image is vhdfixed.xz
+  Description: CaaSP image to download on hyperv hosts, the format image is vhdfixed.xz,vhd,vhdx
   Actions: fetchimage
   Expect: string
 
 .PARAMETER caaspImage  
-  Description: CaaSP image to deploy, can be different from the one in source-url
+  Description: CaaSP image to deploy, the format is IMAGE.vhd|vhdx, can be different from the one in source-url
   Actions: deleteimage,plan,deploy,destroy
   Expect: string
 
@@ -37,11 +37,6 @@
   Description: Location where the virtual hard disks will be stored
   Actions: deleteimage,plan,deploy,destroy
   Expect: string
-
-.PARAMETER vmVlanId
-  Description: Set a VLAN on the virtual machines network adapter cards
-  Actions: deploy
-  Expect: integer
 
 .PARAMETER vmVlanId
   Description: Set a VLAN on the virtual machines network adapter cards
@@ -120,12 +115,6 @@
   Actions: all
   Expect: string
   Default: .\caasp-hyperv.vars
-  
-.PARAMETER nochecksum
-  Description: Define if the checksum file must be downloaded to verify the image.
-  Actions: fetchimage
-  Expect: None
-  Default: false
 
 .PARAMETER Force
   Description: If set with 'deploy', existing VMs will be destroyed and redeployed.
@@ -151,15 +140,17 @@
   
   Retrieve image on nodes
     .\caasp-hyperv.ps1 fetchimage -caaspImageSourceUrl http://url/image.vhdfixed.xz
+    .\caasp-hyperv.ps1 fetchimage -caaspImageSourceUrl http://url/image.vhd
+    .\caasp-hyperv.ps1 fetchimage -caaspImageSourceUrl http://url/image.vhdx
   
   Deploy a new cluster
-    .\caasp-hyperv.ps1 deploy -stackName suse -masters 3 -workers 15
+    .\caasp-hyperv.ps1 deploy -stackName suse -caaspImage SUSE-CaaS-Platform.vhd -masters 3 -workers 15
   
   Redeploy the cluster without confirmation
-    .\caasp-hyperv.ps1 deploy -stackName suse -masters 3 -workers 15 -Force
+    .\caasp-hyperv.ps1 deploy -stackName suse -caaspImage SUSE-CaaS-Platform.vhd -masters 3 -workers 15 -Force
     
   Destroy the cluster with confirmation
-    .\caasp-hyperv.ps1 destroy -stackName suse -masters 3 -workers 15
+    .\caasp-hyperv.ps1 destroy -stackName suse -caaspImage SUSE-CaaS-Platform.vhd -masters 3 -workers 15
   
   Destroy the cluster without confirmation
     .\caasp-hyperv.ps1 destroy -stackName suse -masters 3 -workers 15 -Force
@@ -187,20 +178,20 @@ param (
   [parameter(Mandatory = $false)][string]$vhdStoragePath,
   [parameter(Mandatory = $false)][int]$estimatedVmSize = 15,
 
-  [parameter(Mandatory = $false)][int]$admins = 1,
+  [parameter(Mandatory = $false)][int]$admins,
   [parameter(Mandatory = $false)][string]$adminNodePrefix,
-  [parameter(Mandatory = $false)][string]$adminRam = "8192mb",
-  [parameter(Mandatory = $false)][int]$adminCpu = 4,
+  [parameter(Mandatory = $false)][string]$adminRam,
+  [parameter(Mandatory = $false)][int]$adminCpu,
 
   [parameter(Mandatory = $false)][int]$masters = 1,
   [parameter(Mandatory = $false)][string]$masterNodePrefix,
-  [parameter(Mandatory = $false)][string]$masterRam = "4096mb",
-  [parameter(Mandatory = $false)][int]$masterCpu = 2,
+  [parameter(Mandatory = $false)][string]$masterRam,
+  [parameter(Mandatory = $false)][int]$masterCpu,
 
-  [parameter(Mandatory = $false)][int]$workers = 2,
+  [parameter(Mandatory = $false)][int]$workers,
   [parameter(Mandatory = $false)][string]$workerNodePrefix,
-  [parameter(Mandatory = $false)][string]$workerRam = "2048mb",
-  [parameter(Mandatory = $false)][int]$workerCpu = 1,
+  [parameter(Mandatory = $false)][string]$workerRam,
+  [parameter(Mandatory = $false)][int]$workerCpu,
   
   [parameter(Mandatory = $false)][string]$stackName,
   
@@ -212,7 +203,6 @@ param (
 
   [parameter(Mandatory = $false)][string]$varFile = "$PSScriptRoot\caasp-hyperv.vars",
 
-  [switch]$nochecksum,
   [switch]$Force
 )
 
@@ -279,25 +269,6 @@ function convert_to_unc() {
   return $UNCPath
 }
 
-function checksum_file() {
-  Param(
-    [parameter(Mandatory = $true)]$file,
-    [parameter(Mandatory = $true)]$sha256sum
-  )
-
-  log_task "Get hash for $file"
-  $file_hash = Get-FileHash $file -Algorithm SHA256
-
-  if ($sha256sum -eq $file_hash.Hash) {
-    log_info -Message "Checksum is valid for $file `n- Expected: $sha256sum`n- Found   : $(($file_hash.Hash).ToLower())`n- Filesize: $((Get-Item $file).Length)b"
-    return $true
-  }
-  Else {
-    log_error -Message  "Checksum is invalid for $file `n- Expected: $sha256sum`n- Found   : $(($file_hash.Hash).ToLower())`n- Filesize: $((Get-Item $file).Length)b"
-    return $false
-  }
-}
-
 function download_file() {
   Param(
     [parameter(Mandatory = $true)][string]$file_url,
@@ -352,17 +323,10 @@ Function list_images() {
   )
   
   Foreach ($ComputeHost in $COMPUTE_HOSTS) {
-    $lsfiles = Get-ChildItem -File $(convert_to_unc $ComputeHost $image_dir)
-    log_task "List images/files on $ComputeHost in $image_dir"
-    log_info "Files:"
+    $lsfiles = Get-ChildItem -File -Recurse -Include *.vhd,*.vhdx $(convert_to_unc $ComputeHost $image_dir)
+    log_info "Available images:"
     ForEach ($f in $lsfiles) {
       log_info "- $($f.name) ($($f.length)b)"
-    }
-
-    log_info "Available images:"
-    $images = $lsfiles.name|ForEach-Object {$_ -replace "(.vhd.*$)|(.sha256$)"} | Get-Unique
-    ForEach ($img in $images) {
-      log_info "- $img"
     }
   }
 }
@@ -372,16 +336,17 @@ Function delete_image() {
     [parameter(Mandatory = $true)][string]$image_dir,
     [parameter(Mandatory = $true)][string]$image
   )
-  $image_base_path = "$image_dir\$image"
+  $image_path = "$image_dir\$image"
 
   Foreach ($ComputeHost in $COMPUTE_HOSTS) {
-    $unc_image_base_path = $(convert_to_unc $ComputeHost $image_base_path)
+    $unc_image_path = $(convert_to_unc $ComputeHost $image_path)
+    $unc_image_base_path = $unc_image_path -replace '(.vhdx)|(.vhd)',''
 
     # Test if .vhd file exists and if it is locked
-    If (Test-Path "$unc_image_base_path.vhd") {
-      If ($(is_file_locked "$unc_image_base_path.vhd") -eq $false) {
+    If (Test-Path "$unc_image_path") {
+      If ($(is_file_locked "$unc_image_path") -eq $false) {
         log_task "Delete $image on $($ComputeHost)"
-        delete_file "$unc_image_base_path.vhd"
+        delete_file "$unc_image_path"
         # Clean up
         If (Test-Path "$unc_image_base_path.vhdfixed.xz") { delete_file "$unc_image_base_path.vhdfixed.xz" }
         If (Test-Path "$unc_image_base_path.vhdfixed.xz.sha256") { delete_file "$unc_image_base_path.vhdfixed.xz.sha256" }
@@ -412,63 +377,44 @@ function fetch_image() {
 
     $url_split = $file_url.split('/')
     $filename = $url_split[-1]
-    $baseurl = $url_split[0..($url_split.Length - 2)] -join ('/')
-    $csum_url = "$baseurl\SHA256SUMS"
-
-    # Download SHA256SUMS
-    if (-not $nochecksum) {
-      $output_csum_path = "$dir\$filename.sha256"
-      If (-not $(Test-Path $output_csum_path)) {
-        log_info -Message "Downloading $filename SHA256SUMS"
-        download_file $csum_url  $output_csum_path
-        
-        # Retrieve checksum
-        $sha256sum = Get-Content $output_csum_path |  Where-Object { $_ -match $filename }
-        $sha256sum = $sha256sum.split(' ')[0]
-      }
-      Else {
-        log_info -Message "Existing $filename SHA256SUMS found"
-        # Retrieve checksum
-        $sha256sum = Get-Content $output_csum_path |  Where-Object { $_ -match $filename }
-        $sha256sum = $sha256sum.split(' ')[0]
-      }
+    if ($filename -match '.*fixed.xz$') {
+      $target_filename = $filename -replace 'fixed.xz',''
+    }
+    Else {
+      $target_filename = $filename
     }
 
-    # Download Image if it does not exist or if local file checksum is not valid
-    $file_sum = $true
-    $output_file_path = "$dir\$filename"
+    # Download Image if it does not exist
+    $output_file_path = "$dir\$target_filename"
     If (Test-Path $output_file_path) {
-      log_info -Message "Existing $filename IMAGE found"
-      if (-not $nochecksum) {
-        $file_sum = checksum_file $output_file_path $sha256sum
-      }
+      log_info -Message "Existing $target_filename IMAGE found"
     }
 
-    If (-not $(Test-Path $output_file_path) -or (-not $file_sum) -or (-not $nochecksum -and -not $(Test-Path $output_file_path))) {
+    If (-not $(Test-Path $output_file_path)) {
       log_info -Message "Downloading $filename"
-      download_file $file_url  $output_file_path
-      if (-not $nochecksum) {
-        $file_sum = checksum_file $output_file_path $sha256sum
-      }
+      # use $filename to download file to vhdfixed.xz if necessary
+      download_file $file_url  "$dir\$filename"
     }
     
     $extracted_filename = $filename.replace('.xz', '')
-    $target_filename = $filename.replace('fixed.xz', '')
-    try {
-      If (-not $(Test-Path $dir\$target_filename)) {
-        log_info -Message "Extracting $dir\$filename"
-        Invoke-Command -ComputerName $ComputeHost -ScriptBlock {param($d, $f, $df) & 'C:\Program Files\7-Zip\7Z.exe' e $d\$f -o"$df" -y } -ArgumentList $dest_dir, $filename, $dest_dir
-        Rename-Item $dir\$extracted_filename "$dir\$target_filename"
+    # Extract the file if necessary
+    if ($filename -match '.*fixed.xz$') {
+      try {
+        If (-not $(Test-Path $output_file_path)) {
+          log_info -Message "Extracting $dir\$filename"
+          Invoke-Command -ComputerName $ComputeHost -ScriptBlock {param($d, $f, $df) & 'C:\Program Files\7-Zip\7Z.exe' e $d\$f -o"$df" -y } -ArgumentList $dest_dir, $filename, $dest_dir
+          Rename-Item $dir\$extracted_filename "$dir\$target_filename"
+        }
       }
-    }
-    Catch {
-      log_error -Message "Extract file failed"
-      $_.Exception.Message
-    }
-    Finally {
-      # Clean up
-      If (Test-Path "$dir\$filename") { delete_file "$dir\$filename" }
-      If (Test-Path "$dir\$filename.sha256") { delete_file "$dir\$filename.sha256" }
+      Catch {
+        log_error -Message "Extract file failed"
+        $_.Exception.Message
+      }
+      Finally {
+        # Clean up
+        If (Test-Path "$dir\$filename") { delete_file "$dir\$filename" }
+        If (Test-Path "$dir\$filename.sha256") { delete_file "$dir\$filename.sha256" }
+      }
     }
   }
 }
@@ -645,6 +591,7 @@ function deploy_vm() {
     [parameter(Mandatory = $true)]$VMSwitch,
     [parameter(Mandatory = $true)]$VMVlanId,
     [parameter(Mandatory = $true)]$ImagePath,
+    [parameter(Mandatory = $true)]$ImageFormat,
     [parameter(Mandatory = $true)]$Role
   )
 
@@ -656,15 +603,15 @@ function deploy_vm() {
       $ComputeHost = $ALLOCATION.$VMName
 
       # Exit if a VM or VHD exit with the same name 
-      if ((Get-VM -ComputerName $ComputeHost -VMName $VMName -ErrorAction ignore) -Or (Get-VHD -ComputerName $ComputeHost -Path "$DeployVmDirLocal\$VMName.vhd" -ErrorAction ignore)) { 
-        log_error "A Virtual Machine ($VMName) or a Virtual Hard Disk ($DeployVmDirLocal\$VMName.vhd) on $ComputerHost already exist with the same name, use -Force to overwrite existing deployment"
+      if ((Get-VM -ComputerName $ComputeHost -VMName $VMName -ErrorAction ignore) -Or (Get-VHD -ComputerName $ComputeHost -Path "$DeployVmDirLocal\$VMName.$ImageFormat" -ErrorAction ignore)) { 
+        log_error "A Virtual Machine ($VMName) or a Virtual Hard Disk ($DeployVmDirLocal\$VMName.$ImageFormat) on $ComputerHost already exist with the same name, use -Force to overwrite existing deployment"
         Exit
       }
 
       log_task "Deploy $VMName on $ComputeHost"
       create_vm -VMName $VMName -VMMemory $VMMemory -VMProcessor $VMProcessor -VMSwitch $VMSwitch -VMVlanId $VMVlanId
-      create_vmharddisk -ImagePath $ImagePath -DiskPath "$DeployVmDirLocal\$VMName.vhd"
-      add_vmharddisk -VMName $VMName -DiskPath "$DeployVmDirLocal\$VMName.vhd"
+      create_vmharddisk -ImagePath $ImagePath -DiskPath "$DeployVmDirLocal\$VMName.$ImageFormat"
+      add_vmharddisk -VMName $VMName -DiskPath "$DeployVmDirLocal\$VMName.$ImageFormat"
       create_cloudinit_iso -VMName $VMName -IsoTargetPath $(convert_to_unc $ComputeHost $DeployVmDirLocal) -CloudInit "$CloudInit" -AdminNode $AdminNode
       add_vmdvddrive -VMName $VMName -IsoTargetPath "$DeployVmDirLocal\$VMName-cloud-init.iso"
       start_vm -VMName $VMName
@@ -950,6 +897,7 @@ function deploy_caasp() {
     -VMProcessor $CONF.adminCpu `
     -VMSwitch $CONF.vmSwitch `
     -ImagePath $CONF.imagePath `
+    -ImageFormat $CONF.imageFormat `
     -Role "admin" `
     -CloudInit $CONF.adminCloudInit
 
@@ -972,6 +920,7 @@ function deploy_caasp() {
     -VMProcessor $CONF.masterCpu `
     -VMSwitch $CONF.vmSwitch `
     -ImagePath $CONF.imagePath `
+    -ImageFormat $CONF.imageFormat `
     -Role "master" `
     -CloudInit $CONF.nodeCloudInit `
     -AdminNode $AdminNodeIP
@@ -985,6 +934,7 @@ function deploy_caasp() {
     -VMProcessor $CONF.workerCpu `
     -VMSwitch $CONF.vmSwitch `
     -ImagePath $CONF.imagePath `
+    -ImageFormat $CONF.imageFormat `
     -Role "worker" `
     -CloudInit $CONF.nodeCloudInit `
     -AdminNode $AdminNodeIP
@@ -1113,13 +1063,29 @@ $CONF["masterNode"] = $CONF.masterNodePrefix + "-$($CONF.stackName)"
 $CONF["workerNode"] = $CONF.workerNodePrefix + "-$($CONF.stackName)"
 
 # Generate VHD Image path
-$CONF["imagePath"] = "$($CONF.imageStoragePath)\$($CONF.caaspImage).vhd"
+$CONF["imagePath"] = "$($CONF.imageStoragePath)\$($CONF.caaspImage)"
+
+# Get VHD Image format
+$CONF["imageFormat"] = ($CONF.caaspImage).split('.')[-1]
 
 # Generate deployment dir path
 $CONF["vhdStoragePath"] = "$($CONF.vhdStoragePath)\$($CONF.stackName)"
 
 # Generate state file path
 $CONF["hvStateFile"] = "$PSScriptRoot\caasp-hyperv-$($CONF.stackName).hvstate"
+
+# Set default values if not set
+If (-not $CONF.caaspImageFormat) { $CONF.caaspImageFormat = "vhdx" }
+If (-not $CONF.estimatedVmSize) { $CONF.estimatedVmSize = 15 }
+If (-not $CONF.admins) { $CONF.admins = 1 }
+If (-not $CONF.adminRam) { $CONF.adminRam = "8192mb" }
+If (-not $CONF.adminCpu) { $CONF.adminCpu = 4 }
+If (-not $CONF.masters) { $CONF.masters = 1 }
+If (-not $CONF.masterRam) { $CONF.masterRam = "4096mb" }
+If (-not $CONF.masterCpu) { $CONF.masterCpu = 2 }
+If (-not $CONF.workers) { $CONF.workers = 2 }
+If (-not $CONF.workerRam) { $CONF.workerRam = "2048mb" }
+If (-not $CONF.workerCpu) { $CONF.workerCpu = 1 }
 
 # Add the mb unit information if not here
 foreach ($mem in @("adminRam", "masterRam", "workerRam")) {
