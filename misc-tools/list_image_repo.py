@@ -10,6 +10,7 @@ import json
 import os
 import re
 import requests
+import sys
 
 
 # HTML Parser
@@ -52,7 +53,7 @@ def http_get(url, insecure):
         request = http.get(url, verify=insecure, allow_redirects=True)
         request.raise_for_status()
     except (requests.ConnectionError, requests.HTTPError, requests.Timeout) as e:
-        print("connection failed: {0}".format(e))
+        sys.exit("connection failed: {0}".format(e))
 
     return request.text
 
@@ -97,9 +98,9 @@ def write_file(path, content):
     try:
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)
-        print("INFO: File successfully created: {0}\n".format(path))
+        print("INFO: file successfully created: {0}\n".format(path))
     except IOError as e:
-        print("i/o error: {0}".format(e))
+        sys.exit("i/o error: {0}".format(e))
 
 
 def main():
