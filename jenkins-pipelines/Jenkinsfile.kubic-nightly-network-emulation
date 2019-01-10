@@ -18,7 +18,11 @@ properties([
     ])
 ])
 
+def kvmTypeOptions = kubicLib.CaaspKvmTypeOptions.new();
+kvmTypeOptions.vanilla = true
+
 coreKubicProjectPeriodic(
+    environmentTypeOptions: kvmTypeOptions,
     environmentDestroy: env.ENVIRONMENT_DESTROY.toBoolean(),
     masterCount: env.MASTER_COUNT.toInteger(),
     workerCount: env.WORKER_COUNT.toInteger()
