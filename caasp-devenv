@@ -250,10 +250,16 @@ setup() {
     sudo zypper --gpg-auto-import-keys ref SUSE_CA
   fi
 
-  if ! zypper lr -dU | grep --quiet "$DIST_BASE" ; then
-    log "Adding Virtualization:containers Zypper repo"
-    sudo zypper ar "http://download.$DIST_BASE/${dist}/Virtualization:containers.repo"
-    sudo zypper --gpg-auto-import-keys ref Virtualization_containers
+  if ! zypper lr -dU | grep --quiet "suse.de/ibs/Devel:/CASP:/CI" ; then
+    log "Adding Devel:CASP:CI Zypper repo"
+    sudo zypper ar "http://download.suse.de/ibs/Devel:/CASP:/CI/${dist}/Devel:CASP:CI.repo"
+    sudo zypper --gpg-auto-import-keys ref Devel_CASP_CI
+  fi
+
+  if ! zypper lr -dU | grep --quiet "opensuse.org/repositories/systemsmanagement:/terraform/" ; then
+    log "Adding systemsmanagement:terraform zypper repo"
+    sudo zypper ar -f "http://download.opensuse.org/repositories/systemsmanagement:/terraform/${dist}/systemsmanagement:terraform.repo"
+    sudo zypper --gpg-auto-import-keys ref systemsmanagement_terraform
   fi
 
   sudo zypper in --no-confirm --auto-agree-with-licenses $DIST_PACKAGES
